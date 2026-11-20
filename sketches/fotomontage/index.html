@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Globetrotter – fotomontage</title>
+<style>
+  :root { --ink:#f4ead6; --gold:#e9b949; --dark:rgba(18,14,10,.78); }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#111; color:var(--ink); font-family: "Segoe UI", system-ui, sans-serif; }
+  h2 { font-weight:500; font-size:15px; color:#aaa; margin:24px auto 8px; width:min(960px,96vw); }
+  .stage { position:relative; width:min(960px,96vw); aspect-ratio:16/9; margin:0 auto; overflow:hidden; border-radius:6px; background:#000; }
+  .layer { position:absolute; inset:0; background-size:cover; background-position:center; }
+  .map { background-image:url(img/map1914a.jpg); filter:sepia(.35) contrast(1.05);
+         -webkit-mask-image:linear-gradient(to bottom, #000 0%, #000 30%, transparent 62%);
+                 mask-image:linear-gradient(to bottom, #000 0%, #000 30%, transparent 62%); }
+  .photo { background-image:url(img/skyline.jpg); background-position:center 70%;
+           -webkit-mask-image:linear-gradient(to bottom, transparent 22%, #000 55%);
+                   mask-image:linear-gradient(to bottom, transparent 22%, #000 55%); }
+  .title { position:absolute; left:2%; top:3%; padding:0 14px 4px; background:rgba(244,234,214,.78); border-radius:4px; font-family: Georgia, "Times New Roman", serif;
+           font-size:clamp(28px,6.5vw,64px); color:#c8282d; letter-spacing:1px;
+           text-shadow:0 2px 0 rgba(255,255,255,.6); }
+  .subtitle { position:absolute; left:3.4%; top:18.5%; background:rgba(244,234,214,.78); padding:1px 8px; border-radius:3px; font-size:clamp(11px,1.5vw,15px); color:#5b3b1c; font-style:italic; }
+  .hud { position:absolute; right:2%; top:3%; display:flex; gap:8px; }
+  .hud div { background:var(--dark); border:1px solid rgba(233,185,73,.6); border-radius:4px; padding:6px 10px; font-size:clamp(10px,1.4vw,14px); }
+  .hud b { color:var(--gold); font-weight:600; }
+  .spot { position:absolute; transform:translate(-50%,-50%); text-align:center; cursor:pointer; }
+  .spot .ph { width:clamp(54px,10vw,96px); aspect-ratio:1; border-radius:50%; background-size:cover; background-position:center;
+              border:3px solid var(--ink); box-shadow:0 4px 12px rgba(0,0,0,.55); transition:transform .15s; }
+  .spot:hover .ph { transform:scale(1.08); }
+  .spot .lb { margin-top:4px; background:var(--dark); padding:2px 8px; border-radius:3px; font-size:clamp(10px,1.3vw,13px); white-space:nowrap; }
+  .spot.done .ph { border-color:var(--gold); }
+  .spot.done .lb::before { content:"✓ "; color:var(--gold); }
+  .spot.wonder .ph { border-radius:10px; border-color:var(--gold); width:clamp(64px,12vw,116px); }
+  .spot.wonder .lb { background:#7a4f12; }
+  .bar { position:absolute; left:0; right:0; bottom:0; display:flex; gap:6px; padding:8px 2%; background:linear-gradient(to top, rgba(0,0,0,.8), transparent); }
+  .bar button { flex:1; background:var(--dark); color:var(--ink); border:1px solid rgba(244,234,214,.35); border-radius:4px; padding:8px 4px;
+                font-size:clamp(10px,1.4vw,14px); cursor:pointer; }
+  .bar button:hover { border-color:var(--gold); color:var(--gold); }
+  .progress { position:absolute; right:2%; top:12%; background:var(--dark); padding:6px 10px; border-radius:4px; font-size:clamp(10px,1.3vw,13px); }
+  .progress i { display:inline-block; width:10px; height:10px; border-radius:50%; border:1px solid var(--gold); margin-left:4px; vertical-align:-1px; }
+  .progress i.on { background:var(--gold); }
+
+  .pyr { background-image:url(img/pyramids.jpg); background-position:center 60%; }
+  .card { position:absolute; right:3%; top:6%; bottom:6%; width:42%; background:rgba(244,234,214,.94); color:#2a1d10;
+          border-radius:6px; padding:clamp(10px,2vw,22px); box-shadow:0 8px 30px rgba(0,0,0,.5); display:flex; flex-direction:column; gap:8px;
+          font-size:clamp(10px,1.35vw,14px); line-height:1.45; }
+  .card h3 { margin:0; font-family:Georgia,serif; font-weight:400; font-size:clamp(16px,2.6vw,26px); color:#7a4f12; }
+  .card .tag { font-size:.85em; color:#7a6a55; }
+  .card .q { margin-top:auto; font-weight:600; }
+  .card .alts { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .card .alts button { background:#fff; border:1px solid #c9b48f; border-radius:4px; padding:6px; font-size:inherit; cursor:pointer; color:#2a1d10; }
+  .card .alts button.right { background:#2f7d43; color:#fff; border-color:#2f7d43; }
+  .card .alts button.wrong { background:#a33; color:#fff; border-color:#a33; }
+  .credit { position:absolute; left:1.5%; bottom:1.5%; font-size:10px; color:rgba(255,255,255,.75); text-shadow:0 1px 2px #000; }
+  .note { width:min(960px,96vw); margin:10px auto 0; font-size:12px; color:#888; }
+</style>
+</head>
+<body>
+
+<h2>Skärm 1 · Stadsvyn: historisk karta som tonar över i ett nutida foto</h2>
+<div class="stage">
+  <div class="layer map"></div>
+  <div class="layer photo"></div>
+  <div class="title">Kairo</div>
+  <div class="subtitle">Egypten · Afrika</div>
+  <div class="hud">
+    <div>Dag <b>13</b> · 09:00</div>
+    <div>Kassa <b>4 820 kr</b></div>
+    <div>Ryggsäck <b>3/6</b></div>
+  </div>
+  <div class="progress">Staden gjord: <i class="on"></i><i></i><i></i></div>
+
+  <div class="spot wonder" style="left:20%;top:50%"><div class="ph" style="background-image:url(img/pyramids.jpg)"></div><div class="lb">Pyramiderna i Giza · underverk</div></div>
+  <div class="spot done" style="left:52%;top:30%"><div class="ph" style="background-image:url(img/museum.jpg)"></div><div class="lb">Egyptiska museet</div></div>
+  <div class="spot" style="left:71%;top:52%"><div class="ph" style="background-image:url(img/khan.jpg)"></div><div class="lb">Khan el-Khalili</div></div>
+  <div class="spot" style="left:87%;top:40%"><div class="ph" style="background-image:url(img/mosque.jpg)"></div><div class="lb">Citadellet</div></div>
+
+  <div class="bar">
+    <button>Hotell</button><button>Tidning · jobb</button><button>Basar</button><button>Station</button><button>Flygplats</button><button>Landfakta</button>
+  </div>
+</div>
+
+<h2>Skärm 2 · Underverket: helbildsfoto med faktakort och fråga</h2>
+<div class="stage">
+  <div class="layer pyr"></div>
+  <div class="hud" style="left:2%;right:auto">
+    <div>Dag <b>13</b> · 14:00</div>
+    <div>Kassa <b>4 700 kr</b></div>
+  </div>
+  <div class="card">
+    <h3>Pyramiderna i Giza</h3>
+    <div class="tag">Underverk · besök 4 tim · inträde 120 kr</div>
+    <div>Den stora pyramiden byggdes för farao Cheops (Khufu) omkring 2560 f.Kr. Den var ursprungligen ungefär 146 meter hög och var världens högsta byggnad i närmare 4 000 år.</div>
+    <div>Bredvid ligger Chefrens och Mykerinos pyramider, och sfinxen vaktar området från öster.</div>
+    <div class="q">Vilken farao lät bygga den stora pyramiden?</div>
+    <div class="alts">
+      <button data-ok="1">Cheops</button><button>Ramses II</button><button>Tutankhamon</button><button>Kleopatra</button>
+    </div>
+  </div>
+  <div class="credit">Foto: Ricardo Liberato, CC BY-SA 2.0</div>
+</div>
+
+<p class="note">Skiss. Foton och karta från Wikimedia Commons, se CREDITS.md. Stadsvyn: Vyacheslav Argenberg (CC BY 4.0), Baedeker 1914, Diego Delso (CC BY-SA 3.0), V Manninen (CC BY 2.0).</p>
+
+<script>
+  document.querySelectorAll('.alts button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.alts button').forEach(x => { if (x.dataset.ok) x.classList.add('right'); });
+    if (!b.dataset.ok) b.classList.add('wrong');
+  }));
+</script>
+</body>
+</html>

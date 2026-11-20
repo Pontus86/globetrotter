@@ -1,0 +1,98 @@
+{
+  "vasa": {
+    "title": "File:Stockholm Vasa Museum vasa exterior 11.jpg",
+    "license": "CC BY-SA 4.0",
+    "artist": "Ad Meskens",
+    "page": "https://commons.wikimedia.org/wiki/File:Stockholm_Vasa_Museum_vasa_exterior_11.jpg"
+  },
+  "gamlastan": {
+    "title": "File:Stortorget i Gamla Stan i Stockholm-2.JPG",
+    "license": "CC BY-SA 3.0",
+    "artist": "Øyvind Holmstad",
+    "page": "https://commons.wikimedia.org/wiki/File:Stortorget_i_Gamla_Stan_i_Stockholm-2.JPG"
+  },
+  "redfort": {
+    "title": "File:Lahori Gate Red Fort New Delhi India 2.jpg",
+    "license": "CC BY-SA 4.0",
+    "artist": "Ranjeet Chauhan",
+    "page": "https://commons.wikimedia.org/wiki/File:Lahori_Gate_Red_Fort_New_Delhi_India_2.jpg"
+  },
+  "qutb": {
+    "title": "File:Qutb Minar Minaret Delhi India.jpg",
+    "license": "Public domain",
+    "artist": "wtclark (Wtclark)",
+    "page": "https://commons.wikimedia.org/wiki/File:Qutb_Minar_Minaret_Delhi_India.jpg"
+  },
+  "taj": {
+    "title": "File:Taj Mahal, Agra, India edit2.jpg",
+    "license": "CC BY-SA 4.0",
+    "artist": "Yann; edited by King of Hearts",
+    "page": "https://commons.wikimedia.org/wiki/File:Taj_Mahal,_Agra,_India_edit2.jpg"
+  },
+  "sensoji": {
+    "title": "File:Senso-ji Kaminarimon 201503a.jpg",
+    "license": "CC BY-SA 3.0",
+    "artist": "Tak1701d",
+    "page": "https://commons.wikimedia.org/wiki/File:Senso-ji_Kaminarimon_201503a.jpg"
+  },
+  "tokyotower": {
+    "title": "File:Tokyo Tower, Minato City.jpg",
+    "license": "CC BY 4.0",
+    "artist": "David Kernan",
+    "page": "https://commons.wikimedia.org/wiki/File:Tokyo_Tower,_Minato_City.jpg"
+  },
+  "goldengate": {
+    "title": "File:Golden Gate Bridge from Marin Headlands 1.jpg",
+    "license": "CC BY 3.0",
+    "artist": "Wattewyl",
+    "page": "https://commons.wikimedia.org/wiki/File:Golden_Gate_Bridge_from_Marin_Headlands_1.jpg"
+  },
+  "alcatraz": {
+    "title": "File:Alcatraz Island as seen from the East.jpg",
+    "license": "CC BY-SA 4.0",
+    "artist": "Frank Schulenburg",
+    "page": "https://commons.wikimedia.org/wiki/File:Alcatraz_Island_as_seen_from_the_East.jpg"
+  },
+  "grandcanyon": {
+    "title": "File:Grand Canyon South Rim at Sunset.jpg",
+    "license": "CC0",
+    "artist": "Mgimelfarb",
+    "page": "https://commons.wikimedia.org/wiki/File:Grand_Canyon_South_Rim_at_Sunset.jpg"
+  },
+  "liberty": {
+    "title": "File:Liberty Island photo Don Ramey Logan.jpg",
+    "license": "CC BY 4.0",
+    "artist": "Don Ramey Logan",
+    "page": "https://commons.wikimedia.org/wiki/File:Liberty_Island_photo_Don_Ramey_Logan.jpg"
+  },
+  "empirestate": {
+    "title": "File:Manhattan from Weehawken, NJ.jpg",
+    "license": "CC BY-SA 3.0",
+    "artist": "Dmitry Avdeev",
+    "page": "https://commons.wikimedia.org/wiki/File:Manhattan_from_Weehawken,_NJ.jpg"
+  },
+  "pyramids": {
+    "title": "File:All Gizah Pyramids.jpg",
+    "license": "CC BY-SA 2.0",
+    "artist": "Ricardo Liberato",
+    "page": "https://commons.wikimedia.org/wiki/File:All_Gizah_Pyramids.jpg"
+  },
+  "museum": {
+    "title": "File:Facade of the Egyptian Museum, Tahrir Square, Cairo, Egypt1.jpg",
+    "license": "CC BY-SA 3.0",
+    "artist": "Diego Delso",
+    "page": "https://commons.wikimedia.org/wiki/File:Facade_of_the_Egyptian_Museum,_Tahrir_Square,_Cairo,_Egypt1.jpg"
+  },
+  "khan": {
+    "title": "File:The Khan el-Khalili market in Cairo, Egypt (2743501345).jpg",
+    "license": "CC BY 2.0",
+    "artist": "V Manninen",
+    "page": "https://commons.wikimedia.org/wiki/File:The_Khan_el-Khalili_market_in_Cairo,_Egypt_(2743501345).jpg"
+  },
+  "mosque": {
+    "title": "File:Cairo, Cairo Citadel, Muhammad Ali Mosque, Egypt.jpg",
+    "license": "CC BY 4.0",
+    "artist": "Vyacheslav Argenberg",
+    "page": "https://commons.wikimedia.org/wiki/File:Cairo,_Cairo_Citadel,_Muhammad_Ali_Mosque,_Egypt.jpg"
+  }
+}

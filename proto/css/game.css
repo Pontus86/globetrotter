@@ -1,0 +1,4133 @@
+/* Globetrotter — Stilark för BackPacker-inspirerad fotomontagestil */
+:root {
+  --ink: #f4ead6;
+  --ink-dark: #2a1d10;
+  --gold: #e9b949;
+  --gold-dark: #b8861c;
+  --dark-bg: rgba(18, 14, 10, 0.88);
+  --paper-bg: rgba(246, 238, 224, 0.96);
+  --passport-red: #581619;
+  --accent-red: #c8282d;
+  --accent-green: #2f7d43;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0d0b09;
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 12px;
+  user-select: none;
+}
+
+/* Huvudbehållare */
+.app-container {
+  width: 100%;
+  max-width: 1040px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Övre topplist */
+.top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 6px;
+}
+
+.logo-group {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.logo-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 1.5px;
+}
+
+.logo-sub {
+  font-size: 12px;
+  color: #a89f91;
+  font-style: italic;
+}
+
+/* 16:9 Scen i fotomontagestil */
+.stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(233, 185, 73, 0.3);
+}
+
+/* Bakgrundslager i montaget */
+.layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  pointer-events: none;
+}
+
+.layer.map {
+  filter: sepia(0.42) contrast(1.08) brightness(0.88);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 66%);
+          mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 66%);
+  transition: background-image 0.4s ease-in-out;
+}
+
+.layer.photo {
+  background-position: center 65%;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 20%, #000 58%);
+          mask-image: linear-gradient(to bottom, transparent 20%, #000 58%);
+  transition: background-image 0.4s ease-in-out;
+}
+
+/* Stadsskylt i scenen */
+.city-plate {
+  position: absolute;
+  left: 2.5%;
+  top: 3.5%;
+  background: var(--paper-bg);
+  padding: 4px 18px 6px;
+  border-radius: 4px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 0 0 1px #d6c6a8;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.city-name {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(24px, 4.8vw, 48px);
+  font-weight: bold;
+  color: var(--accent-red);
+  letter-spacing: 1px;
+  line-height: 1.1;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.city-region {
+  font-size: clamp(10px, 1.3vw, 13px);
+  color: #5b3b1c;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* HUD uppe till höger (Klocka, Kassa, Ljud) */
+.hud {
+  position: absolute;
+  right: 2.5%;
+  top: 3.5%;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.hud-item {
+  background: var(--dark-bg);
+  border: 1px solid rgba(233, 185, 73, 0.65);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: clamp(11px, 1.4vw, 14px);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+}
+
+.hud-item b {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.hud-btn {
+  background: var(--dark-bg);
+  border: 1px solid rgba(233, 185, 73, 0.65);
+  border-radius: 4px;
+  padding: 6px 10px;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.hud-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  transform: scale(1.06);
+}
+
+/* Dock nere till höger i scenen för Ryggsäck och Pass */
+.travel-dock {
+  position: absolute;
+  right: 2.5%;
+  bottom: 3.5%;
+  display: flex;
+  gap: 10px;
+  z-index: 15;
+}
+
+.dock-badge {
+  background: var(--dark-bg);
+  border: 1.5px solid var(--gold);
+  border-radius: 6px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--ink);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.7);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.dock-badge:hover {
+  transform: translateY(-4px) scale(1.05);
+  border-color: #fff;
+  box-shadow: 0 8px 22px rgba(233, 185, 73, 0.5);
+}
+
+.dock-badge.passport-badge {
+  background: var(--passport-red);
+  border-color: var(--gold);
+}
+
+.dock-badge.globe-badge {
+  background: #133959;
+  border-color: #5c93c4;
+}
+
+.dock-badge.globe-badge:hover {
+  border-color: var(--gold);
+  box-shadow: 0 8px 24px rgba(92, 147, 196, 0.6);
+}
+
+.dock-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.dock-img-icon {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,0.85));
+  transition: transform 0.35s ease;
+}
+
+.dock-img-icon.passport-thumb {
+  width: 44px;
+  height: 36px;
+  border-radius: 3px;
+  object-fit: cover;
+  border: 1px solid rgba(233, 185, 73, 0.7);
+}
+
+.dock-badge:hover .dock-img-icon {
+  animation: modelSpin3D 1.8s infinite linear;
+}
+
+.dock-globe-canvas {
+  width: 40px;
+  height: 40px;
+  display: block;
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.8));
+}
+
+.inline-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-right: 4px;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+}
+
+.inline-icon.round {
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(138, 104, 50, 0.7);
+}
+
+.dock-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.dock-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #c9b48f;
+  letter-spacing: 0.5px;
+}
+
+.dock-sub {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--gold);
+}
+
+/* Interaktiva kartspots (Hotell, Jobb, Basar, Flygplats, Sevärdheter, Underverk) */
+.spots-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.spot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.spot:hover {
+  transform: translate(-50%, -50%) scale(1.12);
+  z-index: 12;
+}
+
+/* 90-tals BackPacker-inspirerade snurrande 3D-modeller / fotomedaljonger på kartan */
+@keyframes modelFloat {
+  0%, 100% { transform: perspective(360px) rotateY(-10deg) translateY(0px); }
+  50% { transform: perspective(360px) rotateY(10deg) translateY(-3px); }
+}
+
+@keyframes modelSpin3D {
+  0% { transform: perspective(360px) rotateY(0deg); }
+  100% { transform: perspective(360px) rotateY(360deg); }
+}
+
+.spot.service .spot-badge {
+  width: clamp(58px, 8.8vw, 82px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #2a2117 0%, #050403 78%);
+  border: 3px solid var(--gold);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.88),
+    inset 0 2px 6px rgba(255, 232, 170, 0.35),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin: 0 auto;
+  padding: 2px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  animation: modelFloat 4.6s ease-in-out infinite;
+}
+
+.spot.service .spot-badge img.spot-model-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+  filter: contrast(1.06) saturate(1.08);
+}
+
+.spot.service:hover .spot-badge {
+  border-color: #fff6d6;
+  box-shadow:
+    0 0 22px rgba(233, 185, 73, 0.85),
+    0 8px 20px rgba(0, 0, 0, 0.9);
+  animation: modelSpin3D 1.9s linear infinite;
+}
+
+.spot.service.hotel .spot-badge { border-color: #7eb0db; animation-delay: -0.4s; }
+.spot.service.job .spot-badge { border-color: #e6a73c; animation-delay: -1.3s; }
+.spot.service.bazaar .spot-badge { border-color: #78c284; animation-delay: -2.2s; }
+.spot.service.airport .spot-badge { border-color: #e56a6a; animation-delay: -3.1s; }
+.spot.service.harbor .spot-badge { border-color: #4eb2d1; animation-delay: -3.9s; }
+
+.spot .spot-label {
+  margin-top: 5px;
+  background: var(--dark-bg);
+  color: var(--ink);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: clamp(10px, 1.2vw, 12px);
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.6);
+  border: 1px solid rgba(244, 234, 214, 0.25);
+}
+
+/* Sevärdheter (runda fotospots) */
+.spot.sight .spot-photo {
+  width: clamp(58px, 9.5vw, 92px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  border: 3px solid var(--ink);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.75);
+  margin: 0 auto;
+  transition: all 0.2s;
+}
+
+.spot.sight:hover .spot-photo {
+  border-color: var(--gold);
+  box-shadow: 0 8px 24px rgba(233, 185, 73, 0.6);
+}
+
+.spot.sight.done .spot-photo {
+  border-color: var(--gold);
+}
+
+.spot.sight.done .spot-label::before {
+  content: "✓ ";
+  color: var(--gold);
+  font-weight: bold;
+}
+
+/* Underverk (distinkt rundad rektangel) */
+.spot.wonder .spot-photo {
+  width: clamp(70px, 11vw, 108px);
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background-size: cover;
+  background-position: center;
+  border: 3px solid var(--gold);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+  margin: 0 auto;
+}
+
+.spot.wonder .spot-label {
+  background: #7a4f12;
+  border-color: var(--gold);
+  color: #fff;
+  font-weight: bold;
+}
+
+/* Toast notiser */
+.toast-notice {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background: var(--dark-bg);
+  border: 2px solid var(--gold);
+  color: var(--ink);
+  padding: 16px 28px;
+  border-radius: 8px;
+  font-size: clamp(14px, 2vw, 20px);
+  font-weight: bold;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 60;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
+}
+
+.toast-notice.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Reseanimation (BackPacker-film & avgångsbanner) */
+.travel-cinematic {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s;
+}
+
+.travel-cinematic.hidden {
+  display: none !important;
+}
+
+.travel-video-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.travel-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.travel-banner {
+  position: absolute;
+  top: 8%;
+  background: rgba(18, 14, 10, 0.88);
+  border: 2px solid var(--gold);
+  border-radius: 6px;
+  padding: 12px 24px;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.8);
+  z-index: 55;
+  animation: slideDown 0.4s ease-out;
+}
+
+.travel-banner-title {
+  font-family: Georgia, serif;
+  font-size: clamp(16px, 2.5vw, 26px);
+  color: var(--gold);
+  font-weight: bold;
+}
+
+.travel-banner-sub {
+  font-size: 13px;
+  color: #dfd0b5;
+  margin-top: 4px;
+}
+
+.travel-skip-btn {
+  position: absolute;
+  bottom: 6%;
+  right: 4%;
+  background: rgba(18, 14, 10, 0.85);
+  color: var(--ink);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  z-index: 55;
+}
+
+.travel-skip-btn:hover {
+  background: #7a4f12;
+  color: #fff;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* 3D Jordglob Modal & Visning */
+.globe-modal-card {
+  background: var(--paper-bg);
+  color: var(--ink-dark);
+  border-radius: var(--radius);
+  padding: clamp(12px, 2vw, 20px);
+  max-width: 820px;
+  width: 96%;
+  max-height: 94%;
+  overflow-y: auto;
+  box-shadow: 0 16px 50px rgba(0,0,0,0.9), 0 0 0 1px rgba(184, 134, 28, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+}
+
+.globe-canvas-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  max-height: 430px;
+  background: radial-gradient(circle at center, #11283d 0%, #061018 100%);
+  border-radius: 6px;
+  border: 2px solid #8c6832;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.85);
+}
+
+#globeCanvas {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  display: block;
+}
+
+#globeCanvas:active {
+  cursor: grabbing;
+}
+
+.globe-hud-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #d4c5a9;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.globe-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.globe-btn {
+  background: #fbf9f5;
+  border: 1px solid #c9b48f;
+  border-radius: 4px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink-dark);
+  transition: all 0.15s;
+}
+
+.globe-btn:hover {
+  background: #ebdcc2;
+  border-color: var(--gold-dark);
+}
+
+.globe-routes-box {
+  background: #fff;
+  border: 1px solid #dfd0b5;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #5b3b1c;
+  line-height: 1.5;
+}
+
+.travel-globe-wrap {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, #0f2436 0%, #04090e 100%);
+}
+
+#flightGlobeCanvas {
+  width: 100%;
+  height: 100%;
+  max-width: 800px;
+  max-height: 500px;
+  display: block;
+}
+
+/* Modal-lager */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(4px);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-overlay.hidden {
+  display: none !important;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Faktakort och modalbox */
+.card-modal {
+  background: var(--paper-bg);
+  color: var(--ink-dark);
+  border-radius: var(--radius);
+  padding: clamp(14px, 2.5vw, 24px);
+  max-width: 640px;
+  width: 95%;
+  max-height: 92%;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(184, 134, 28, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  font-size: clamp(12px, 1.4vw, 15px);
+  line-height: 1.5;
+}
+
+.card-modal h3 {
+  font-family: Georgia, serif;
+  font-size: clamp(18px, 2.8vw, 28px);
+  font-weight: normal;
+  color: #7a4f12;
+  border-bottom: 2px solid #dfd0b5;
+  padding-bottom: 6px;
+  margin: 0;
+}
+
+.card-tag {
+  font-size: 0.9em;
+  color: #7a6a55;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+}
+
+.card-photo {
+  width: 100%;
+  height: clamp(120px, 22vw, 200px);
+  border-radius: 4px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid #d4c5a9;
+}
+
+.card-fact {
+  background: rgba(255, 255, 255, 0.65);
+  padding: 10px 14px;
+  border-left: 3px solid var(--gold-dark);
+  border-radius: 0 4px 4px 0;
+}
+
+.quiz-box {
+  margin-top: 8px;
+  background: #fff;
+  border: 1px solid #c9b48f;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quiz-q {
+  font-weight: 600;
+  color: #1a120b;
+}
+
+.quiz-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.quiz-btn {
+  background: #fbf9f5;
+  border: 1px solid #c9b48f;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--ink-dark);
+  text-align: left;
+  transition: all 0.15s;
+}
+
+.quiz-btn:hover:not(:disabled) {
+  background: #f0e6d2;
+  border-color: var(--gold-dark);
+}
+
+.quiz-btn.correct {
+  background: var(--accent-green) !important;
+  color: #fff !important;
+  border-color: var(--accent-green) !important;
+}
+
+.quiz-btn.wrong {
+  background: var(--accent-red) !important;
+  color: #fff !important;
+  border-color: var(--accent-red) !important;
+}
+
+.quiz-btn.disabled {
+  opacity: 0.35;
+  pointer-events: none;
+  text-decoration: line-through;
+}
+
+/* Siffermätare (Slider) */
+.num-gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.num-gauge input[type="range"] {
+  width: 100%;
+  accent-color: var(--gold-dark);
+}
+
+.num-val-display {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  color: #5b3b1c;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.btn-primary {
+  background: #7a4f12;
+  color: #fff;
+  border: 1px solid #5a3809;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-primary:hover {
+  background: #946016;
+}
+
+.btn-secondary {
+  background: #fbf9f5;
+  color: var(--ink-dark);
+  border: 1px solid #c9b48f;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #ede1cb;
+}
+
+/* Basar / Handla lista */
+.shop-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.shop-column {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #d4c5a9;
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shop-col-title {
+  font-weight: bold;
+  font-size: 14px;
+  color: #7a4f12;
+  border-bottom: 1px solid #e2d6be;
+  padding-bottom: 4px;
+}
+
+.item-row {
+  background: #fff;
+  border: 1px solid #dfd4bf;
+  border-radius: 4px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.item-desc {
+  font-size: 0.85em;
+  color: #665a4c;
+}
+
+.item-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.item-price {
+  font-weight: bold;
+  color: #2b743e;
+}
+
+.btn-buy, .btn-sell {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.btn-buy { background: #2f7d43; color: #fff; border: none; }
+.btn-sell { background: #a35d18; color: #fff; border: none; }
+
+/* Avgångar lista */
+.flight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.flight-item {
+  background: #fff;
+  border: 1px solid #dcd1ba;
+  border-radius: 6px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.15s;
+}
+
+.flight-item:hover {
+  border-color: var(--gold-dark);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.flight-dest {
+  font-size: 16px;
+  font-weight: bold;
+  color: #7a4f12;
+}
+
+.flight-details {
+  font-size: 12px;
+  color: #776a5b;
+}
+
+.flight-deal {
+  background: #d94343;
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: bold;
+  margin-left: 6px;
+}
+.flight-standby {
+  background: #236e42;
+  color: #e8ffef;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: bold;
+  margin-left: 6px;
+  border: 1px solid #4fc97f;
+}
+.flap-flight-no {
+  display: inline-block;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  background: #0b0d10;
+  color: #f3c44d;
+  border: 1px solid #59492a;
+  padding: 1px 6px;
+  margin-right: 6px;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  border-radius: 2px;
+}
+.flap-row.unavailable {
+  opacity: 0.62;
+  border-left: 4px solid #a82828;
+}
+.flap-status-closed {
+  display: inline-block;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  background: #3d1212;
+  color: #ff8e8e;
+  border: 1px solid #b53a3a;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  border-radius: 3px;
+}
+.board-footnote {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px dashed #3d444e;
+  font-size: 11px;
+  color: #9ba4b0;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Passvy & Stämplar */
+.passport-book {
+  background: #fbf7ee;
+  border: 3px solid #8c6832;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: inset 0 0 15px rgba(0,0,0,0.15);
+}
+
+.stamps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.stamp-cell {
+  background: #fff;
+  border: 1px dashed #c4b395;
+  border-radius: 6px;
+  padding: 8px;
+  text-align: center;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.stamp-img {
+  max-width: 80px;
+  max-height: 80px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  transform: rotate(-3deg);
+}
+
+.stamp-city-name {
+  font-weight: bold;
+  font-size: 12px;
+  color: #7a4f12;
+  margin-top: 4px;
+}
+
+/* Stämpelanimation vid färdig stad */
+.stamp-celebration {
+  text-align: center;
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.celebration-stamp-img {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  animation: stampSlam 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes stampSlam {
+  from { transform: scale(3) rotate(-25deg); opacity: 0; }
+  to { transform: scale(1) rotate(-5deg); opacity: 1; }
+}
+
+/* Slutrevy */
+.diploma {
+  text-align: center;
+  padding: 10px 0;
+  border: 2px dashed #b8861c;
+  border-radius: 6px;
+  background: #fcf9f2;
+}
+
+.diploma-title {
+  font-family: Georgia, serif;
+  font-size: clamp(22px, 3.5vw, 34px);
+  color: var(--accent-red);
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.diploma-rank {
+  font-size: clamp(18px, 2.5vw, 24px);
+  color: #7a4f12;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 12px 0;
+  text-align: left;
+}
+
+.stat-box {
+  background: #fff;
+  border: 1px solid #e0d5be;
+  border-radius: 4px;
+  padding: 8px 12px;
+}
+
+.stat-box b {
+  color: #7a4f12;
+}
+
+/* Undertext under scenen */
+.footer-info {
+  width: 100%;
+  font-size: 11px;
+  color: #887e71;
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 6px;
+}
+
+@media (max-width: 600px) {
+  .quiz-options { grid-template-columns: 1fr; }
+  .shop-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .travel-dock { flex-direction: column; gap: 6px; }
+}
+
+
+/* =====================================================================
+   90-TALS BACKPACKER DIEGETISK UI: SKRIVBORD, DYGNSLJUS & UDDARE MENYER
+   ===================================================================== */
+
+body {
+  background: radial-gradient(circle at center, #261a11 0%, #0d0906 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-container.cdrom-desk {
+  width: 100%;
+  max-width: 1180px;
+  padding: 12px;
+}
+
+.app-container.cdrom-desk .stage {
+  border: 4px solid #6b4c24;
+  box-shadow:
+    0 0 0 2px #1a1108,
+    0 24px 60px rgba(0, 0, 0, 0.92),
+    inset 0 0 24px rgba(0, 0, 0, 0.55);
+}
+
+/* Dygnsljuslager över stadens fotomontage */
+.layer.time-light {
+  pointer-events: none;
+  z-index: 4;
+  transition: background 1.2s ease, opacity 1.2s ease;
+  mix-blend-mode: multiply;
+}
+.layer.time-light.morning {
+  background: linear-gradient(180deg, rgba(255, 245, 220, 0.06) 0%, rgba(210, 232, 255, 0.14) 100%);
+}
+.layer.time-light.day {
+  background: rgba(255, 255, 255, 0);
+}
+.layer.time-light.afternoon {
+  background: linear-gradient(180deg, rgba(255, 198, 112, 0.18) 0%, rgba(196, 108, 42, 0.24) 100%);
+}
+.layer.time-light.evening {
+  background: linear-gradient(180deg, rgba(28, 36, 72, 0.42) 0%, rgba(72, 42, 26, 0.48) 100%);
+}
+.layer.time-light.night {
+  background: linear-gradient(180deg, rgba(10, 16, 42, 0.62) 0%, rgba(18, 14, 24, 0.66) 100%);
+}
+
+/* Aktiv världshändelse-remsa på stadsskylten */
+.city-event-ribbon {
+  margin-top: 6px;
+  background: #2b1a0c;
+  color: #ffd479;
+  border: 1px dashed #e9b949;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.3px;
+  display: inline-block;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.city-event-ribbon.hidden { display: none; }
+
+/* Taktila 90-tals reseinstrument i HUD */
+.hud-calendar {
+  background: #f7f0e2;
+  border: 2px solid #3a2716;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 66px;
+  box-shadow: 2px 4px 10px rgba(0,0,0,0.65);
+  transform: rotate(-1.5deg);
+}
+.hud-calendar .cal-top {
+  background: #b52b27;
+  color: #fff8ea;
+  width: 100%;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-bottom: 1px dashed rgba(0,0,0,0.35);
+}
+.hud-calendar .cal-num {
+  color: #23180e;
+  font-family: Georgia, serif;
+  font-size: 13px;
+  padding: 2px 8px 4px;
+}
+.hud-calendar .cal-num b { font-size: 16px; color: #9c1f1b; }
+
+.hud-watch {
+  background: radial-gradient(circle at 35% 30%, #3d3121 0%, #19130c 85%);
+  border: 2.5px solid #d4a64a;
+  border-radius: 24px;
+  padding: 4px 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.75), inset 0 1px 4px rgba(255,230,170,0.35);
+}
+.hud-watch .watch-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: #c9b48f;
+  letter-spacing: 0.8px;
+}
+.hud-watch .watch-digits {
+  font-family: 'Courier New', monospace;
+  font-size: 15px;
+  color: #ffd875;
+  text-shadow: 0 0 6px rgba(255, 200, 80, 0.45);
+}
+
+.hud-wallet {
+  background: linear-gradient(135deg, #3c2614 0%, #22140a 100%);
+  border: 2px solid #9e7537;
+  border-radius: 5px;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 2px 4px 12px rgba(0,0,0,0.75);
+  transform: rotate(1deg);
+}
+.wallet-card-img {
+  width: 34px;
+  height: 22px;
+  object-fit: cover;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+.wallet-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.wallet-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: #c9b48f;
+  letter-spacing: 0.6px;
+}
+.wallet-amount {
+  font-family: Georgia, serif;
+  font-size: 14px;
+  color: #f4d27a;
+}
+
+.hud-radio-btn {
+  background: linear-gradient(180deg, #4b3a28 0%, #241a10 100%);
+  border: 2px outset #a88246;
+  border-radius: 3px;
+  color: #f4ead6;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 5px 9px;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.7);
+}
+.hud-radio-btn:hover {
+  border-color: #ffd875;
+  color: #ffd875;
+}
+.hud-radio-btn:active {
+  border-style: inset;
+}
+
+/* Miljösignaler direkt på kartikonerna */
+.spot-rea-tag {
+  position: absolute;
+  top: -8px;
+  right: -12px;
+  background: #c92a2a;
+  color: #fff6d6;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 6px;
+  border: 1.5px solid #ffd479;
+  border-radius: 2px;
+  transform: rotate(12deg);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.7);
+  animation: reaFlutter 1.6s ease-in-out infinite;
+  z-index: 5;
+}
+@keyframes reaFlutter {
+  0%, 100% { transform: rotate(10deg) scale(1); }
+  50% { transform: rotate(16deg) scale(1.08); }
+}
+
+.spot.service.hotel.hotel-evening-glow .spot-badge {
+  border-color: #ffcc55 !important;
+  box-shadow:
+    0 0 24px rgba(255, 196, 70, 0.9),
+    0 0 42px rgba(255, 145, 30, 0.55),
+    0 8px 18px rgba(0,0,0,0.85) !important;
+}
+
+.globe-event-dot {
+  position: absolute;
+  top: -7px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #d93829;
+  color: #fff8e6;
+  border: 2px solid #ffd479;
+  font-size: 12px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  animation: reaFlutter 1.8s infinite;
+}
+.globe-event-dot.hidden { display: none; }
+.dock-badge.globe-badge { position: relative; }
+
+/* =====================================================================
+   TEMATISERADE 90-TALS BACKPACKER-MENYER (ISTÄLLET FÖR STELA WEBBBOXAR)
+   ===================================================================== */
+
+/* 1. Mekanisk 90-tals Klappertavla (Flygplats & Resor) */
+.modal-departure-board {
+  background: #141619;
+  color: #f4d35e;
+  border: 5px ridge #6c5a3e;
+  border-radius: 4px;
+  padding: 20px 24px;
+  max-width: 700px;
+  width: 94vw;
+  max-height: 86vh;
+  overflow-y: auto;
+  box-shadow: 0 22px 60px rgba(0,0,0,0.92), inset 0 0 28px rgba(0,0,0,0.8);
+  font-family: 'Courier New', monospace;
+}
+.board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #3c4047;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+.board-title {
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: #ffd24c;
+  text-transform: uppercase;
+  text-shadow: 0 0 8px rgba(255, 210, 76, 0.35);
+}
+.board-ticket-thumb {
+  height: 36px;
+  object-fit: contain;
+  transform: rotate(3deg);
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,0.8));
+}
+.flap-row {
+  background: linear-gradient(180deg, #1f2328 0%, #16181c 49%, #0e1013 51%, #1b1f24 100%);
+  border: 1px solid #393f47;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.flap-row.boat-row {
+  border-left: 4px solid #4ea8de;
+}
+.flap-dest {
+  font-size: 15px;
+  font-weight: bold;
+  color: #ffe07d;
+  letter-spacing: 0.6px;
+}
+.flap-meta {
+  font-size: 11px;
+  color: #9ba5b4;
+  margin-top: 3px;
+}
+.flap-event-note {
+  font-size: 11px;
+  color: #ff9f68;
+  margin-top: 2px;
+}
+.ticket-btn {
+  background: linear-gradient(180deg, #f3e4c3 0%, #dcc390 100%);
+  color: #24170a;
+  border: 2px dashed #7a5524;
+  padding: 7px 12px;
+  font-family: 'Courier New', monospace;
+  font-weight: 900;
+  font-size: 12px;
+  cursor: pointer;
+  text-transform: uppercase;
+  box-shadow: 2px 3px 0 rgba(0,0,0,0.55);
+  transition: transform 0.12s, background 0.12s;
+}
+.ticket-btn:hover {
+  background: #fff3d1;
+  transform: translateY(-2px) rotate(-1deg);
+}
+
+/* 2. Vikt Dagstidning med Platsannonser (Jobb) */
+.modal-newspaper {
+  background: #ede3cc;
+  background-image: radial-gradient(rgba(120, 90, 50, 0.08) 1px, transparent 0);
+  background-size: 12px 12px;
+  color: #211a12;
+  border: 3px solid #3a2d1d;
+  padding: 20px 26px;
+  max-width: 640px;
+  width: 92vw;
+  max-height: 86vh;
+  overflow-y: auto;
+  box-shadow: 8px 10px 30px rgba(0,0,0,0.85);
+  transform: rotate(-0.5deg);
+}
+.news-masthead {
+  text-align: center;
+  border-top: 4px double #2b2116;
+  border-bottom: 4px double #2b2116;
+  padding: 6px 0;
+  margin-bottom: 14px;
+}
+.news-masthead h3 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 24px;
+  letter-spacing: 2px;
+  margin: 0;
+  text-transform: uppercase;
+  color: #1a130b;
+}
+.news-subline {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #5b4a36;
+  margin-top: 2px;
+}
+.news-classified-box {
+  border: 2px dashed #6b4e2e;
+  background: rgba(255, 250, 238, 0.7);
+  padding: 14px;
+  margin: 12px 0;
+  position: relative;
+}
+.news-red-circle {
+  display: inline-block;
+  border: 2px solid #b82828;
+  color: #b82828;
+  border-radius: 50% 45% 55% 48%;
+  padding: 2px 10px;
+  font-weight: bold;
+  font-size: 12px;
+  transform: rotate(-4deg);
+}
+.stamp-action-btn {
+  background: #8c2323;
+  color: #fdf6e3;
+  border: 2px outset #c24b4b;
+  padding: 9px 18px;
+  font-family: Georgia, serif;
+  font-weight: bold;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 2px 3px 0 rgba(0,0,0,0.45);
+}
+.stamp-action-btn:hover { background: #a82c2c; }
+.stamp-ghost-btn {
+  background: transparent;
+  color: #4a3a28;
+  border: 1.5px solid #7d674d;
+  padding: 8px 14px;
+  font-family: Georgia, serif;
+  cursor: pointer;
+}
+.stamp-ghost-btn:hover { background: rgba(0,0,0,0.06); }
+
+/* 3. Hotelliggare med Mässingsklocka & Vandrarhemmets Gästbok */
+.modal-hotel-ledger {
+  background: #f4ebd8;
+  color: #2b1e12;
+  border: 6px solid #4d2f18;
+  border-radius: 4px;
+  padding: 20px 24px;
+  max-width: 720px;
+  width: 94vw;
+  max-height: 86vh;
+  overflow-y: auto;
+  box-shadow: 0 22px 55px rgba(0,0,0,0.9), inset 0 0 24px rgba(110, 72, 32, 0.22);
+}
+.ledger-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 10px;
+}
+.ledger-col {
+  border-right: 2px solid rgba(110, 72, 32, 0.28);
+  padding-right: 16px;
+}
+.ledger-col:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+.reception-bell-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: linear-gradient(180deg, #52331b 0%, #2f1b0d 100%);
+  color: #ffe6a3;
+  border: 2px outset #b88b43;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-family: Georgia, serif;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: left;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.45);
+  margin-top: 12px;
+}
+.reception-bell-btn:hover {
+  background: linear-gradient(180deg, #684224 0%, #3d2412 100%);
+}
+.reception-bell-btn img {
+  width: 38px;
+  height: 34px;
+  object-fit: contain;
+}
+.guestbook-note {
+  background: #fffdf5;
+  border-left: 3px solid #9e6b2c;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  font-family: Georgia, serif;
+  font-size: 12.5px;
+  font-style: italic;
+  box-shadow: 1px 2px 5px rgba(0,0,0,0.12);
+}
+.guestbook-author {
+  font-style: normal;
+  font-weight: bold;
+  font-size: 11px;
+  color: #6b461e;
+  margin-top: 4px;
+  text-align: right;
+}
+
+/* 4. Basar & Prutningsdisk */
+.modal-bazaar-stall {
+  background: #f5ebd4;
+  color: #2a1d10;
+  border: 4px solid #69431d;
+  border-top: 12px repeating-linear-gradient(90deg, #9c2b23 0 22px, #f4e6c8 22px 44px);
+  padding: 18px 22px;
+  max-width: 760px;
+  width: 94vw;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 55px rgba(0,0,0,0.9);
+}
+.shopkeeper-bubble {
+  background: #fffaf0;
+  border: 2px solid #8a6432;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-family: Georgia, serif;
+  font-size: 13.5px;
+  position: relative;
+}
+.shopkeeper-name {
+  font-weight: bold;
+  color: #8c2b1e;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 3px;
+}
+.btn-haggle {
+  background: #b87324;
+  color: #fffaf0;
+  border: 1.5px outset #e0a352;
+  padding: 4px 9px;
+  font-size: 11.5px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-haggle:hover { background: #cf842d; }
+
+/* 5. Mässingsreglage / Värdemätare (Brass Caliper Quiz) */
+.brass-caliper {
+  background: linear-gradient(180deg, #2d2215 0%, #1a130b 100%);
+  border: 2.5px solid #c99a45;
+  border-radius: 6px;
+  padding: 14px 16px;
+  color: #f7ebd2;
+  margin-top: 10px;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.7);
+}
+.caliper-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #c9b48f;
+  margin-bottom: 4px;
+}
+.brass-caliper input[type="range"] {
+  width: 100%;
+  accent-color: #e9b949;
+  cursor: pointer;
+  height: 10px;
+}
+.caliper-readout {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  font-family: Georgia, serif;
+  font-size: 15px;
+}
+.caliper-readout b {
+  color: #ffd875;
+  font-size: 19px;
+  font-family: 'Courier New', monospace;
+}
+
+/* 6. Resedagbok / Klippbok */
+.scrapbook-box {
+  background: #fbf5e6;
+  border: 2px solid #b59b72;
+  padding: 12px 16px;
+  margin-top: 12px;
+  max-height: 185px;
+  overflow-y: auto;
+}
+.scrapbook-entry {
+  border-bottom: 1px dashed #d6c4a5;
+  padding: 5px 0;
+  font-family: Georgia, serif;
+  font-size: 12.5px;
+  color: #3b2b1a;
+}
+.scrapbook-entry:last-child { border-bottom: none; }
+.scrapbook-day {
+  font-weight: bold;
+  color: #8c2323;
+  margin-right: 6px;
+}
+
+@media (max-width: 720px) {
+  .ledger-grid { grid-template-columns: 1fr; }
+  .ledger-col { border-right: none; border-bottom: 2px solid rgba(110,72,32,0.25); padding-right: 0; padding-bottom: 12px; }
+}
+
+
+/* =====================================================================
+   FULLSKÄRMS 90-TALS BACKPACKER-SCENER (INGA TRÅKIGA BEIGE RUTOR!)
+   ===================================================================== */
+
+.modal-overlay {
+  padding: 0 !important;
+}
+
+#modalContent {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scene-fullscreen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background-size: cover;
+  background-position: center;
+}
+
+/* 1. FULLSKÄRMS 3D-JORDGLOB (Dominerar hela skärmen!) */
+.scene-globe-full {
+  background: radial-gradient(circle at 50% 48%, #0d2238 0%, #040a12 65%, #010306 100%);
+}
+.scene-globe-full canvas#globeCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+.scene-globe-full canvas#globeCanvas:active {
+  cursor: grabbing;
+}
+.globe-overlay-top {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 14px 18px;
+  pointer-events: none;
+}
+.globe-overlay-top > * { pointer-events: auto; }
+.globe-title-plate {
+  background: rgba(14, 11, 8, 0.82);
+  border: 2px solid #b88b43;
+  padding: 8px 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.75);
+}
+.globe-title-plate h3 {
+  margin: 0;
+  font-family: Georgia, serif;
+  color: #ffd875;
+  font-size: 18px;
+  letter-spacing: 0.8px;
+}
+.globe-title-plate .globe-sub {
+  font-size: 11px;
+  color: #c9b48f;
+  margin-top: 2px;
+}
+.globe-top-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.globe-brass-btn {
+  background: linear-gradient(180deg, #3c2b18 0%, #1c130a 100%);
+  color: #f7ebd2;
+  border: 2px outset #b88b43;
+  padding: 6px 12px;
+  font-family: Georgia, serif;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.7);
+}
+.globe-brass-btn:hover { color: #ffd875; border-color: #ffd875; }
+.globe-brass-btn.close-btn { background: linear-gradient(180deg, #7d2222 0%, #4a1111 100%); }
+
+.globe-overlay-bottom {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 12px 18px;
+  pointer-events: none;
+}
+.globe-info-strip {
+  pointer-events: auto;
+  background: rgba(12, 10, 8, 0.84);
+  border: 1.5px solid rgba(212, 166, 74, 0.7);
+  padding: 8px 14px;
+  max-width: 52%;
+  max-height: 112px;
+  overflow-y: auto;
+  color: #f4ead6;
+  font-size: 12px;
+  line-height: 1.45;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.8);
+}
+
+/* 2. FULLSKÄRMS SEVÄRDHET / UNDERVÄRK (Stort foto i 90-tals BackPacker-stil!) */
+.scene-sight-full::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(10, 8, 6, 0.45) 0%,
+    rgba(10, 8, 6, 0.05) 36%,
+    rgba(10, 8, 6, 0.35) 56%,
+    rgba(12, 9, 6, 0.92) 82%,
+    rgba(12, 9, 6, 0.97) 100%);
+  pointer-events: none;
+}
+.sight-header-bar {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px 20px;
+}
+.sight-plaque {
+  background: rgba(18, 13, 8, 0.86);
+  border: 2px solid #d4a64a;
+  padding: 10px 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.8);
+}
+.sight-plaque h3 {
+  margin: 0;
+  font-family: Georgia, serif;
+  font-size: 24px;
+  color: #ffe299;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+}
+.sight-plaque .sight-meta {
+  font-size: 12px;
+  color: #d6c5a5;
+  margin-top: 3px;
+}
+.sight-bottom-panel {
+  position: relative;
+  z-index: 3;
+  padding: 14px 22px 18px;
+  max-height: 58%;
+  overflow-y: auto;
+  color: #f7eedc;
+}
+.sight-fact-card {
+  background: rgba(24, 18, 12, 0.82);
+  border-left: 4px solid #e9b949;
+  padding: 10px 14px;
+  font-family: Georgia, serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #f4ead6;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.65);
+}
+.sight-bottom-panel .quiz-box {
+  background: rgba(244, 234, 214, 0.96);
+  color: #24190e;
+  border: 2px solid #9e7537;
+  padding: 12px 16px;
+  border-radius: 3px;
+}
+
+/* 3. RIKTIG 3-SPALTIG DAGSTIDNING (Jobb & Platsannonser på kafébord!) */
+.scene-newspaper-full {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(65, 42, 22, 0.88), rgba(22, 13, 7, 0.97)),
+    repeating-linear-gradient(90deg, #3b2412 0 18px, #2f1b0d 18px 36px);
+  padding: 16px 24px;
+  align-items: center;
+  justify-content: center;
+}
+.broadsheet-paper {
+  position: relative;
+  width: 100%;
+  max-width: 980px;
+  max-height: 94%;
+  overflow-y: auto;
+  background: #e9dec4;
+  background-image:
+    linear-gradient(90deg, rgba(0,0,0,0.03) 0%, transparent 4%, transparent 96%, rgba(0,0,0,0.05) 100%),
+    radial-gradient(rgba(90, 68, 38, 0.1) 1px, transparent 0);
+  background-size: 100% 100%, 9px 9px;
+  color: #1c1610;
+  border: 2px solid #59462f;
+  padding: 16px 24px 20px;
+  box-shadow: 0 22px 60px rgba(0,0,0,0.92), 6px 6px 0 #c9bc9e;
+  transform: rotate(-0.4deg);
+}
+.broadsheet-masthead {
+  text-align: center;
+  border-bottom: 4px double #1f1810;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+.broadsheet-title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(22px, 3.2vw, 34px);
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin: 0;
+  color: #14100b;
+}
+.broadsheet-dateline {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-top: 1px solid #3a2e20;
+  margin-top: 6px;
+  padding-top: 4px;
+  color: #4a3b29;
+}
+.broadsheet-columns {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr 0.95fr;
+  gap: 16px;
+}
+.news-col {
+  border-right: 1px solid rgba(58, 46, 32, 0.35);
+  padding-right: 14px;
+  font-family: Georgia, serif;
+  font-size: 12.5px;
+  line-height: 1.48;
+}
+.news-col:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+.news-col h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  text-transform: uppercase;
+  border-bottom: 2px solid #2b2116;
+  padding-bottom: 3px;
+  letter-spacing: 0.6px;
+}
+.job-ad-circled {
+  border: 3px solid #b82323;
+  border-radius: 14px 18px 16px 20px / 10px 14px 12px 16px;
+  background: rgba(255, 252, 240, 0.85);
+  padding: 12px 14px;
+  margin: 8px 0 10px;
+  box-shadow: 0 0 0 2px rgba(184, 35, 35, 0.15);
+  position: relative;
+}
+.job-ad-box {
+  border: 2px solid #3a2d1f;
+  border-radius: 3px;
+  background: rgba(255, 252, 244, 0.74);
+  padding: 10px 12px;
+  margin: 8px 0 10px;
+  box-shadow: inset 0 0 0 1px rgba(120, 95, 62, 0.35);
+}
+.job-done-stamp {
+  text-align: center;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 11px;
+  font-weight: 900;
+  color: #2b6b3a;
+  border: 2px dashed #2b6b3a;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: rgba(47, 125, 67, 0.08);
+  letter-spacing: 0.8px;
+}
+.news-ticker-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: #3d2e1e;
+  background: rgba(168, 142, 102, 0.16);
+  border-top: 1px solid #9e8a68;
+  border-bottom: 1px solid #9e8a68;
+  padding: 5px 10px;
+  margin-bottom: 10px;
+}
+.job-ad-circled::after {
+  content: 'SÖK DETTA!';
+  position: absolute;
+  top: -11px;
+  right: 12px;
+  background: #b82323;
+  color: #fff6e0;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 7px;
+  transform: rotate(3deg);
+}
+.mini-ad-box {
+  border: 1px dashed #6b5842;
+  padding: 7px 9px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #4f4130;
+  background: rgba(255, 250, 236, 0.45);
+}
+
+/* 4. FULLSKÄRMS HOTELLRECEPTION, BASAR & FLYGPLATSHALL (Äkta 90-tals fotobakgrund!) */
+.scene-room-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg,
+    rgba(12, 9, 6, 0.38) 0%,
+    rgba(12, 9, 6, 0.14) 45%,
+    rgba(12, 9, 6, 0.42) 100%);
+  pointer-events: none;
+}
+.room-top-bar {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 14px 18px;
+}
+.room-counter-dock {
+  position: relative;
+  z-index: 3;
+  padding: 14px 20px 18px;
+  max-height: 76%;
+  overflow-y: auto;
+}
+.room-dark-panel {
+  background: rgba(22, 16, 11, 0.88);
+  border: 2.5px solid #b88b43;
+  color: #f4ead6;
+  padding: 14px 18px;
+  box-shadow: 0 12px 35px rgba(0,0,0,0.85);
+}
+.room-dark-panel .guestbook-note {
+  background: rgba(248, 241, 224, 0.95);
+  color: #24190e;
+}
+.room-dark-panel .item-row {
+  background: rgba(246, 238, 220, 0.94);
+  color: #24190e;
+  border-color: #9e7537;
+}
+.room-dark-panel .shop-col-title {
+  color: #ffd875;
+  border-bottom-color: rgba(212, 166, 74, 0.45);
+}
+
+@media (max-width: 780px) {
+  .broadsheet-columns { grid-template-columns: 1fr; }
+  .news-col { border-right: none; border-bottom: 1px solid rgba(58,46,32,0.3); padding-right: 0; padding-bottom: 10px; }
+  .globe-info-strip { max-width: 100%; }
+}
+
+
+/* =====================================================================
+   VIEWPORT-ANPASSNING: ALLTID HELA SPELET I BILD UTAN ONÖDIG SCROLLVIEW
+   ===================================================================== */
+
+html, body {
+  width: 100vw;
+  height: 100vh;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.app-container.cdrom-desk {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-container.cdrom-desk .stage {
+  width: min(96vw, calc(94vh * 16 / 9));
+  height: min(94vh, calc(96vw * 9 / 16));
+  aspect-ratio: 16 / 9;
+  max-width: 1140px;
+  max-height: 94vh;
+}
+
+/* Kompaktare inre vyer så modaler och scener slipper onödig intern scroll */
+.room-top-bar, .sight-header-bar {
+  padding: 10px 14px;
+}
+.sight-plaque {
+  padding: 6px 12px;
+}
+.sight-plaque h3 {
+  font-size: clamp(16px, 2.2vw, 21px);
+}
+.sight-bottom-panel {
+  padding: 10px 16px 12px;
+  max-height: 62%;
+}
+.sight-fact-card {
+  padding: 8px 12px;
+  font-size: clamp(12px, 1.35vw, 13.5px);
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+.room-counter-dock {
+  padding: 8px 16px 12px;
+  max-height: 80%;
+}
+.room-dark-panel {
+  padding: 10px 14px;
+}
+.modal-departure-board {
+  padding: 12px 16px;
+}
+.board-header {
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+.board-title {
+  font-size: 16px;
+}
+.flap-row {
+  padding: 6px 10px;
+  margin-bottom: 5px;
+}
+.flap-dest {
+  font-size: 13px;
+}
+.ticket-btn {
+  padding: 5px 10px;
+  font-size: 11px;
+}
+.scene-newspaper-full {
+  padding: 10px 16px;
+}
+.broadsheet-paper {
+  padding: 12px 18px 14px;
+  max-height: 96%;
+}
+.broadsheet-title {
+  font-size: clamp(18px, 2.6vw, 28px);
+}
+.broadsheet-columns {
+  gap: 12px;
+}
+.news-col {
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+.job-ad-circled {
+  padding: 9px 11px;
+  margin: 6px 0;
+}
+.globe-info-strip {
+  max-height: 96px;
+  font-size: 11px;
+  padding: 6px 10px;
+}
+
+
+/* =====================================================================
+   BACKPACKER 90-TALS FRÅGELAYOUT (MÄSSINGSPLAKETT & STÄMPLADE SVARSKORT)
+   ===================================================================== */
+
+.sight-bottom-panel .quiz-box,
+.broadsheet-paper .quiz-box {
+  background: linear-gradient(180deg, rgba(28, 20, 12, 0.94) 0%, rgba(16, 11, 7, 0.96) 100%) !important;
+  color: #f7ebd2 !important;
+  border: 3px ridge #c99a45 !important;
+  border-radius: 3px !important;
+  padding: 12px 16px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 226, 150, 0.25) !important;
+}
+
+.bp-quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed rgba(212, 166, 74, 0.45);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.bp-quiz-counter {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #ffd875;
+  text-transform: uppercase;
+  background: rgba(140, 35, 35, 0.75);
+  border: 1px solid #d4a64a;
+  padding: 2px 8px;
+}
+
+.sight-bottom-panel .quiz-q,
+.broadsheet-paper .quiz-q {
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-size: clamp(14px, 1.65vw, 17px) !important;
+  color: #fff6df !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+  margin: 6px 0 10px !important;
+  line-height: 1.38;
+}
+
+.sight-bottom-panel .quiz-options,
+.broadsheet-paper .quiz-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.sight-bottom-panel .quiz-btn,
+.broadsheet-paper .quiz-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  background: linear-gradient(180deg, #f5ebd4 0%, #dfd0af 100%) !important;
+  color: #23170b !important;
+  border: 2px outset #b89458 !important;
+  border-radius: 2px !important;
+  padding: 7px 11px !important;
+  font-family: Georgia, serif !important;
+  font-size: clamp(12px, 1.3vw, 13.5px) !important;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.55);
+  transition: transform 0.1s, background 0.12s;
+}
+
+.sight-bottom-panel .quiz-btn:hover:not(:disabled),
+.broadsheet-paper .quiz-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #fff8e6 0%, #ebd9b2 100%) !important;
+  border-color: #ffd875 !important;
+  transform: translateY(-1px);
+}
+
+.sight-bottom-panel .quiz-btn:active:not(:disabled),
+.broadsheet-paper .quiz-btn:active:not(:disabled) {
+  border-style: inset !important;
+  transform: translateY(1px);
+}
+
+.quiz-letter-seal {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #a83228 0%, #5e1510 100%);
+  color: #ffe8a8;
+  border: 1.5px solid #d4a64a;
+  font-family: Georgia, serif;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.45);
+}
+
+.sight-bottom-panel .quiz-btn.correct,
+.broadsheet-paper .quiz-btn.correct {
+  background: linear-gradient(180deg, #3c8c4f 0%, #245c32 100%) !important;
+  color: #fffbe8 !important;
+  border-color: #8be09e !important;
+}
+
+.sight-bottom-panel .quiz-btn.wrong,
+.broadsheet-paper .quiz-btn.wrong {
+  background: linear-gradient(180deg, #a62c2c 0%, #6b1818 100%) !important;
+  color: #ffdede !important;
+  border-color: #ff8f8f !important;
+}
+
+.sight-bottom-panel .quiz-btn.disabled,
+.broadsheet-paper .quiz-btn.disabled {
+  opacity: 0.35;
+  text-decoration: line-through;
+  pointer-events: none;
+}
+
+
+/* =====================================================================
+   MODERN BLÄDDRINGSBAR PASSBOK (ID-SIDA + STÄMPELSIDOR + DAGBOK)
+   ===================================================================== */
+
+.scene-passport-full {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(48, 30, 18, 0.9), rgba(14, 9, 5, 0.98)),
+    repeating-linear-gradient(45deg, #24160c 0 12px, #1c1109 12px 24px);
+  padding: 12px 20px;
+  align-items: center;
+  justify-content: center;
+}
+
+.passport-book-shell {
+  width: 100%;
+  max-width: 900px;
+  height: 92%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.passport-spread {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #61191d;
+  padding: 8px;
+  border-radius: 10px;
+  border: 2px solid #b88b43;
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.92), inset 0 0 18px rgba(0,0,0,0.65);
+  position: relative;
+}
+
+.passport-page {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(212, 184, 130, 0.16) 0%, transparent 65%),
+    repeating-linear-gradient(0deg, rgba(110, 92, 68, 0.04) 0 1px, transparent 1px 14px),
+    #f6efe0;
+  color: #211912;
+  padding: 16px 20px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid #cbb998;
+}
+
+.passport-page.left {
+  border-radius: 5px 0 0 5px;
+  box-shadow: inset -14px 0 22px -12px rgba(40, 22, 8, 0.35);
+}
+
+.passport-page.right {
+  border-radius: 0 5px 5px 0;
+  box-shadow: inset 14px 0 22px -12px rgba(40, 22, 8, 0.35);
+}
+
+.passport-page.cover-inside {
+  background: radial-gradient(circle at 50% 42%, #6d1c22 0%, #3d0d11 100%);
+  color: #e8c775;
+  border-color: #9e7537;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.passport-crest {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: 2.5px double #e8c775;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.45);
+}
+
+.passport-crest img {
+  width: 62px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #e8c775;
+}
+
+.passport-id-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 2px solid #7a1c21;
+  padding-bottom: 4px;
+  margin-bottom: 10px;
+}
+.passport-id-header span {
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  font-weight: 800;
+  color: #7a1c21;
+  text-transform: uppercase;
+}
+
+.passport-id-grid {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.passport-photo-frame {
+  width: 92px;
+  height: 112px;
+  background: linear-gradient(180deg, #d8ccb4 0%, #b5a58a 100%);
+  border: 2px solid #5a4630;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+}
+.passport-photo-frame img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  filter: sepia(0.25) contrast(1.05);
+}
+.passport-photo-cap {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  color: #3a2a18;
+  margin-top: 4px;
+  font-weight: bold;
+}
+
+.passport-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
+}
+.pp-field-lbl {
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #776652;
+}
+.pp-field-val {
+  font-family: Georgia, serif;
+  font-size: 12.5px;
+  font-weight: bold;
+  color: #1c140c;
+}
+
+.passport-mrz {
+  margin-top: 10px;
+  padding-top: 6px;
+  border-top: 1px dashed #b5a282;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  color: #3d342a;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+.visa-page-title {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #8c785c;
+  border-bottom: 1px solid rgba(140, 120, 92, 0.35);
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+}
+
+.visa-slots-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  flex: 1;
+}
+
+.visa-slot {
+  border: 1px dashed rgba(130, 108, 78, 0.45);
+  border-radius: 4px;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(255, 252, 244, 0.55);
+}
+
+.visa-slot.stamped {
+  border-style: solid;
+  border-color: rgba(140, 35, 35, 0.35);
+  background: rgba(255, 249, 236, 0.9);
+}
+
+.visa-stamp-img {
+  width: 68px;
+  height: 54px;
+  object-fit: contain;
+  transform: rotate(-8deg);
+  filter: contrast(1.1) saturate(1.1);
+}
+
+.passport-page-num {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #8c785c;
+  text-align: center;
+  margin-top: 6px;
+}
+
+.passport-nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+
+/* =====================================================================
+   FÖRDJUPNINGSKORT EFTER FRÅGA & HOTELLBAR / VÄRDSHUS (REALMS OF ARKANIA)
+   ===================================================================== */
+
+.quiz-explain-card {
+  margin-top: 0;
+  background: linear-gradient(180deg, #faf3e3 0%, #ede0c4 100%);
+  color: #23170b;
+  border: 2px solid #b88b43;
+  border-left: 5px solid #2f7d43;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 92px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  border-radius: 3px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  animation: fadeIn 0.2s ease-out;
+}
+.quiz-explain-card.wrong-border {
+  border-left-color: #a82828;
+}
+.quiz-explain-thumb {
+  width: 92px;
+  height: 92px;
+  object-fit: cover;
+  border: 2px solid #7a5828;
+  border-radius: 3px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+.quiz-explain-body {
+  min-width: 0;
+}
+.quiz-explain-action {
+  align-self: center;
+}
+.quiz-explain-title {
+  font-family: Georgia, serif;
+  font-size: 14.5px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+.quiz-explain-text {
+  font-family: Georgia, serif;
+  font-size: 13px;
+  line-height: 1.48;
+  color: #2f2215;
+}
+
+/* Hotellbar / Lokalt kafé (Realms of Arkania-känsla) */
+.tavern-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.tavern-encounter-box {
+  background: rgba(250, 243, 226, 0.96);
+  color: #24190e;
+  border: 2px solid #b88b43;
+  border-left: 5px solid #9c2b23;
+  padding: 10px 14px;
+  margin-top: 10px;
+  font-family: Georgia, serif;
+  font-size: 12.5px;
+  line-height: 1.48;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+}
+.relay-badge {
+  display: inline-block;
+  background: #8c2323;
+  color: #fff3d1;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 7px;
+  letter-spacing: 0.6px;
+  margin-bottom: 5px;
+}
+
+
+/* =====================================================================
+   FOTOREALISTISKT SVENSKT PASS (LÄDERKORN, GUILLOCHÉ-PAPPER, HOLOGRAM & BLÄCK)
+   ===================================================================== */
+
+.scene-passport-full {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(62, 39, 22, 0.72) 0%, rgba(16, 10, 6, 0.96) 100%),
+    url('../assets/maps/map1914a.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+.passport-spread {
+  background:
+    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 0),
+    radial-gradient(rgba(0, 0, 0, 0.18) 1px, transparent 0),
+    linear-gradient(135deg, #6b1a20 0%, #4d1015 48%, #36090d 100%) !important;
+  background-size: 4px 4px, 5px 5px, 100% 100% !important;
+  background-position: 0 0, 2px 2px, 0 0 !important;
+  padding: 10px 11px !important;
+  border-radius: 12px !important;
+  border: 2px solid #8a5e28 !important;
+  box-shadow:
+    0 28px 65px rgba(0, 0, 0, 0.95),
+    0 6px 14px rgba(0, 0, 0, 0.8),
+    inset 0 1px 2px rgba(255, 210, 150, 0.25),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.85) !important;
+}
+
+/* Sömmad mittfals mellan vänster och höger passida */
+.passport-spread::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 50%;
+  width: 26px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg,
+    rgba(28, 16, 8, 0) 0%,
+    rgba(28, 16, 8, 0.28) 38%,
+    rgba(12, 6, 3, 0.62) 50%,
+    rgba(28, 16, 8, 0.28) 62%,
+    rgba(28, 16, 8, 0) 100%);
+  pointer-events: none;
+  z-index: 6;
+}
+
+.passport-page {
+  background:
+    linear-gradient(180deg, rgba(226, 236, 245, 0.42) 0%, rgba(246, 241, 228, 0.78) 50%, rgba(228, 236, 242, 0.48) 100%),
+    #f5f0e4 !important;
+  border: 1px solid #b9a98e !important;
+}
+
+/* Vattenstämplat svenskt landskap & säkerhetsmönster på riktiga passidor */
+.passport-page:not(.cover-inside)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('../assets/photos/gamlastan.jpg');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.085;
+  filter: grayscale(1) sepia(0.35) contrast(1.25);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.passport-page.left {
+  box-shadow:
+    inset -22px 0 28px -12px rgba(30, 18, 8, 0.42),
+    inset 3px 0 6px -2px rgba(255, 255, 255, 0.65),
+    -3px 0 0 #d9ceb8,
+    -5px 0 0 #bfb299 !important;
+}
+
+.passport-page.right {
+  box-shadow:
+    inset 22px 0 28px -12px rgba(30, 18, 8, 0.42),
+    inset -3px 0 6px -2px rgba(255, 255, 255, 0.65),
+    3px 0 0 #d9ceb8,
+    5px 0 0 #bfb299 !important;
+}
+
+/* Polykarbonat-datasidan (Sida 1) med äkta holografisk säkerhetsglans! */
+.passport-page.polycarbonate-id {
+  background:
+    linear-gradient(125deg,
+      rgba(195, 220, 242, 0.35) 0%,
+      rgba(248, 244, 235, 0.85) 35%,
+      rgba(218, 234, 246, 0.55) 65%,
+      rgba(245, 232, 212, 0.7) 100%),
+    #f2f0ea !important;
+}
+
+.passport-page.polycarbonate-id::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg,
+    transparent 20%,
+    rgba(120, 210, 255, 0.14) 38%,
+    rgba(255, 215, 120, 0.16) 46%,
+    rgba(210, 140, 255, 0.12) 54%,
+    transparent 72%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.passport-page.cover-inside {
+  background:
+    radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 0),
+    radial-gradient(circle at 50% 42%, #68171e 0%, #3a090e 100%) !important;
+  background-size: 4px 4px, 100% 100% !important;
+  box-shadow: inset -24px 0 30px -12px rgba(0, 0, 0, 0.65) !important;
+}
+
+.gold-foil-text {
+  background: linear-gradient(135deg, #b8892c 0%, #fff0b3 35%, #c79634 55%, #ffe694 80%, #996d1c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.65));
+}
+
+.passport-photo-frame {
+  background: linear-gradient(180deg, #c2cdd8 0%, #9ba9b8 100%) !important;
+  border: 1.5px solid #52606e !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.passport-photo-frame::after {
+  content: 'SWE';
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 1px;
+  text-shadow: 0 0 4px rgba(80, 170, 255, 0.7);
+}
+
+.passport-photo-frame img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  filter: grayscale(0.85) contrast(1.12) brightness(0.98) !important;
+}
+
+/* Äkta bläckstämplar som suger in i passpappret */
+.visa-stamp-img {
+  mix-blend-mode: multiply;
+  opacity: 0.88;
+  filter: contrast(1.22) saturate(1.15) !important;
+}
+
+.visa-slot {
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 253, 248, 0.42) !important;
+  backdrop-filter: blur(1px);
+}
+
+
+/* Äkta fotorealistiskt uppslaget svenskt pass som bakgrund! */
+.scene-passport-full {
+  background: #140c07 !important;
+  padding: 0 !important;
+}
+
+.passport-book-shell {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  background-image: url('../assets/icons/passport_spread.jpg');
+  background-size: cover;
+  background-position: center;
+  padding: 10px 18px;
+  gap: 0 !important;
+}
+
+.passport-spread {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 2.5% 8.5% 3.5% 8.5% !important;
+  gap: 5.5% !important;
+}
+
+.passport-spread::after {
+  display: none !important;
+}
+
+.passport-page {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 14px 18px !important;
+}
+
+.passport-page:not(.cover-inside)::before {
+  display: none !important;
+}
+
+.passport-page.cover-inside {
+  background: rgba(68, 13, 18, 0.88) !important;
+  border: 1.5px solid rgba(212, 166, 74, 0.55) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+.passport-page.polycarbonate-id {
+  background: linear-gradient(125deg,
+    rgba(248, 245, 238, 0.72) 0%,
+    rgba(232, 242, 250, 0.65) 55%,
+    rgba(248, 242, 232, 0.72) 100%) !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(130, 115, 92, 0.35) !important;
+}
+
+.visa-slot {
+  background: rgba(255, 253, 247, 0.52) !important;
+}
+
+
+/* =====================================================================
+   STARTSKÄRM, SIGNATURAKTIVITETER, PEKA-PÅ-GLOBEN-QUIZ & RESEHÄNDELSER
+   ===================================================================== */
+
+.scene-start-full {
+  background:
+    radial-gradient(ellipse at 32% 45%, rgba(28, 18, 10, 0.72) 0%, rgba(10, 7, 5, 0.94) 100%),
+    url('../assets/photos/gamlastan.jpg');
+  background-size: cover;
+  background-position: center;
+  padding: 20px 28px;
+  justify-content: center;
+  align-items: center;
+}
+
+.start-desk-grid {
+  width: 100%;
+  max-width: 960px;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 24px;
+  align-items: center;
+}
+
+.start-plaque {
+  background: rgba(18, 13, 8, 0.90);
+  border: 3px ridge #c99a45;
+  padding: 22px 26px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.9);
+  color: #f7ebd2;
+}
+
+.start-logo-main {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(28px, 4vw, 44px);
+  letter-spacing: 4px;
+  margin: 0;
+  background: linear-gradient(135deg, #c69b3a 0%, #fff2be 45%, #b88424 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.start-passport-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.start-passport-inputs label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #c9b48f;
+  margin-bottom: 4px;
+}
+
+.start-passport-inputs input {
+  width: 100%;
+  background: #f5ebd4;
+  color: #1f160d;
+  border: 2px inset #9e7537;
+  padding: 7px 10px;
+  font-family: Georgia, serif;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.start-globe-showcase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Signaturaktivitet på stadskartan (unik för varje stad + öppettider!) */
+.spot.signature .spot-badge {
+  width: clamp(50px, 7.5vw, 68px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #7d4e16 0%, #2b1806 85%);
+  border: 3px double #ffd875;
+  color: #ffe9a8;
+  font-family: Georgia, serif;
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 18px rgba(255, 206, 86, 0.55), 0 6px 14px rgba(0,0,0,0.85);
+  margin: 0 auto;
+  text-transform: uppercase;
+}
+.spot.signature.closed .spot-badge {
+  filter: grayscale(0.9) brightness(0.65);
+  border-color: #777;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+}
+.spot.signature.closed .spot-label {
+  color: #aaa;
+}
+
+/* Peka på 3D-jordgloben-quiz */
+.globe-quiz-wrap {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 14px;
+  align-items: center;
+  margin-top: 6px;
+}
+.globe-quiz-canvas {
+  width: 300px;
+  height: 190px;
+  border: 2px solid #b88b43;
+  border-radius: 4px;
+  background: radial-gradient(circle at center, #0c2238 0%, #03080e 100%);
+  cursor: crosshair;
+  display: block;
+}
+
+/* Resehändelse-kort */
+.travel-event-card {
+  background: linear-gradient(180deg, rgba(26, 18, 12, 0.96) 0%, rgba(14, 10, 7, 0.98) 100%);
+  border: 3px ridge #c99a45;
+  color: #f7ebd2;
+  padding: 20px 24px;
+  max-width: 600px;
+  width: 92vw;
+  box-shadow: 0 24px 65px rgba(0,0,0,0.92);
+}
+
+@media (max-width: 780px) {
+  .start-desk-grid { grid-template-columns: 1fr; }
+  .globe-quiz-wrap { grid-template-columns: 1fr; }
+}
+
+
+/* Variabelt antal svarsalternativ (2, 3, 4, 5, 6) + Fritext-frågor i BackPacker 2-stil */
+.sight-bottom-panel .quiz-options.cols-2,
+.broadsheet-paper .quiz-options.cols-2 {
+  grid-template-columns: 1fr 1fr;
+}
+.sight-bottom-panel .quiz-options.cols-3,
+.broadsheet-paper .quiz-options.cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.sight-bottom-panel .quiz-options.cols-many,
+.broadsheet-paper .quiz-options.cols-many {
+  grid-template-columns: repeat(3, 1fr);
+}
+.bp-text-quiz {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+.bp-text-input {
+  flex: 1;
+  background: #f6efe0;
+  color: #1f160d;
+  border: 2px inset #b88b43;
+  padding: 9px 12px;
+  font-family: Georgia, serif;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+
+/* =====================================================================
+   EXAKT PASSNING AV PASSIDORNA OVANPÅ FOTOT (passport_spread.jpg 16:9)
+   ===================================================================== */
+
+.passport-book-shell {
+  position: relative !important;
+  background-size: 100% 100% !important;
+  padding: 0 !important;
+}
+
+.passport-book-shell > .passport-nav-bar:first-child {
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  right: 16px;
+  z-index: 10;
+}
+
+.passport-book-shell > .passport-nav-bar:last-child {
+  position: absolute;
+  bottom: 8px;
+  left: 16px;
+  right: 16px;
+  z-index: 10;
+}
+
+.passport-spread {
+  position: absolute !important;
+  top: 11.2% !important;
+  bottom: 10.8% !important;
+  left: 20.8% !important;
+  right: 20.2% !important;
+  padding: 0 !important;
+  gap: 3.6% !important;
+  height: auto !important;
+}
+
+.passport-page {
+  padding: 10px 12px !important;
+  overflow: hidden !important;
+}
+
+.passport-page.cover-inside {
+  margin: 4px;
+  padding: 12px !important;
+}
+
+.passport-page.polycarbonate-id {
+  background: rgba(246, 244, 238, 0.36) !important;
+  border: none !important;
+}
+
+.passport-id-grid {
+  grid-template-columns: 72px 1fr !important;
+  gap: 8px !important;
+}
+
+.passport-photo-frame {
+  width: 72px !important;
+  height: 90px !important;
+}
+
+.pp-field-lbl {
+  font-size: 7.5px !important;
+}
+
+.pp-field-val {
+  font-size: 10.5px !important;
+}
+
+.passport-mrz {
+  font-size: 8px !important;
+  letter-spacing: 0.7px !important;
+  margin-top: 6px !important;
+  padding-top: 4px !important;
+}
+
+.visa-slot {
+  padding: 5px 8px !important;
+}
+
+.visa-stamp-img {
+  width: 52px !important;
+  height: 42px !important;
+}
+
+
+/* Miniatyr av modernt vinrött svenskt EU-pass i dockan (ersätter gamla BP1-passet!) */
+.mini-swe-passport {
+  width: 34px;
+  height: 44px;
+  border-radius: 2px 4px 4px 2px;
+  background:
+    radial-gradient(rgba(255,255,255,0.05) 1px, transparent 0),
+    linear-gradient(135deg, #741c23 0%, #4d0f15 65%, #34080c 100%);
+  background-size: 3px 3px, 100% 100%;
+  border: 1px solid #b88b43;
+  border-left: 3px solid #2b0609;
+  box-shadow: 2px 3px 6px rgba(0,0,0,0.75), inset 0 1px 1px rgba(255,220,150,0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  color: #f0cf7b;
+  font-family: Georgia, serif;
+  line-height: 1;
+  transition: transform 0.3s ease;
+}
+.mini-swe-passport .msp-eu { font-size: 5px; letter-spacing: 0.8px; opacity: 0.85; }
+.mini-swe-passport .msp-swe { font-size: 5.5px; font-weight: 900; letter-spacing: 0.5px; }
+.mini-swe-passport .msp-crown { font-size: 6px; color: #ffe494; margin: 1px 0; }
+.mini-swe-passport .msp-pass { font-size: 7px; font-weight: 900; letter-spacing: 0.8px; }
+.dock-badge:hover .mini-swe-passport {
+  animation: modelSpin3D 1.8s infinite linear;
+}
+
+
+/* =====================================================================
+   EXAKT PASSNING AV PASSIDORNA OVANPÅ FOTOT (passport_spread.jpg 16:9)
+   ===================================================================== */
+
+.passport-book-shell {
+  position: relative !important;
+  background-size: 100% 100% !important;
+  padding: 0 !important;
+}
+
+.passport-book-shell > .passport-nav-bar:first-child {
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  right: 16px;
+  z-index: 10;
+}
+
+.passport-book-shell > .passport-nav-bar:last-child {
+  position: absolute;
+  bottom: 8px;
+  left: 16px;
+  right: 16px;
+  z-index: 10;
+}
+
+.passport-spread {
+  position: absolute !important;
+  top: 11.2% !important;
+  bottom: 10.8% !important;
+  left: 20.8% !important;
+  right: 20.2% !important;
+  padding: 0 !important;
+  gap: 3.6% !important;
+  height: auto !important;
+}
+
+.passport-page {
+  padding: 10px 12px !important;
+  overflow: hidden !important;
+}
+
+.passport-page.cover-inside {
+  margin: 4px;
+  padding: 12px !important;
+}
+
+.passport-page.polycarbonate-id {
+  background: rgba(246, 244, 238, 0.36) !important;
+  border: none !important;
+}
+
+.passport-id-grid {
+  grid-template-columns: 72px 1fr !important;
+  gap: 8px !important;
+}
+
+.passport-photo-frame {
+  width: 72px !important;
+  height: 90px !important;
+}
+
+.pp-field-lbl {
+  font-size: 7.5px !important;
+}
+
+.pp-field-val {
+  font-size: 10.5px !important;
+}
+
+.passport-mrz {
+  font-size: 8px !important;
+  letter-spacing: 0.7px !important;
+  margin-top: 6px !important;
+  padding-top: 4px !important;
+}
+
+.visa-slot {
+  padding: 5px 8px !important;
+}
+
+.visa-stamp-img {
+  width: 52px !important;
+  height: 42px !important;
+}
+
+
+/* Miniatyr av modernt vinrött svenskt EU-pass i dockan (ersätter gamla BP1-passet!) */
+.mini-swe-passport {
+  width: 34px;
+  height: 44px;
+  border-radius: 2px 4px 4px 2px;
+  background:
+    radial-gradient(rgba(255,255,255,0.05) 1px, transparent 0),
+    linear-gradient(135deg, #741c23 0%, #4d0f15 65%, #34080c 100%);
+  background-size: 3px 3px, 100% 100%;
+  border: 1px solid #b88b43;
+  border-left: 3px solid #2b0609;
+  box-shadow: 2px 3px 6px rgba(0,0,0,0.75), inset 0 1px 1px rgba(255,220,150,0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  color: #f0cf7b;
+  font-family: Georgia, serif;
+  line-height: 1;
+  transition: transform 0.3s ease;
+}
+.mini-swe-passport .msp-eu { font-size: 5px; letter-spacing: 0.8px; opacity: 0.85; }
+.mini-swe-passport .msp-swe { font-size: 5.5px; font-weight: 900; letter-spacing: 0.5px; }
+.mini-swe-passport .msp-crown { font-size: 6px; color: #ffe494; margin: 1px 0; }
+.mini-swe-passport .msp-pass { font-size: 7px; font-weight: 900; letter-spacing: 0.8px; }
+.dock-badge:hover .mini-swe-passport {
+  animation: modelSpin3D 1.8s infinite linear;
+}
+
+
+/* =====================================================================
+   90-TALS DIEGETISK HOTELLRECEPTION & PUB / VÄRDSHUS (INGA WEBBBOXAR!)
+   ===================================================================== */
+
+.scene-hotel-desk {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.scene-hotel-desk::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(10, 7, 4, 0.55) 0%,
+    rgba(10, 7, 4, 0.12) 38%,
+    rgba(14, 9, 5, 0.45) 62%,
+    rgba(18, 10, 5, 0.94) 86%,
+    rgba(12, 7, 3, 0.98) 100%);
+  pointer-events: none;
+}
+
+/* Fysisk mahogny-receptionsdisk längst ner i hotellscenen */
+.hotel-mahogany-counter {
+  position: relative;
+  z-index: 4;
+  background:
+    linear-gradient(180deg, #5c3619 0%, #3d210e 14%, #261307 100%);
+  border-top: 4px solid #b88b43;
+  box-shadow: 0 -14px 36px rgba(0, 0, 0, 0.85), inset 0 2px 6px rgba(255, 224, 150, 0.25);
+  padding: 14px 24px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+/* Mässingsklocka + rumsnyckelbricka direkt på disken */
+.desk-bell-object {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(180deg, rgba(28, 16, 8, 0.72), rgba(14, 8, 4, 0.88));
+  border: 2px outset #c99a45;
+  border-radius: 6px;
+  padding: 10px 18px;
+  cursor: pointer;
+  color: #ffe8ad;
+  text-align: left;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.75);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.desk-bell-object:hover {
+  transform: translateY(-3px);
+  border-color: #ffe28a;
+  box-shadow: 0 0 22px rgba(255, 206, 92, 0.45), 0 10px 24px rgba(0,0,0,0.85);
+}
+.desk-bell-object:active {
+  transform: translateY(1px);
+  border-style: inset;
+}
+.desk-bell-object img {
+  width: 50px;
+  height: 44px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.85));
+}
+.room-key-tag {
+  display: inline-block;
+  background: #8c2323;
+  color: #ffeaad;
+  border: 1.5px solid #d4a64a;
+  border-radius: 14px;
+  padding: 2px 9px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  margin-bottom: 3px;
+}
+
+/* Träskylt till hotellbaren / puben */
+.tavern-door-sign {
+  background: linear-gradient(180deg, #4b2d14 0%, #2b1708 100%);
+  border: 3px ridge #c99a45;
+  padding: 12px 20px;
+  color: #ffd875;
+  font-family: Georgia, serif;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.8);
+  transition: transform 0.15s, border-color 0.15s;
+}
+.tavern-door-sign:hover {
+  transform: translateY(-3px) rotate(0.8deg);
+  border-color: #fff0b8;
+}
+.tavern-door-sign .sign-main {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+}
+.tavern-door-sign .sign-sub {
+  font-size: 11px;
+  color: #d6c5a5;
+  margin-top: 2px;
+  font-style: italic;
+}
+
+/* Griffeltavla i hotellbaren (Realms of Arkania-pubkänsla!) */
+.tavern-floor-grid {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: 330px 1fr;
+  gap: 18px;
+  padding: 12px 22px 18px;
+  align-items: end;
+}
+
+.tavern-chalkboard {
+  background: radial-gradient(circle at 40% 35%, #232b24 0%, #131814 100%);
+  border: 6px ridge #6e4521;
+  padding: 14px 16px;
+  color: #f2efe4;
+  box-shadow: 0 14px 36px rgba(0,0,0,0.9), inset 0 0 18px rgba(0,0,0,0.75);
+  transform: rotate(-0.8deg);
+}
+.chalk-title {
+  font-family: Georgia, serif;
+  font-size: 15px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #ffe299;
+  border-bottom: 1.5px dashed rgba(242, 239, 228, 0.45);
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.chalk-choice-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(242, 239, 228, 0.45);
+  color: #f7f4ea;
+  padding: 9px 11px;
+  margin-bottom: 8px;
+  font-family: Georgia, serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chalk-choice-btn:hover {
+  background: rgba(255, 226, 153, 0.14);
+  border-color: #ffe299;
+  color: #fff7dc;
+}
+.chalk-choice-btn small {
+  display: block;
+  color: #c9d4c5;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+@media (max-width: 760px) {
+  .hotel-mahogany-counter { flex-direction: column; align-items: stretch; }
+  .tavern-floor-grid { grid-template-columns: 1fr; }
+}
+
+
+/* =====================================================================
+   MÖRKARE RYMD BAKOM 3D-JORDGLOBEN & MYSIGA RESETYPSNITT (LORA / PLAYFAIR / SPECIAL ELITE)
+   ===================================================================== */
+
+:root {
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-body: 'Lora', Georgia, serif;
+  --font-typewriter: 'Special Elite', 'Courier New', monospace;
+}
+
+body {
+  font-family: var(--font-body) !important;
+}
+
+h1, h2, h3, h4,
+.city-name,
+.start-logo-main,
+.broadsheet-title,
+.sight-plaque h3,
+.globe-title-plate h3,
+.chalk-title,
+.tavern-door-sign .sign-main,
+.diploma-title {
+  font-family: var(--font-display) !important;
+}
+
+.sight-fact-card,
+.quiz-q,
+.quiz-btn,
+.quiz-explain-text,
+.spot-label,
+.dock-label,
+.dock-sub,
+.news-col,
+.shopkeeper-bubble,
+.tavern-encounter-box,
+.scrapbook-entry,
+.chalk-choice-btn,
+.pp-field-val,
+.stamp-action-btn,
+.globe-brass-btn {
+  font-family: var(--font-body) !important;
+}
+
+.hud-watch .watch-digits,
+.board-title,
+.flap-dest,
+.flap-meta,
+.ticket-btn,
+.room-key-tag,
+.bp-quiz-counter,
+.relay-badge,
+.hud-radio-btn {
+  font-family: var(--font-typewriter) !important;
+}
+
+/* Djupare, mer dramatisk rymdbakgrund bakom 3D-jordgloben (både i helskärm & under flygning) */
+.scene-globe-full,
+.travel-globe-wrap,
+.globe-quiz-canvas {
+  background: radial-gradient(circle at 50% 48%, #040912 0%, #010306 60%, #000000 100%) !important;
+}
+
+/* BackPacker-ankomstvinjett (små mysiga landnings- & hamnbilder efter jordgloben) */
+.travel-vignette-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px 20px;
+  animation: fadeIn 0.35s ease-out;
+}
+.travel-vignette-wrap.hidden,
+.travel-globe-wrap.hidden {
+  display: none !important;
+}
+.travel-vignette-frame {
+  position: relative;
+  width: min(680px, 86vw);
+  height: min(400px, 56vh);
+  border: 5px solid #9e7537;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.85), inset 0 0 0 2px rgba(255, 224, 150, 0.35);
+  background: #0c0906;
+}
+.travel-vignette-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.travel-vignette-img.pan-zoom {
+  animation: bpVignetteZoom 2.3s ease-out forwards;
+}
+.travel-vignette-img.pan-slide {
+  animation: bpVignetteSlide 2.3s ease-out forwards;
+}
+@keyframes bpVignetteZoom {
+  0% { transform: scale(1.0) translateX(0); filter: sepia(0.18) contrast(1.04); }
+  100% { transform: scale(1.11) translateX(-1.5%); filter: sepia(0.06) contrast(1.06); }
+}
+@keyframes bpVignetteSlide {
+  0% { transform: scale(1.12) translateX(-2%); filter: sepia(0.12); }
+  100% { transform: scale(1.03) translateX(1.5%); filter: sepia(0); }
+}
+.travel-vignette-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 14px 18px;
+  background: linear-gradient(180deg, transparent 0%, rgba(12, 8, 5, 0.86) 45%, rgba(12, 8, 5, 0.96) 100%);
+  color: #f8ecd4;
+  text-align: left;
+}
+.travel-vignette-tag {
+  display: inline-block;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: #ffd875;
+  background: rgba(158, 117, 55, 0.32);
+  border: 1px solid rgba(255, 216, 117, 0.5);
+  padding: 2px 8px;
+  border-radius: 3px;
+  margin-bottom: 5px;
+}
+.travel-vignette-text {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 17px;
+  color: #fff6e3;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
+}
+
+/* =====================================================================
+   EGNA BLÄCKSTÄMPLAR & DIEGETISKA UI-DETALJER (100 % EGNA ASSETS)
+   ===================================================================== */
+.ink-stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--stamp-color, #8c2323);
+  border: 2.5px solid var(--stamp-color, #8c2323);
+  padding: 2px;
+  opacity: 0.86;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  user-select: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+}
+.ink-stamp.shape-round { border-radius: 50%; width: 58px; height: 58px; }
+.ink-stamp.shape-oval  { border-radius: 50%; width: 66px; height: 48px; }
+.ink-stamp.shape-rect  { border-radius: 5px; min-width: 64px; height: 44px; }
+.ink-stamp.large.shape-round { width: 112px; height: 112px; border-width: 4px; }
+.ink-stamp.large.shape-oval  { width: 132px; height: 92px; border-width: 4px; }
+.ink-stamp.large.shape-rect  { min-width: 132px; height: 84px; border-width: 4px; }
+.ink-stamp-inner {
+  border: 1px dashed var(--stamp-color, #8c2323);
+  border-radius: inherit;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  text-align: center;
+  line-height: 1.05;
+}
+.ink-stamp-top  { font-size: 7px; font-weight: 900; letter-spacing: 0.8px; }
+.ink-stamp-city { font-size: 8px; font-weight: 900; letter-spacing: 0.4px; margin: 1px 0; }
+.ink-stamp-sub  { font-size: 6px; letter-spacing: 0.5px; opacity: 0.85; }
+.ink-stamp.large .ink-stamp-top  { font-size: 12px; }
+.ink-stamp.large .ink-stamp-city { font-size: 14px; margin: 3px 0; }
+.ink-stamp.large .ink-stamp-sub  { font-size: 10px; }
+
+.wallet-card-css {
+  width: 34px;
+  height: 22px;
+  border-radius: 3px;
+  background: linear-gradient(135deg, #273e6b 0%, #14223d 55%, #b88b3b 100%);
+  border: 1px solid #e0be72;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 9px;
+  font-weight: 900;
+  color: #fce29a;
+  letter-spacing: 0.8px;
+  flex-shrink: 0;
+}
+.brass-bell-css {
+  position: relative;
+  width: 44px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+.brass-bell-css .bell-knob {
+  width: 10px;
+  height: 5px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, #8a6423, #ffe49c, #8a6423);
+  border: 1px solid #593d10;
+}
+.brass-bell-css .bell-dome {
+  width: 36px;
+  height: 21px;
+  border-radius: 18px 18px 4px 4px;
+  background: radial-gradient(circle at 35% 30%, #fff2be 0%, #d4a348 45%, #7a5418 100%);
+  border: 1px solid #593d10;
+  box-shadow: inset 0 -3px 6px rgba(40,22,5,0.45);
+}
+.brass-bell-css .bell-base {
+  width: 42px;
+  height: 7px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #3b2714 0%, #170e07 100%);
+  border: 1px solid #8a6423;
+}
+.board-ticket-css {
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #24170a;
+  background: linear-gradient(180deg, #f3e4c3 0%, #dcc390 100%);
+  border: 2px dashed #7a5524;
+  padding: 5px 10px;
+  border-radius: 3px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.gear-inline-badge {
+  display: inline-block;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #fff3d1;
+  background: #6b4b26;
+  border: 1px solid #c49a52;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-right: 4px;
+  letter-spacing: 0.6px;
+}
+
+/* =====================================================================
+   DIEGETISK MARKNADSDISK / BASARDISK (MAHOGNY, MÄSSING & PERGAMENT)
+   ===================================================================== */
+.market-counter-dock {
+  position: relative;
+  z-index: 3;
+  margin-top: auto;
+  padding: 0 22px 18px;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+.market-counter-panel {
+  width: 100%;
+  max-width: 980px;
+  background: linear-gradient(180deg, rgba(46, 29, 16, 0.94) 0%, rgba(24, 14, 8, 0.97) 100%);
+  border: 3px solid #a87e3c;
+  border-radius: 6px;
+  padding: 12px 16px 14px;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.82), inset 0 1px 0 rgba(255, 224, 150, 0.3);
+}
+.market-keeper-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: linear-gradient(180deg, #faf1dc 0%, #ead8b5 100%);
+  border: 1.5px solid #9e7537;
+  border-left: 5px solid #8c5a1e;
+  border-radius: 4px;
+  padding: 7px 12px;
+  margin-bottom: 12px;
+  color: #24170a;
+}
+.market-keeper-tag {
+  font-family: var(--font-display, Georgia, serif);
+  font-weight: 700;
+  font-size: 13px;
+  color: #6b3f12;
+  white-space: nowrap;
+}
+.market-keeper-quote {
+  font-family: var(--font-body, Georgia, serif);
+  font-style: italic;
+  font-size: 12.5px;
+  color: #2e2012;
+}
+.market-event-pill {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1b5e20;
+  background: rgba(47, 125, 67, 0.14);
+  border: 1px solid #2f7d43;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+.market-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.market-col {
+  background: rgba(14, 9, 5, 0.45);
+  border: 1px solid rgba(180, 140, 72, 0.38);
+  border-radius: 5px;
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  max-height: 46vh;
+}
+.market-col-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 11.5px;
+  letter-spacing: 1px;
+  color: #f3d286;
+  border-bottom: 1px dashed rgba(196, 154, 82, 0.45);
+  padding-bottom: 5px;
+  margin-bottom: 8px;
+}
+.market-col-head small {
+  color: #c9b48f;
+  font-size: 10.5px;
+}
+.market-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.market-card {
+  background: linear-gradient(180deg, #faf3e2 0%, #ede0c2 100%);
+  border: 1.5px solid #a8864c;
+  border-radius: 4px;
+  padding: 8px 10px;
+  color: #26190d;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.market-card.goal-highlight {
+  border-left: 5px solid #b58328;
+}
+.market-card.keep-highlight {
+  border-left: 5px solid #2f7d43;
+}
+.market-card.courier-locked {
+  border-left: 5px solid #9b2222;
+  opacity: 0.88;
+}
+.market-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+.market-item-name {
+  font-family: var(--font-display, Georgia, serif);
+  font-weight: 700;
+  font-size: 14px;
+  color: #1f140a;
+}
+.market-goal-tag {
+  display: inline-block;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 9.5px;
+  font-weight: 900;
+  background: #b58328;
+  color: #fffaf0;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+.market-goal-tag.done {
+  background: #2b6b3a;
+}
+.market-price-tag {
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #5b310a;
+  background: #f5e5bd;
+  border: 1px dashed #8c6428;
+  padding: 2px 7px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.market-price-tag small {
+  font-size: 9px;
+  color: #246b36;
+  margin-left: 3px;
+}
+.market-price-tag.sell {
+  color: #1f5c2e;
+  background: #e3f2e6;
+  border-color: #3d8750;
+}
+.market-price-tag.locked {
+  color: #8c2323;
+  background: #f7e4e4;
+  border-color: #a83c3c;
+  font-size: 10px;
+}
+.market-item-desc {
+  font-family: var(--font-body, Georgia, serif);
+  font-size: 12px;
+  line-height: 1.35;
+  color: #42311f;
+  margin-bottom: 4px;
+}
+.market-item-effect {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8c520a;
+  margin-bottom: 5px;
+}
+.market-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 5px;
+  border-top: 1px dotted rgba(138, 108, 66, 0.45);
+}
+.market-kind-pill {
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #6b5336;
+}
+.market-profit-pill {
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 11px;
+  font-weight: 700;
+}
+.market-profit-pill.pos { color: #246b36; }
+.market-profit-pill.neg { color: #9c2b23; }
+.market-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.market-locked-note {
+  font-size: 10.5px;
+  color: #7d6b56;
+  font-style: italic;
+}
+.market-btn-haggle {
+  background: linear-gradient(180deg, #b87333 0%, #8a4e1c 100%);
+  color: #fff6e6;
+  border: 1px solid #e0a76b;
+  border-radius: 3px;
+  padding: 5px 10px;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.market-btn-haggle:hover { filter: brightness(1.1); }
+.market-btn-buy {
+  background: linear-gradient(180deg, #3b7d48 0%, #24572f 100%);
+  color: #f4fff6;
+  border: 1px solid #72bd81;
+  border-radius: 3px;
+  padding: 5px 11px;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.market-btn-buy:hover { filter: brightness(1.1); }
+.market-btn-sell {
+  background: linear-gradient(180deg, #9e7537 0%, #6e4e1c 100%);
+  color: #fff6e0;
+  border: 1px solid #e0be72;
+  border-radius: 3px;
+  padding: 5px 11px;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.market-btn-sell:hover { filter: brightness(1.1); }
+.market-empty-note {
+  font-family: var(--font-body, Georgia, serif);
+  font-style: italic;
+  font-size: 12.5px;
+  color: #d6c5a5;
+  padding: 16px 10px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* =====================================================================
+   OUTFORSKADE LANDMÄRKEN (BP2-UTFORSKNING) & SOUVENIRBILDER
+   ===================================================================== */
+.spot-compass-badge {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #4b3824 0%, #24180d 65%, #120b05 100%);
+  border: 3px solid #c79a4b;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.72), inset 0 0 10px rgba(255, 224, 150, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.spot-compass-badge::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1px dashed rgba(240, 206, 130, 0.55);
+}
+.spot-compass-badge span {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 26px;
+  font-weight: 900;
+  color: #ffe399;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
+}
+.spot.undiscovered:hover .spot-compass-badge {
+  transform: scale(1.1);
+  box-shadow: 0 0 18px rgba(255, 216, 117, 0.6), 0 6px 16px rgba(0, 0, 0, 0.8);
+}
+
+.market-card-with-img {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.market-card-main {
+  flex: 1;
+  min-width: 0;
+}
+.souvenir-thumb {
+  width: 58px;
+  height: 58px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 2px solid #9e7537;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  background: #2b1d10;
+  flex-shrink: 0;
+}
+
+/* Flikar inne på Marknaden/Basaren (Souvenirer & Handel / Reseutrustning & Post) */
+.market-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.market-tab-btn {
+  background: rgba(18, 11, 6, 0.72);
+  color: #d6c29b;
+  border: 1.5px solid #7d5d2b;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.market-tab-btn:hover {
+  border-color: #e0be72;
+  color: #fff4d6;
+}
+.market-tab-btn.active {
+  background: linear-gradient(180deg, #b88b43 0%, #8a6223 100%);
+  color: #fff9ea;
+  border-color: #f3d286;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+/* =====================================================================
+   STÄMNINGSFULL 90-TALS RESEHÄNDELSE (VYKORT + PERGAMENT & MÄSSING)
+   ===================================================================== */
+.travel-event-shell {
+  width: min(760px, 92vw);
+  background: linear-gradient(180deg, #faf2df 0%, #ead8b4 100%);
+  border: 4px solid #8c6428;
+  border-radius: 6px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85), inset 0 0 0 2px rgba(255, 246, 224, 0.7);
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 18px;
+  padding: 20px 22px;
+  color: #24170a;
+  animation: fadeIn 0.25s ease-out;
+}
+.travel-event-photo-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.travel-event-polaroid {
+  background: #fffdf7;
+  padding: 8px 8px 10px;
+  border: 1px solid #c9b592;
+  box-shadow: 0 8px 20px rgba(36, 23, 10, 0.35);
+  transform: rotate(-2deg);
+  width: 100%;
+}
+.travel-event-polaroid img {
+  width: 100%;
+  height: 175px;
+  object-fit: cover;
+  display: block;
+  border: 1px solid #d9c9ac;
+}
+.travel-polaroid-cap {
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 10px;
+  color: #6b5336;
+  text-align: center;
+  margin-top: 7px;
+  letter-spacing: 0.8px;
+}
+.travel-event-body-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.travel-event-kicker {
+  display: inline-block;
+  align-self: flex-start;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #8c2323;
+  border: 1.5px dashed #8c2323;
+  padding: 2px 8px;
+  border-radius: 3px;
+  margin-bottom: 8px;
+  background: rgba(140, 35, 35, 0.06);
+}
+.travel-event-heading {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 22px;
+  color: #2b1a0c;
+  margin: 0 0 8px;
+  line-height: 1.2;
+}
+.travel-event-story {
+  font-family: var(--font-body, Georgia, serif);
+  font-size: 14px;
+  line-height: 1.55;
+  color: #3a2716;
+  margin: 0 0 14px;
+}
+.travel-event-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.travel-event-choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: linear-gradient(180deg, #3b2615 0%, #24160b 100%);
+  color: #f8ecd4;
+  border: 2px solid #a87e3c;
+  border-radius: 4px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font-family: var(--font-body, Georgia, serif);
+  font-size: 13px;
+  line-height: 1.35;
+  transition: transform 0.12s, border-color 0.15s, background 0.15s;
+}
+.travel-event-choice:hover {
+  border-color: #ffd875;
+  background: linear-gradient(180deg, #4f331c 0%, #2f1d0f 100%);
+  transform: translateX(3px);
+}
+.travel-choice-seal {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #b88b43;
+  color: #1f140a;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 12px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.travel-choice-label {
+  flex: 1;
+}

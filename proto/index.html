@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Globetrotter — Jorden runt mot klockan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..600&family=Playfair+Display:ital,wght@0,600..900;1,600&family=Special+Elite&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+
+<div class="app-container cdrom-desk">
+  <!-- Fullskärms 16:9 90-tals fotomontagescen utan stela webbmenyer -->
+  <main class="stage" id="stage">
+    <!-- Bakgrundsmontage: historisk Baedeker-karta + nutida foto + dygnsljus -->
+    <div class="layer map" id="mapLayer"></div>
+    <div class="layer photo" id="photoLayer"></div>
+    <div class="layer time-light" id="timeLightLayer"></div>
+
+    <!-- Stadsskylt i klassisk mässings- och pappersstil -->
+    <div class="city-plate">
+      <div class="city-name" id="cityName">Stockholm</div>
+      <div class="city-region" id="cityRegion">Sverige · EUROPA</div>
+      <div class="city-event-ribbon hidden" id="cityEventRibbon"></div>
+    </div>
+
+    <!-- Taktila 90-tals reseinstrument uppe till höger (Kalenderblad, Mässingsklocka, Resekassa, Radiovred) -->
+    <div class="hud">
+      <div class="hud-calendar" id="hudDay" title="Resdag">
+        <span class="cal-top">DAG</span>
+        <span class="cal-num"><b>1</b>/30</span>
+      </div>
+      <div class="hud-watch" id="hudTime" title="Lokal tid">
+        <span class="watch-label">Morgon</span>
+        <span class="watch-digits"><b>08:00</b></span>
+      </div>
+      <div class="hud-wallet" id="hudCash" title="Din resekassa">
+        <div class="wallet-card-css" aria-hidden="true"><span>GT</span></div>
+        <div class="wallet-text">
+          <span class="wallet-label">Kassa</span>
+          <span class="wallet-amount"><b>10 000 kr</b></span>
+        </div>
+      </div>
+      <button class="hud-radio-btn" id="btnSound" title="Slå på eller av ljud">LJUD: PÅ</button>
+    </div>
+
+    <!-- Interaktiva kartspots (Snurrande 3D-modeller/fotomedaljonger & sevärdheter) -->
+    <div class="spots-container" id="spotsContainer"></div>
+
+    <!-- Dock nere till höger: Snurrande 3D-Jordglob, Ryggsäck och Pass -->
+    <div class="travel-dock">
+      <div class="dock-badge globe-badge" id="dockGlobe" onclick="window.GT.openGlobeModal()" title="Öppna 3D-jordgloben och se världshändelser">
+        <canvas id="dockMiniGlobe" class="dock-globe-canvas" width="46" height="46"></canvas>
+        <div class="dock-text">
+          <span class="dock-label">Jordglob</span>
+          <span class="dock-sub" id="dockGlobeDist">0 km</span>
+        </div>
+        <span class="globe-event-dot hidden" id="dockGlobeEventDot" title="Aktiva världshändelser!">!</span>
+      </div>
+      <div class="dock-badge" id="dockBackpack" onclick="window.GT.openBackpackModal()" title="Öppna din vandringsryggsäck">
+        <canvas id="dockMiniBackpack" class="dock-globe-canvas" width="46" height="46"></canvas>
+        <div class="dock-text">
+          <span class="dock-label">Ryggsäck</span>
+          <span class="dock-sub" id="dockBackpackCount">0/5</span>
+        </div>
+      </div>
+      <div class="dock-badge passport-badge" id="dockPassport" onclick="window.GT.openPassportModal()" title="Slå upp ditt pass, stämplar & resedagbok">
+        <div class="mini-swe-passport" aria-hidden="true">
+          <span class="msp-eu">EU</span>
+          <span class="msp-swe">SVERIGE</span>
+          <span class="msp-crown">✦ ✦ ✦</span>
+          <span class="msp-pass">PASS</span>
+        </div>
+        <div class="dock-text">
+          <span class="dock-label">Ditt Pass</span>
+          <span class="dock-sub" id="dockStampCount">0 stämplar</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast-notiser -->
+    <div class="toast-notice" id="toastNotice"></div>
+
+    <!-- Reseanimation (3D Jordglob som zoomar in med röd flyglinje) -->
+    <div class="travel-cinematic hidden" id="travelCinematic">
+      <div class="travel-banner">
+        <div class="travel-banner-title" id="travelTitle">FLYGNING MOT KAIRO</div>
+        <div class="travel-banner-sub" id="travelSub">Flygtid: 6 timmar över Medelhavet</div>
+      </div>
+      <div class="travel-globe-wrap" id="travelGlobeWrap">
+        <canvas id="flightGlobeCanvas" width="800" height="500"></canvas>
+      </div>
+      <div class="travel-vignette-wrap hidden" id="travelVignetteWrap">
+        <div class="travel-vignette-frame">
+          <img id="travelVignetteImg" class="travel-vignette-img" src="" alt="Ankomst">
+          <div class="travel-vignette-caption">
+            <div class="travel-vignette-tag" id="travelVignetteTag">INFLYGNING</div>
+            <div class="travel-vignette-text" id="travelVignetteText">Landningsstället ute...</div>
+          </div>
+        </div>
+      </div>
+      <div class="travel-video-wrap" id="travelVideoWrap" style="display:none;">
+        <video id="travelVideo" class="travel-video" playsinline></video>
+      </div>
+      <button id="travelSkipBtn" class="travel-skip-btn">Hoppa över »</button>
+    </div>
+
+    <!-- Modal-lager för faktakort, klappertavla, tidning, hotelliggare, basar m.m. -->
+    <div class="modal-overlay hidden" id="modalOverlay">
+      <div id="modalContent"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Datalager, Central Frågebank, Världsexpansion (+10 städer), Världens städer, 3D Jordglob, 3D Ryggsäck och Spelmotor -->
+<script src="data/world.js"></script>
+<script src="data/questions.js"></script>
+<script src="data/world_expansion.js"></script>
+<script src="data/jobs_catalog.js"></script>
+<script src="data/world_cities.js"></script>
+<script src="js/globe.js"></script>
+<script src="js/backpack3d.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
