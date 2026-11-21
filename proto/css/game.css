@@ -4826,3 +4826,127 @@ h1, h2, h3, h4,
 .timeline-detail-right {
   min-width: 0;
 }
+
+/* =====================================================================
+   UNIKA LANDSTYPISKA STADSSKYLTAR (UPPE TILL VÄNSTER)
+   ===================================================================== */
+.city-badge {
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+/* Sverige (Malmö, Stockholm): blå-gul emaljskylt */
+.city-badge.theme-se {
+  background: linear-gradient(135deg, #0d3b6e 0%, #072242 100%) !important;
+  border: 3px solid #f5c842 !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.65), inset 0 0 0 2px rgba(245,200,66,0.35);
+}
+.city-badge.theme-se h1 { color: #ffe27a !important; }
+
+/* Egypten (Kairo): sandsten, guld & lapis lazuli */
+.city-badge.theme-eg {
+  background: linear-gradient(135deg, #5c3c16 0%, #2c1a08 100%) !important;
+  border: 3px double #e6b85c !important;
+  border-left: 7px solid #1d5b8c !important;
+}
+.city-badge.theme-eg h1 { color: #ffd984 !important; }
+
+/* Indien (Delhi): saffran, rubinrött & guld */
+.city-badge.theme-in {
+  background: linear-gradient(135deg, #7d1e1e 0%, #420c0c 100%) !important;
+  border: 3px ridge #f0a13a !important;
+}
+.city-badge.theme-in h1 { color: #ffd27a !important; }
+
+/* Japan (Tokyo): ljust washi-papper med röd lackram */
+.city-badge.theme-jp {
+  background: linear-gradient(180deg, #faf3e6 0%, #eadbc2 100%) !important;
+  border: 3px solid #b81d24 !important;
+  border-left: 8px solid #b81d24 !important;
+}
+.city-badge.theme-jp h1 { color: #1c1410 !important; text-shadow: none !important; }
+.city-badge.theme-jp .city-region { color: #8c1b20 !important; }
+
+/* USA (New York, San Francisco): marinblå emalj med röd-vit accent */
+.city-badge.theme-us {
+  background: linear-gradient(180deg, #162a4a 0%, #0b1629 100%) !important;
+  border: 3px solid #e6e2d8 !important;
+  border-bottom: 5px solid #c42727 !important;
+}
+.city-badge.theme-us h1 { color: #fff8ea !important; }
+
+/* Frankrike (Paris): klassisk parisisk blå emaljskylt med grön innerkant */
+.city-badge.theme-fr {
+  background: linear-gradient(180deg, #10326b 0%, #091f45 100%) !important;
+  border: 3px solid #f4f1ea !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.7), inset 0 0 0 3px #1b6b46 !important;
+}
+.city-badge.theme-fr h1 { color: #ffffff !important; }
+
+/* Italien (Rom): varm travertin-marmor & terrakotta */
+.city-badge.theme-it {
+  background: linear-gradient(180deg, #f3e6cf 0%, #dec7a4 100%) !important;
+  border: 3px solid #8c2d19 !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.65), inset 0 0 0 2px #c99a45;
+}
+.city-badge.theme-it h1 { color: #4d190e !important; text-shadow: none !important; }
+.city-badge.theme-it .city-region { color: #2b6b3a !important; }
+
+/* Storbritannien (London): vit klassisk London-gatuskylt med svart & röd ram */
+.city-badge.theme-gb {
+  background: linear-gradient(180deg, #faf8f2 0%, #e8e2d5 100%) !important;
+  border: 3px solid #1b1d20 !important;
+  border-top: 6px solid #b81d24 !important;
+}
+.city-badge.theme-gb h1 { color: #141618 !important; text-shadow: none !important; }
+.city-badge.theme-gb .city-region { color: #b81d24 !important; }
+
+/* Turkiet (Istanbul): Iznik-turkos, kobolt & guld */
+.city-badge.theme-tr {
+  background: linear-gradient(135deg, #105b6b 0%, #093542 100%) !important;
+  border: 3px double #f0c259 !important;
+  border-left: 7px solid #b81d24 !important;
+}
+.city-badge.theme-tr h1 { color: #ffe699 !important; }
+
+/* Thailand (Bangkok): kungligt tempelguld & djup smaragd/lila */
+.city-badge.theme-th {
+  background: linear-gradient(135deg, #3c1854 0%, #1d0a2b 100%) !important;
+  border: 3px ridge #f2c94c !important;
+}
+.city-badge.theme-th h1 { color: #ffe484 !important; }
+
+/* Kina (Peking): kejserligt lackrött & guld */
+.city-badge.theme-cn {
+  background: linear-gradient(180deg, #8c1414 0%, #4d0808 100%) !important;
+  border: 3px double #f5cb5c !important;
+}
+.city-badge.theme-cn h1 { color: #ffe48a !important; }
+
+/* Australien (Sydney): Stilla havs-turkos & solbränd ockra */
+.city-badge.theme-au {
+  background: linear-gradient(135deg, #0d4a5e 0%, #072836 100%) !important;
+  border: 3px solid #e09f3e !important;
+}
+.city-badge.theme-au h1 { color: #fff3d1 !important; }
+
+/* Sydafrika (Kapstaden): savanngrön, guld & jordröd */
+.city-badge.theme-za {
+  background: linear-gradient(135deg, #1b4d2e 0%, #0d2918 100%) !important;
+  border: 3px solid #f0b93c !important;
+  border-left: 7px solid #b83324 !important;
+}
+.city-badge.theme-za h1 { color: #ffe699 !important; }
+
+/* Brasilien (Rio): smaragdgrön & solgul */
+.city-badge.theme-br {
+  background: linear-gradient(135deg, #136634 0%, #0a3b1d 100%) !important;
+  border: 3px solid #f7d136 !important;
+}
+.city-badge.theme-br h1 { color: #ffea75 !important; }
+
+/* Mexiko (Mexico City): Talavera-kobolt & varm terrakotta */
+.city-badge.theme-mx {
+  background: linear-gradient(135deg, #17467a 0%, #0c2647 100%) !important;
+  border: 3px solid #e06d3b !important;
+  border-left: 7px solid #237a43 !important;
+}
+.city-badge.theme-mx h1 { color: #ffe4a3 !important; }

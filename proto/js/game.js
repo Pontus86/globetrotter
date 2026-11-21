@@ -668,6 +668,19 @@
     el.cityName.textContent = city.name;
     el.cityRegion.textContent = `${city.country} · ${city.region.toUpperCase()}`;
 
+    // Unik landstypisk stil på stadsskylten uppe till vänster!
+    const badgeEl = document.querySelector('.city-badge');
+    if (badgeEl) {
+      const themeMap = {
+        malmo: 'theme-se', stockholm: 'theme-se', kairo: 'theme-eg', delhi: 'theme-in',
+        tokyo: 'theme-jp', sanfrancisco: 'theme-us', newyork: 'theme-us', paris: 'theme-fr',
+        rom: 'theme-it', london: 'theme-gb', istanbul: 'theme-tr', bangkok: 'theme-th',
+        peking: 'theme-cn', sydney: 'theme-au', kapstaden: 'theme-za', rio: 'theme-br',
+        mexicocity: 'theme-mx'
+      };
+      badgeEl.className = `city-badge ${themeMap[state.city] || 'theme-se'}`;
+    }
+
     // Bygg BackPacker-kartikoner på scenen
     renderCitySpots(city);
     updateHUD();
@@ -756,11 +769,13 @@
       return ((seed >>> 0) % 10000) / 10000;
     };
 
-    // 14 väl fördelade ankarceller över hela stadskartan (säkert innanför HUD upptill och docka nertill)
+    // 14 väl fördelade ankarceller i helt fria zoner:
+    // Fredar alltid stadsskylten (uppe vänster: x<34, y<32), HUD (uppe höger: x>64, y<22) och dockan (nere höger: x>62, y>74)!
     const anchors = [
-      [14, 27], [34, 24], [55, 25], [76, 26], [87, 36],
-      [13, 47], [31, 45], [50, 46], [69, 45], [86, 57],
-      [16, 69], [36, 72], [58, 70], [79, 73]
+      [41, 22], [56, 22], [72, 26], [86, 28],
+      [13, 39], [28, 39], [45, 39], [62, 39], [80, 42],
+      [13, 58], [30, 56], [48, 56], [68, 57], [85, 59],
+      [18, 76], [37, 76], [53, 76]
     ];
     // Blanda ankarna unikt för just denna stad
     const shuffled = anchors.slice();
@@ -772,9 +787,11 @@
     const coords = {};
     spotKeys.forEach((key, idx) => {
       const base = shuffled[idx % shuffled.length];
-      // Lätt organisk förskjutning inom cellen (±4 % i X, ±3.5 % i Y)
-      const x = Math.max(11, Math.min(89, Math.round(base[0] + (rand() - 0.5) * 8)));
-      const y = Math.max(22, Math.min(76, Math.round(base[1] + (rand() - 0.5) * 7)));
+      // Lätt organisk förskjutning inom cellen (±3 % i X, ±2.5 % i Y) utan att glida in i fredade UI-zoner
+      let x = Math.max(11, Math.min(89, Math.round(base[0] + (rand() - 0.5) * 6)));
+      let y = Math.max(20, Math.min(78, Math.round(base[1] + (rand() - 0.5) * 5)));
+      if (x < 35 && y < 34) y = 37;
+      if (x > 62 && y > 72) y = 66;
       coords[key] = [x, y];
     });
     return coords;
@@ -1282,7 +1299,7 @@
       function showAnswerDeepDive(isCorrect, rightAnswerText, customNote = null) {
         const imgSrc = q.photo || contextPhoto || W.cities[state.city]?.skyline || 'assets/photos/gamlastan.jpg';
         const deepText = customNote || q.explain || (W.answerExplanations && W.answerExplanations[rightAnswerText]) ||
-          `Rätt svar är ${rightAnswerText}. Varje plats du besöker bygger på din allmänbildning inför Globetrotterklubbens antagning!`;
+          `Det rätta svaret på frågan är ${rightAnswerText}.`;
 
         const box = container.querySelector('.quiz-box');
         if (!box) return;

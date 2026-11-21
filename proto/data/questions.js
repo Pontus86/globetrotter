@@ -7,6 +7,7 @@
   root.GT_QUESTIONS = [
   {
     "id": "stockholm_job_01",
+    "explain": "Stockholms skärgård sträcker sig från Arholma i norr till Landsort i söder och rymmer omkring 30 000 öar, kobbar och skär.",
     "city": "stockholm",
     "place": "job",
     "region": "europa",
@@ -22,6 +23,7 @@
   },
   {
     "id": "stockholm_job_02",
+    "explain": "Mälaren är Sveriges tredje största sjö och har sitt utlopp i Östersjön genom Slussen och Norrström mitt i Stockholm.",
     "city": "stockholm",
     "place": "job",
     "region": "europa",
@@ -38,6 +40,7 @@
   },
   {
     "id": "stockholm_job_03",
+    "explain": "Birger jarl lät befästa Stadsholmen i mitten av 1200-talet som ett lås för Mälaren mot plundrare från Östersjön.",
     "city": "stockholm",
     "place": "job",
     "region": "europa",
@@ -54,6 +57,7 @@
   },
   {
     "id": "stockholm_job_04",
+    "explain": "Stockholms stadshus ritades av Ragnar Östberg och invigdes på midsommarafton den 23 juni 1923, på 400-årsdagen av Gustav Vasas intåg.",
     "city": "stockholm",
     "place": "job",
     "region": "europa",
@@ -70,6 +74,7 @@
   },
   {
     "id": "kairo_job_05",
+    "explain": "Nilen breder ut sig i det stora, bördiga Nildeltat norr om Kairo innan den mynnar ut i Medelhavet.",
     "city": "kairo",
     "place": "job",
     "region": "afrika",
@@ -86,6 +91,7 @@
   },
   {
     "id": "kairo_job_06",
+    "explain": "Suezkanalen är 193 km lång och låter fartyg segla mellan Europa och Asien utan att behöva runda hela Afrika.",
     "city": "kairo",
     "place": "job",
     "region": "afrika",
@@ -102,6 +108,7 @@
   },
   {
     "id": "kairo_job_07",
+    "explain": "Nilen är cirka 6 650 km lång och rinner genom elva länder i nordöstra Afrika från källorna vid Victoriasjön till Medelhavet.",
     "city": "kairo",
     "place": "job",
     "region": "afrika",
@@ -117,6 +124,7 @@
   },
   {
     "id": "kairo_job_08",
+    "explain": "Assuandammen reglerar Nilens årliga översvämningar och producerar en stor del av Egyptens el, samtidigt som flera antika tempel fick flyttas undan vattnet.",
     "city": "kairo",
     "place": "job",
     "region": "afrika",
@@ -133,6 +141,7 @@
   },
   {
     "id": "delhi_job_09",
+    "explain": "Gurkmeja är en rot i ingefärssläktet som ger curry dess starkt gula färg och har använts i indisk matlagning i tusentals år.",
     "city": "delhi",
     "place": "job",
     "region": "asien",
@@ -149,6 +158,7 @@
   },
   {
     "id": "delhi_job_10",
+    "explain": "Den indiska rupien (INR) har fått sitt namn från sanskritordet \"rupya\", som ursprungligen betydde präglat silver.",
     "city": "delhi",
     "place": "job",
     "region": "asien",
@@ -165,6 +175,7 @@
   },
   {
     "id": "delhi_job_11",
+    "explain": "Himalaya bildades när den indiska kontinentalplattan kolliderade med Asien och rymmer världens högsta topp, Mount Everest (8 849 m).",
     "city": "delhi",
     "place": "job",
     "region": "asien",
@@ -181,6 +192,7 @@
   },
   {
     "id": "delhi_job_12",
+    "explain": "Calcutta (dagens Kolkata) var Brittiska Indiens huvudstad fram till 1911, då britterna flyttade huvudstaden inåt landet till New Delhi.",
     "city": "delhi",
     "place": "job",
     "region": "asien",
@@ -197,6 +209,7 @@
   },
   {
     "id": "tokyo_job_13",
+    "explain": "Under Tokugawa-shogunatet (1603-1868) växte fiskebyn Edo till världens folkrikaste stad med över en miljon invånare innan den döptes om till Tokyo.",
     "city": "tokyo",
     "place": "job",
     "region": "asien",
@@ -213,6 +226,7 @@
   },
   {
     "id": "tokyo_job_14",
+    "explain": "Honshu är Japans största och mest tätbefolkade ö, där bland annat Tokyo, Kyoto, Osaka och berget Fuji ligger.",
     "city": "tokyo",
     "place": "job",
     "region": "asien",
@@ -229,6 +243,7 @@
   },
   {
     "id": "tokyo_job_15",
+    "explain": "Japansk yen (JPY) infördes 1871 under Meijirestaurationen. Ordet \"en\" betyder \"rund\" och syftar på myntets form.",
     "city": "tokyo",
     "place": "job",
     "region": "asien",
@@ -245,6 +260,7 @@
   },
   {
     "id": "tokyo_job_16",
+    "explain": "Kejsarpalatset Kōkyo ligger mitt i Tokyo på samma plats som den gamla shogunborgen Edo Castle, omgiven av vallgravar och murar.",
     "city": "tokyo",
     "place": "job",
     "region": "asien",
@@ -261,6 +277,7 @@
   },
   {
     "id": "sanfrancisco_job_17",
+    "explain": "Guldruschen 1849 lockade runt 300 000 guldsökare (\"forty-niners\") till Kalifornien och förvandlade San Francisco från liten by till storstad på några år.",
     "city": "sanfrancisco",
     "place": "job",
     "region": "amerika",
@@ -277,6 +294,7 @@
   },
   {
     "id": "sanfrancisco_job_18",
+    "explain": "Jordbävningen den 18 april 1906 och de tre dagar långa bränderna som följde förstörde omkring 80 procent av San Francisco.",
     "city": "sanfrancisco",
     "place": "job",
     "region": "amerika",
@@ -293,6 +311,7 @@
   },
   {
     "id": "sanfrancisco_job_19",
+    "explain": "Silicon Valley i Santa Clara-dalen söder om San Francisco fick sitt namn av kislet i tidiga mikrochip och rymmer idag världens största teknikbolag.",
     "city": "sanfrancisco",
     "place": "job",
     "region": "amerika",
@@ -309,6 +328,7 @@
   },
   {
     "id": "sanfrancisco_job_20",
+    "explain": "Kalifornien är USA:s folkrikaste delstat och har fått smeknamnet \"The Golden State\" efter guldruschen och sina gyllene vallmofält.",
     "city": "sanfrancisco",
     "place": "job",
     "region": "amerika",
@@ -325,6 +345,7 @@
   },
   {
     "id": "newyork_job_21",
+    "explain": "Manhattan köptes enligt traditionen av holländska kolonisatörer 1626 och är idag ett av världens tätast bebyggda finans- och kulturcentrum.",
     "city": "newyork",
     "place": "job",
     "region": "amerika",
@@ -341,6 +362,7 @@
   },
   {
     "id": "newyork_job_22",
+    "explain": "Central Park invigdes 1858, täcker 3,4 kvadratkilometer mitt på Manhattan och har över 40 miljoner besökare om året.",
     "city": "newyork",
     "place": "job",
     "region": "amerika",
@@ -357,6 +379,7 @@
   },
   {
     "id": "newyork_job_23",
+    "explain": "I slutscenen av filmklassikern King Kong (1933) klättrar jättegorillan upp i toppen av det då helt nybyggda Empire State Building.",
     "city": "newyork",
     "place": "job",
     "region": "amerika",
@@ -373,6 +396,7 @@
   },
   {
     "id": "newyork_job_24",
+    "explain": "New York City består av fem boroughs: Manhattan, Brooklyn, Queens, The Bronx och Staten Island.",
     "city": "newyork",
     "place": "job",
     "region": "amerika",
@@ -423,6 +447,7 @@
   },
   {
     "id": "stockholm_vasa_27",
+    "explain": "Regalskeppet Vasa sjönk den 10 augusti 1628 efter bara 1 300 meters segling eftersom skeppet var för smalt och topp-tungt för sina 64 kanoner.",
     "city": "stockholm",
     "place": "vasa",
     "region": "europa",
@@ -589,6 +614,7 @@
   },
   {
     "id": "kairo_khan_37",
+    "explain": "Karkadeh bryggs på torkade hibiskusblad, har en djupröd färg och frisk syrlighet, och dricks både iskall i sommarhettan och varm på vintern.",
     "city": "kairo",
     "place": "khan",
     "region": "afrika",
@@ -605,6 +631,7 @@
   },
   {
     "id": "kairo_khan_38",
+    "explain": "Egyptiskt pund (EGP) delas in i 100 piastrar och pryds ofta av historiska moskéer, faraoner och tempel på sedlarna.",
     "city": "kairo",
     "place": "khan",
     "region": "afrika",
@@ -638,6 +665,7 @@
   },
   {
     "id": "kairo_citadel_40",
+    "explain": "Minareter är smala torn vid en moské varifrån böneutroparen (muezzinen) kallar till bön fem gånger om dagen.",
     "city": "kairo",
     "place": "citadel",
     "region": "afrika",
@@ -671,6 +699,7 @@
   },
   {
     "id": "delhi_redfort_42",
+    "explain": "Chandni Chowk (\"Månskensmarknaden\") anlades på 1600-talet av kejsar Shah Jahans dotter Jahanara och är fortfarande en av Indiens livligaste basargator.",
     "city": "delhi",
     "place": "redfort",
     "region": "asien",
@@ -704,6 +733,7 @@
   },
   {
     "id": "delhi_qutb_44",
+    "explain": "Qutb Minar är cirka 73 meter högt med 379 trappsteg invändigt och är världens högsta minaret byggd helt i tegel.",
     "city": "delhi",
     "place": "qutb",
     "region": "asien",
@@ -719,6 +749,7 @@
   },
   {
     "id": "delhi_qutb_45",
+    "explain": "Yamuna rinner rakt förbi både Delhi och Taj Mahal i Agra innan den förenas med Ganges vid den heliga mötesplatsen i Prayagraj.",
     "city": "delhi",
     "place": "qutb",
     "region": "asien",
@@ -735,6 +766,7 @@
   },
   {
     "id": "delhi_qutb_46",
+    "explain": "Den 15 augusti 1947 blev Indien självständigt från Storbritannien efter en lång frihetskamp ledd av bland andra Mahatma Gandhi och Jawaharlal Nehru.",
     "city": "delhi",
     "place": "qutb",
     "region": "asien",
@@ -768,6 +800,7 @@
   },
   {
     "id": "tokyo_sensoji_48",
+    "explain": "Samurajerna var Japans krigaradel från 1100-talet fram till 1868 och levde efter hederskodexen bushido (\"krigarens väg\").",
     "city": "tokyo",
     "place": "sensoji",
     "region": "asien",
@@ -784,6 +817,7 @@
   },
   {
     "id": "tokyo_sensoji_49",
+    "explain": "Hanami betyder \"att titta på blommor\" och samlar vänner, familjer och kollegor i parkerna under körsbärsträden varje vår.",
     "city": "tokyo",
     "place": "sensoji",
     "region": "asien",
@@ -817,6 +851,7 @@
   },
   {
     "id": "tokyo_tokyotower_51",
+    "explain": "Shinkansen (\"nya stamlinjen\") invigdes 1964 inför OS i Tokyo, kör i upp till 320 km/h och är världsberömt för sin punktlighet.",
     "city": "tokyo",
     "place": "tokyotower",
     "region": "asien",
@@ -833,6 +868,7 @@
   },
   {
     "id": "tokyo_tokyotower_52",
+    "explain": "Tokyo Tower är 333 meter högt (13 meter högre än Eiffeltornet) och målades i internationell orange och vitt för flygsäkerhetens skull.",
     "city": "tokyo",
     "place": "tokyotower",
     "region": "asien",
@@ -864,6 +900,7 @@
   },
   {
     "id": "sanfrancisco_goldengate_54",
+    "explain": "San Franciscos täta sommar-dimma kallas kärleksfullt \"Karl the Fog\" av lokalborna och rullar in från det kalla Stilla havet genom Golden Gate.",
     "city": "sanfrancisco",
     "place": "goldengate",
     "region": "amerika",
@@ -880,6 +917,7 @@
   },
   {
     "id": "sanfrancisco_goldengate_55",
+    "explain": "San Franciscos kabelspårvagnar (Cable Cars) började rulla 1873 och dras fortfarande av en ständigt rörlig stålkabel under gatstenen.",
     "city": "sanfrancisco",
     "place": "goldengate",
     "region": "amerika",
@@ -896,6 +934,7 @@
   },
   {
     "id": "sanfrancisco_goldengate_56",
+    "explain": "Färgen \"International Orange\" valdes av arkitekten Irving Morrow eftersom den syns tydligt i dimman och harmonierar med de gyllene kullarna runt sundet.",
     "city": "sanfrancisco",
     "place": "goldengate",
     "region": "amerika",
@@ -929,6 +968,7 @@
   },
   {
     "id": "sanfrancisco_alcatraz_58",
+    "explain": "Robert Stroud studerade kanariefåglar i sin cell i Leavenworth och skrev böcker om fågelsjukdomar, men på Alcatraz fick han faktiskt aldrig ha några fåglar.",
     "city": "sanfrancisco",
     "place": "alcatraz",
     "region": "amerika",
@@ -945,6 +985,7 @@
   },
   {
     "id": "sanfrancisco_alcatraz_59",
+    "explain": "Alcatraz stängdes i mars 1963 eftersom det var nästan tre gånger dyrare att driva fängelset på en ö än på fastlandet.",
     "city": "sanfrancisco",
     "place": "alcatraz",
     "region": "amerika",
@@ -977,6 +1018,7 @@
   },
   {
     "id": "newyork_liberty_61",
+    "explain": "De sju strålarna på Frihetsgudinnans krona symboliserar världens sju hav och sju kontinenter, ett tecken på frihet som når hela jorden.",
     "city": "newyork",
     "place": "liberty",
     "region": "amerika",
@@ -1026,6 +1068,7 @@
   },
   {
     "id": "newyork_empirestate_64",
+    "explain": "Times Square och Theater District runt Broadway rymmer ett fyrtiotal stora teatrar och lyser upp Midtown Manhattan dygnet runt.",
     "city": "newyork",
     "place": "empirestate",
     "region": "amerika",
@@ -1042,6 +1085,7 @@
   },
   {
     "id": "newyork_empirestate_65",
+    "explain": "Toppspiran byggdes ursprungligen som förtöjningsmast för luftskepp, men vindarna 380 meter upp visade sig vara alldeles för farliga för landning.",
     "city": "newyork",
     "place": "empirestate",
     "region": "amerika",
@@ -1058,6 +1102,7 @@
   },
   {
     "id": "newyork_empirestate_66",
+    "explain": "Wall Street på södra Manhattan har fått sitt namn efter den träpalissad som holländarna byggde här på 1600-talet och hyser idag New York-börsen.",
     "city": "newyork",
     "place": "empirestate",
     "region": "amerika",
@@ -1091,6 +1136,7 @@
   },
   {
     "id": "stockholm_skansen_68",
+    "explain": "Allsång på Skansen började redan 1935 på Sollidenscenen och har sänts i svensk TV varje sommar sedan 1979.",
     "city": "stockholm",
     "place": "skansen",
     "region": "europa",
@@ -1107,6 +1153,7 @@
   },
   {
     "id": "stockholm_skansen_69",
+    "explain": "Skansen grundades av Artur Hazelius 1891 och är världens äldsta friluftsmuseum, med historiska byggnader flyttade hit från hela Sverige.",
     "city": "stockholm",
     "place": "skansen",
     "region": "europa",
@@ -1139,6 +1186,7 @@
   },
   {
     "id": "stockholm_stadshuset_71",
+    "explain": "Omkring åtta miljoner mörkröda, handslagna tegelstenar murades in i Stockholms stadshus mellan 1911 och 1923.",
     "city": "stockholm",
     "place": "stadshuset",
     "region": "europa",
@@ -1155,6 +1203,7 @@
   },
   {
     "id": "stockholm_stadshuset_72",
+    "explain": "Stadshustornet är 106 meter högt upp till toppen av de förgyllda Tre Kronor och bjuder på en av Stockholms bästa utsikter.",
     "city": "stockholm",
     "place": "stadshuset",
     "region": "europa",
@@ -1170,6 +1219,7 @@
   },
   {
     "id": "kairo_alazhar_73",
+    "explain": "Fatimiderna grundade både Kairo (\"Al-Qahira\", Den segerrika) och Al-Azhar-moskén år 969-970, som snabbt blev ett ledande lärosäte.",
     "city": "kairo",
     "place": "alazhar",
     "region": "afrika",
@@ -1186,6 +1236,7 @@
   },
   {
     "id": "kairo_alazhar_74",
+    "explain": "Arabiska skrivs från höger till vänster med 28 bokstäver och talas som huvudspråk i över tjugo länder i Mellanöstern och Nordafrika.",
     "city": "kairo",
     "place": "alazhar",
     "region": "afrika",
@@ -1202,6 +1253,7 @@
   },
   {
     "id": "delhi_indiagate_75",
+    "explain": "Den brittiske arkitekten Edwin Lutyens utformade New Delhis breda boulevarder, presidentpalatset Rashtrapati Bhavan och triumfbågen India Gate.",
     "city": "delhi",
     "place": "indiagate",
     "region": "asien",
@@ -1218,6 +1270,7 @@
   },
   {
     "id": "delhi_indiagate_76",
+    "explain": "India Gate bär namnen på över 13 000 indiska och brittiska soldater som stupade under första världskriget och tredje anglo-afghanska kriget.",
     "city": "delhi",
     "place": "indiagate",
     "region": "asien",
@@ -1234,6 +1287,7 @@
   },
   {
     "id": "delhi_humayun_77",
+    "explain": "Humayuns grav från 1570 introducerade den symmetriska mogularkitekturen i Indien och blev direkt förebild för Taj Mahal knappt hundra år senare.",
     "city": "delhi",
     "place": "humayun",
     "region": "asien",
@@ -1250,6 +1304,7 @@
   },
   {
     "id": "delhi_humayun_78",
+    "explain": "UNESCO (FN:s organ för utbildning, vetenskap och kultur) satte upp Humayuns grav på världsarvslistan 1993.",
     "city": "delhi",
     "place": "humayun",
     "region": "asien",
@@ -1283,6 +1338,7 @@
   },
   {
     "id": "tokyo_shibuya_80",
+    "explain": "Yamanote-linjen är en 34,5 km lång grön ringlinje som knyter ihop nästan alla stora knutpunkter i Tokyo, från Shibuya och Shinjuku till Tokyo Station.",
     "city": "tokyo",
     "place": "shibuya",
     "region": "asien",
@@ -1299,6 +1355,7 @@
   },
   {
     "id": "tokyo_meiji_81",
+    "explain": "En torii-port markerar gränsen mellan den vardagliga världen och det heliga området inne vid en japansk shinto-helgedom.",
     "city": "tokyo",
     "place": "meiji",
     "region": "asien",
@@ -1315,6 +1372,7 @@
   },
   {
     "id": "tokyo_meiji_82",
+    "explain": "Under Meijiperioden (1868-1912) avskaffades samurajväldet, järnvägar byggdes och Japan öppnade sina hamnar för handel och vetenskap.",
     "city": "tokyo",
     "place": "meiji",
     "region": "asien",
@@ -1331,6 +1389,7 @@
   },
   {
     "id": "sanfrancisco_fishermans_83",
+    "explain": "San Franciscos surdegsbröd får sin unika syrliga smak från lokala mjölksyrabakterier (Fructilactobacillus sanfranciscensis) och serveras ofta urgröpt med clam chowder.",
     "city": "sanfrancisco",
     "place": "fishermans",
     "region": "amerika",
@@ -1347,6 +1406,7 @@
   },
   {
     "id": "sanfrancisco_fishermans_84",
+    "explain": "Stilla havet breder ut sig direkt väster om Golden Gate och täcker ungefär en tredjedel av hela jordens yta.",
     "city": "sanfrancisco",
     "place": "fishermans",
     "region": "amerika",
@@ -1363,6 +1423,7 @@
   },
   {
     "id": "sanfrancisco_chinatown_sf_85",
+    "explain": "Lyckokakan (fortune cookie) har sitt ursprung bland japanska och kinesiska bagare i Kalifornien i början av 1900-talet, inte i Kina.",
     "city": "sanfrancisco",
     "place": "chinatown_sf",
     "region": "amerika",
@@ -1379,6 +1440,7 @@
   },
   {
     "id": "sanfrancisco_chinatown_sf_86",
+    "explain": "Den berömda tegelbelagda delen av Lombard Street på Russian Hill slingrar sig i åtta skarpa hårnålskurvor för att bilar ska kunna ta sig nerför den branta backen.",
     "city": "sanfrancisco",
     "place": "chinatown_sf",
     "region": "amerika",
@@ -1411,6 +1473,7 @@
   },
   {
     "id": "newyork_centralpark_88",
+    "explain": "Metropolitan Museum of Art (\"The Met\") ligger vid Fifth Avenue i kanten av Central Park och är ett av världens största konstmuseer.",
     "city": "newyork",
     "place": "centralpark",
     "region": "amerika",
@@ -1427,6 +1490,7 @@
   },
   {
     "id": "newyork_brooklynbridge_89",
+    "explain": "Brooklyn Bridge spänner över East River och band 1883 samman de då separata städerna New York (Manhattan) och Brooklyn.",
     "city": "newyork",
     "place": "brooklynbridge",
     "region": "amerika",
@@ -1443,6 +1507,7 @@
   },
   {
     "id": "newyork_brooklynbridge_90",
+    "explain": "Brooklyn Bridge invigdes 1883 som världens första hängbro med stålkablar och var då världens längsta hängbro.",
     "city": "newyork",
     "place": "brooklynbridge",
     "region": "amerika",
@@ -1492,6 +1557,7 @@
   },
   {
     "id": "kairo_giza_93",
+    "explain": "Av antikens sju underverk är Cheopspyramiden i Giza både det äldsta och det enda som fortfarande står kvar idag.",
     "city": "kairo",
     "place": "giza",
     "region": "afrika",
@@ -1507,6 +1573,7 @@
   },
   {
     "id": "delhi_taj_94",
+    "explain": "Taj Mahal ligger vid floden Yamuna i staden Agra, omkring 20 mil söder om Delhi.",
     "city": "delhi",
     "place": "taj",
     "region": "asien",
@@ -1523,6 +1590,7 @@
   },
   {
     "id": "delhi_taj_95",
+    "explain": "Charbagh betyder \"fyra trädgårdar\" på persiska och delas upp i fyra symmetriska kvarter av raka vattenkanaler och gångar.",
     "city": "delhi",
     "place": "taj",
     "region": "asien",
@@ -1539,6 +1607,7 @@
   },
   {
     "id": "delhi_taj_96",
+    "explain": "Fotografiet på prinsessan Diana ensam på marmorbänken framför Taj Mahal i februari 1992 blev en av 1990-talets mest kända nyhetsbilder.",
     "city": "delhi",
     "place": "taj",
     "region": "asien",
@@ -1555,6 +1624,7 @@
   },
   {
     "id": "sanfrancisco_grandcanyon_97",
+    "explain": "Havasupaifolket (\"folket vid det blågröna vattnet\") har bott i Grand Canyon i över 800 år. Deras by Supai nås bara till fots, med mula eller helikopter.",
     "city": "sanfrancisco",
     "place": "grandcanyon",
     "region": "amerika",
@@ -1571,6 +1641,7 @@
   },
   {
     "id": "sanfrancisco_grandcanyon_98",
+    "explain": "President Theodore Roosevelt skyddade Grand Canyon som nationalmonument 1908 med orden: \"Lämna det som det är. Människan kan inte förbättra det.\"",
     "city": "sanfrancisco",
     "place": "grandcanyon",
     "region": "amerika",
@@ -1587,6 +1658,7 @@
   },
   {
     "id": "sanfrancisco_grandcanyon_99",
+    "explain": "Coloradofloden har under fem till sex miljoner år skurit sig rakt ner genom lager av röd sandsten och kalksten till nästan 1 800 meters djup.",
     "city": "sanfrancisco",
     "place": "grandcanyon",
     "region": "amerika",
