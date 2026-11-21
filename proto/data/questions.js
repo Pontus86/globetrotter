@@ -1,4 +1,4 @@
-// Globetrotter — Central frågebank (platt lista för enkel överblick & faktagranskning)
+// Globetrotter, Central frågebank (platt lista för enkel överblick & faktagranskning)
 // Stödjer BackPacker-variation: mc (2–6 alternativ), text (fritext), num (mässingsmätare) och globe (3D-jordglob).
 
 (function () {
@@ -401,7 +401,7 @@
       "Sven Hedin",
       "Thor Heyerdahl"
     ],
-    "explain": "Marinarkeologen Anders Franzén (1918–1993) letade efter Vasa i flera år genom att dra ett egenkonstruerat lod över Stockholms ström. År 1956 fick han upp en bit svartnad ek — och 1961 bärgades hela skeppet efter 333 år på botten.",
+    "explain": "Marinarkeologen Anders Franzén (1918–1993) letade efter Vasa i flera år genom att dra ett egenkonstruerat lod över Stockholms ström. År 1956 fick han upp en bit svartnad ek, och 1961 bärgades hela skeppet efter 333 år på botten.",
     "photo": "assets/photos/vasa.jpg"
   },
   {
@@ -449,7 +449,7 @@
     "targetName": "Helsingfors",
     "startLat": 56,
     "startLon": 16,
-    "explain": "Helsingfors ligger tvärs över Östersjön från Stockholm och grundades år 1550 av kung Gustav Vasa — farfar till kungen som lät bygga regalskeppet Vasa!",
+    "explain": "Helsingfors ligger tvärs över Östersjön från Stockholm och grundades år 1550 av kung Gustav Vasa, farfar till kungen som lät bygga regalskeppet Vasa!",
     "photo": "assets/photos/vasa.jpg"
   },
   {
@@ -483,7 +483,7 @@
       "Kristian IV",
       "Hans"
     ],
-    "explain": "Under Stockholms blodbad i november 1520 lät unionskungen Kristian II (i Sverige kallad Kristian Tyrann) avrätta över 80 adelsmän och borgare på Stortorget — en händelse som utlöste Gustav Vasas uppror.",
+    "explain": "Under Stockholms blodbad i november 1520 lät unionskungen Kristian II (i Sverige kallad Kristian Tyrann) avrätta över 80 adelsmän och borgare på Stortorget, en händelse som utlöste Gustav Vasas uppror.",
     "photo": "assets/photos/gamlastan.jpg"
   },
   {
@@ -812,7 +812,7 @@
       "Tateyama",
       "Ontake"
     ],
-    "explain": "Vulkanen Fuji (3 776 m ö.h.) är Japans högsta berg och ett av landets tre heliga berg. Dess perfekta, snötäckta kon har avbildats i tusentals träsnitt — mest berömt av konstnären Hokusai.",
+    "explain": "Vulkanen Fuji (3 776 m ö.h.) är Japans högsta berg och ett av landets tre heliga berg. Dess perfekta, snötäckta kon har avbildats i tusentals träsnitt, mest berömt av konstnären Hokusai.",
     "photo": "assets/photos/tokyotower.jpg"
   },
   {
@@ -972,7 +972,7 @@
       "Roosevelt Island",
       "Staten Island"
     ],
-    "explain": "Mellan 1892 och 1954 passerade över 12 miljoner emigranter — däribland hundratusentals svenskar — genom mottagningshallen på Ellis Island. Idag uppskattas omkring 40 % av USA:s befolkning ha minst en förfader som steg iland här.",
+    "explain": "Mellan 1892 och 1954 passerade över 12 miljoner emigranter, däribland hundratusentals svenskar, genom mottagningshallen på Ellis Island. Idag uppskattas omkring 40 % av USA:s befolkning ha minst en förfader som steg iland här.",
     "photo": "assets/photos/liberty.jpg"
   },
   {
@@ -1278,7 +1278,7 @@
       "Kuro",
       "Taro"
     ],
-    "explain": "Akita-hunden Hachiko väntade troget på sin husse, professor Ueno, vid Shibuya-stationen varje dag — och fortsatte komma dit i nästan tio år efter att professorn plötsligt gått bort 1925.",
+    "explain": "Akita-hunden Hachiko väntade troget på sin husse, professor Ueno, vid Shibuya-stationen varje dag, och fortsatte komma dit i nästan tio år efter att professorn plötsligt gått bort 1925.",
     "photo": "assets/photos/shibuya.jpg"
   },
   {
@@ -1613,7 +1613,7 @@
       "Sant",
       "Falskt"
     ],
-    "explain": "Sant! Stockholms tunnelbana invigdes 1950 och är fortfarande Sveriges enda tunnelbana — Göteborg och Norrköping har istället spårvagnar.",
+    "explain": "Sant! Stockholms tunnelbana invigdes 1950 och är fortfarande Sveriges enda tunnelbana, Göteborg och Norrköping har istället spårvagnar.",
     "photo": "assets/photos/gamlastan.jpg"
   },
   {
@@ -1761,7 +1761,7 @@
     "region": "asien",
     "type": "mc",
     "difficulty": 2,
-    "q": "Delhis berömda paradgata vid India Gate hette länge Rajpath — vad bytte den officiellt namn till år 2022?",
+    "q": "Delhis berömda paradgata vid India Gate hette länge Rajpath, vad bytte den officiellt namn till år 2022?",
     "a": [
       "Kartavya Path",
       "Gandhi Marg",
@@ -1796,7 +1796,7 @@
     "region": "asien",
     "type": "mc",
     "difficulty": 2,
-    "q": "Strax väster om Delhi breder Indiens största öken ut sig — vad heter den?",
+    "q": "Strax väster om Delhi breder Indiens största öken ut sig, vad heter den?",
     "a": [
       "Tharöknen",
       "Gobiöknen",
@@ -1847,7 +1847,7 @@
     "region": "asien",
     "type": "mc",
     "difficulty": 2,
-    "q": "Den japanska elektronikjätten som i BackPacker på 90-talet hette \"Matsushita\" bytte 2008 namn till ett världskänt varumärke — vilket?",
+    "q": "Den japanska elektronikjätten som i BackPacker på 90-talet hette \"Matsushita\" bytte 2008 namn till ett världskänt varumärke, vilket?",
     "a": [
       "Panasonic",
       "Sony",
@@ -1983,7 +1983,7 @@
     "accept": [
       "broadway"
     ],
-    "explain": "Broadway är en av Manhattans äldsta gator — den följer ursprungligen en uråldrig stig som användes av Lenape-folket långt innan holländarna grundade Nya Amsterdam.",
+    "explain": "Broadway är en av Manhattans äldsta gator, den följer ursprungligen en uråldrig stig som användes av Lenape-folket långt innan holländarna grundade Nya Amsterdam.",
     "photo": "assets/photos/brooklynbridge.jpg"
   },
   {

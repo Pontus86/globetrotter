@@ -1,4 +1,4 @@
-// Globetrotter — Utökad Jobbkatalog (3 distinkta jobb per destination, BackPacker 1 & 2-stil!)
+// Globetrotter, Utökad Jobbkatalog (3 distinkta jobb per destination, BackPacker 1 & 2-stil!)
 // Varje stad får:
 //   [0] Stadens signaturjobb (6 tim, 100 % grundlön, lokala stadsfrågor)
 //   [1] Snabbpass / Servicejobb (4 tim, ~70 % grundlön, yrkesfrågor)
@@ -99,17 +99,17 @@
   const CITY_SIGNATURE_ADS = {
     stockholm: 'Kapten Holm på M/S Västan har tappat rösten! Han behöver en pigg skärgårdsguide som hittar bland kobbarna och kan dra en bra historia för passagerarna.',
     kairo: 'Kapten Tariq sätter segel på sin gamla felucca vid solnedgången och söker en pratglad ciceron med koll på både Nilen och faraonerna.',
-    delhi: 'Gamle mästerkocken Rashid i Old Delhi behöver ett par snabba händer bland grytorna — doften av kardemumma och varm naan ingår i lönen!',
+    delhi: 'Gamle mästerkocken Rashid i Old Delhi behöver ett par snabba händer bland grytorna, doften av kardemumma och varm naan ingår i lönen!',
     tokyo: 'Rektor Tanaka på Sakura-skolan söker en glad gästlärare som kan hålla en livlig konversationslektion för nyfikna kvällsstudenter.',
-    sanfrancisco: 'Skeppare Lou på Pier 39 vill ha skarpa vykortsklipp av Golden Gate och sjölejonen — låna en regnjacka och hoppa ombord!',
+    sanfrancisco: 'Skeppare Lou på Pier 39 vill ha skarpa vykortsklipp av Golden Gate och sjölejonen, låna en regnjacka och hoppa ombord!',
     newyork: 'Dispatchern Sal på 42:a gatan har tre bilar som står stilla! Kan du hitta mellan Manhattan och Brooklyn får du behålla både lön och dricks.',
     paris: 'Madame Delacroix öppnar vernissage i Marais ikväll och söker någon med blick för färg, form och fransk konsthistoria som kan guida besökarna.',
-    rom: 'Farbror Marco har eldat upp stenugnen sedan gryningen — hjälp honom knåda deg och hålla koll på beställningarna i kvällsrusningen!',
+    rom: 'Farbror Marco har eldat upp stenugnen sedan gryningen, hjälp honom knåda deg och hålla koll på beställningarna i kvällsrusningen!',
     london: 'Chaufför Bernard på linje 15 saknar sin konduktör! Klipp biljetter, ropa ut hållplatserna och charma Londons pendlare.',
     istanbul: 'Farbror Kemal bjuder på äppelte och söker en kvicktänkt medhjälpare som kan berätta om knutar, mönster och sidenvägen i basaren.',
     bangkok: 'Somchai har just putsat kromet på sin tuk-tuk och behöver en kartläsare som hittar snabbaste genvägen genom Bangkoks trafik.',
     peking: 'Mästare Lin på antikgatan Liulichang söker en stadig hand som kan riva tusch, ordna rispapper och hälsa nyfikna samlare välkomna.',
-    sydney: 'Livräddaren Bruce på Bondi Beach behöver extra ögon ut mot vågorna — solkräm, visselpipa och fin utsikt över Tasmanhavet utlovas!',
+    sydney: 'Livräddaren Bruce på Bondi Beach behöver extra ögon ut mot vågorna, solkräm, visselpipa och fin utsikt över Tasmanhavet utlovas!',
     kapstaden: 'Guiden Sipho kör tidig morgontur runt Kaphalvön och söker en nyfiken medguide som kan peka ut pingviner, fynbos och bergstoppar.',
     rio: 'Redaktör Silva på Jornal do Brasil behöver en snabb reporter på Maracanã som kan skriva ihop kvällens matchreferat före pressläggning.',
     mexicocity: 'Doktor Elena katalogiserar nya fynd på antropologiska museet och söker en noggrann assistent med känsla för azteker och mayakultur.'
@@ -119,10 +119,10 @@
   const CITY_EXTRA_JOBS = {
     stockholm: [
       { title: 'Barista på Söder', employer: 'Kafé Mariatorget', hours: 4, payFactor: 0.68, role: 'barista', tag: 'Kafé · 4 tim', adText: 'Klaus och Gittan på Mariatorget bjuder på bullfika och en bra slant till den som vill jobba extra och skumma mjölk i rusningen!' },
-      { title: 'Utrikesreporter', employer: 'Svenska Resebladet', hours: 8, payFactor: 1.38, role: 'journalist', tag: 'Redaktion · 8 tim', adText: 'Chefredaktör Lindqvist har skrivit fast sig och behöver en beläst reseskribent hela dagen — eget skrivbord och presskort ingår.' }
+      { title: 'Utrikesreporter', employer: 'Svenska Resebladet', hours: 8, payFactor: 1.38, role: 'journalist', tag: 'Redaktion · 8 tim', adText: 'Chefredaktör Lindqvist har skrivit fast sig och behöver en beläst reseskribent hela dagen, eget skrivbord och presskort ingår.' }
     ],
     kairo: [
-      { title: 'Kökshjälp i basaren', employer: 'Khan el-Khalili Kök', hours: 4, payFactor: 0.72, role: 'kock', tag: 'Kök · 4 tim', adText: 'Moster Fatima friterar falafel så kryddorna ryker! Hjälp henne hacka persilja och servera myntate — varm mat och kontanter direkt.' },
+      { title: 'Kökshjälp i basaren', employer: 'Khan el-Khalili Kök', hours: 4, payFactor: 0.72, role: 'kock', tag: 'Kök · 4 tim', adText: 'Moster Fatima friterar falafel så kryddorna ryker! Hjälp henne hacka persilja och servera myntate, varm mat och kontanter direkt.' },
       { title: 'Byggnadsassistent', employer: 'Kairo Arkitekturbyrå', hours: 8, payFactor: 1.42, role: 'arkitekt', tag: 'Arkitektur · 8 tim', adText: 'Arkitekt Mansour ritar om ett gammalt palats vid Nilen och söker någon med öga för valv, kupoler och stora byggnadsverk.' }
     ],
     delhi: [
@@ -131,15 +131,15 @@
     ],
     tokyo: [
       { title: 'Cykelbud i Shibuya', employer: 'Kanto Express', hours: 4, payFactor: 0.68, role: 'bud', tag: 'Bud · 4 tim', adText: 'Kenji har punktering på sin budcykel! Låna extracykeln, kryssa genom gränderna och leverera paket med knivskarpt lokalsinne.' },
-      { title: 'Stadsfotograf', employer: 'Tokyo Lens Magazine', hours: 8, payFactor: 1.38, role: 'fotograf', tag: 'Foto · 8 tim', adText: 'Bildredaktören Yuki jagar det perfekta ljuset över neonskyltar och tempel — en heldag med kameran ger rejält med yen i fickan.' }
+      { title: 'Stadsfotograf', employer: 'Tokyo Lens Magazine', hours: 8, payFactor: 1.38, role: 'fotograf', tag: 'Foto · 8 tim', adText: 'Bildredaktören Yuki jagar det perfekta ljuset över neonskyltar och tempel, en heldag med kameran ger rejält med yen i fickan.' }
     ],
     sanfrancisco: [
       { title: 'Kafferostare', employer: 'Mission Roasters', hours: 4, payFactor: 0.68, role: 'barista', tag: 'Kafé · 4 tim', adText: 'Milo och Tessa i Mission District bjuder på nyrostad espresso och surdegsbröd till dig som rycker in bakom disken i eftermiddag.' },
       { title: 'Marinbiolog-praktikant', employer: 'Pacific Bay Institute', hours: 8, payFactor: 1.38, role: 'biolog', tag: 'Natur · 8 tim', adText: 'Doktor Morales studerar Stilla havets djurliv och behöver en nyfiken fältassistent ute vid kusten hela dagen.' }
     ],
     newyork: [
-      { title: 'Bokhandelsbiträde', employer: 'Greenwich Books', hours: 4, payFactor: 0.68, role: 'bokhandel', tag: 'Bokhandel · 4 tim', adText: 'Gamle Arthur i Greenwich Village hinner inte packa upp alla kartonger med reseskildringar — hjälp honom sortera hyllorna över en kopp kaffe!' },
-      { title: 'Börsassistent', employer: 'Manhattan Trading Co.', hours: 8, payFactor: 1.40, role: 'ekonom', tag: 'Finans · 8 tim', adText: 'Mäklaren Diane på Wall Street behöver en skarp hjärna som har koll på världsmarknaden — stressigt pass men stadens bästa dagslön!' }
+      { title: 'Bokhandelsbiträde', employer: 'Greenwich Books', hours: 4, payFactor: 0.68, role: 'bokhandel', tag: 'Bokhandel · 4 tim', adText: 'Gamle Arthur i Greenwich Village hinner inte packa upp alla kartonger med reseskildringar, hjälp honom sortera hyllorna över en kopp kaffe!' },
+      { title: 'Börsassistent', employer: 'Manhattan Trading Co.', hours: 8, payFactor: 1.40, role: 'ekonom', tag: 'Finans · 8 tim', adText: 'Mäklaren Diane på Wall Street behöver en skarp hjärna som har koll på världsmarknaden, stressigt pass men stadens bästa dagslön!' }
     ],
     paris: [
       { title: 'Kaféservitör', employer: 'Bistro Saint-Germain', hours: 4, payFactor: 0.68, role: 'barista', tag: 'Kafé · 4 tim', adText: 'Jean-Luc behöver en stadig brickbärare på uteserveringen! Croissanter i pausen och fina drickspengar utlovas.' },
@@ -147,7 +147,7 @@
     ],
     rom: [
       { title: 'Antikvariatsbiträde', employer: 'Libreria Navona', hours: 4, payFactor: 0.70, role: 'bokhandel', tag: 'Böcker · 4 tim', adText: 'Signora Lucia i gränden vid Piazza Navona bjuder på gelato och söker någon som älskar gamla böcker och kan hjälpa kunderna.' },
-      { title: 'Kulturfotograf', employer: 'Roma Immagine', hours: 8, payFactor: 1.38, role: 'fotograf', tag: 'Foto · 8 tim', adText: 'Fotografen Matteo gör ett stort bildreportage om Rom i gyllene timmen — häng med som assistent och tjäna en redig dagspeng.' }
+      { title: 'Kulturfotograf', employer: 'Roma Immagine', hours: 8, payFactor: 1.38, role: 'fotograf', tag: 'Foto · 8 tim', adText: 'Fotografen Matteo gör ett stort bildreportage om Rom i gyllene timmen, häng med som assistent och tjäna en redig dagspeng.' }
     ],
     london: [
       { title: 'Gatumusikant på Covent Garden', employer: 'West End Buskers', hours: 4, payFactor: 0.68, role: 'musik', tag: 'Musik · 4 tim', adText: 'Alfie och hans band saknar en medspelare på torget! Har du koll på musik och gillar publik så delar ni på hatten efteråt.' },
@@ -167,19 +167,19 @@
     ],
     sydney: [
       { title: 'Trubadur i hamnen', employer: 'Circular Quay Stage', hours: 4, payFactor: 0.68, role: 'musik', tag: 'Musik · 4 tim', adText: 'Kylie på kajkaféet bjuder på kall ingefärsöl och hyr in en glad musikälskare som kan underhålla kvällsflanörerna vid vattnet.' },
-      { title: 'Havs- & stjärnguide', employer: 'Southern Cross Observatory', hours: 8, payFactor: 1.38, role: 'astronom', tag: 'Vetenskap · 8 tim', adText: 'Astronomen Liam tar emot nyfikna gäster under södra halvklotets stjärnhimmel — ett långt men riktigt välbetalt pass!' }
+      { title: 'Havs- & stjärnguide', employer: 'Southern Cross Observatory', hours: 8, payFactor: 1.38, role: 'astronom', tag: 'Vetenskap · 8 tim', adText: 'Astronomen Liam tar emot nyfikna gäster under södra halvklotets stjärnhimmel, ett långt men riktigt välbetalt pass!' }
     ],
     kapstaden: [
       { title: 'Receptionist vid vattnet', employer: 'Waterfront Lodge', hours: 4, payFactor: 0.70, role: 'reception', tag: 'Hotell · 4 tim', adText: 'Tant Miriam bjuder på nybryggt rooibos-te och en skön slant om du kan passa receptionen medan hon handlar på marknaden.' },
       { title: 'Naturfotograf', employer: 'Cape Wildlife Press', hours: 8, payFactor: 1.40, role: 'fotograf', tag: 'Foto · 8 tim', adText: 'Tidningen Cape Wildlife ska skicka ut ett naturteam mot Taffelberget och söker en skarp fotografassistent för hela dagen.' }
     ],
     rio: [
-      { title: 'Samba-slagverkare', employer: 'Lapa Music Club', hours: 4, payFactor: 0.70, role: 'musik', tag: 'Musik · 4 tim', adText: 'Tiago och sambagänget i Lapa behöver en extra rytmspelare till kvällens spelning — färsk limejuice och kontant gage väntar!' },
+      { title: 'Samba-slagverkare', employer: 'Lapa Music Club', hours: 4, payFactor: 0.70, role: 'musik', tag: 'Musik · 4 tim', adText: 'Tiago och sambagänget i Lapa behöver en extra rytmspelare till kvällens spelning, färsk limejuice och kontant gage väntar!' },
       { title: 'Regnskogsforskare', employer: 'Instituto Atlântico', hours: 8, payFactor: 1.40, role: 'biolog', tag: 'Natur · 8 tim', adText: 'Biologen Beatriz samlar in prover i Tijuca-skogen ovanför Rio och betalar bra till en naturkunnig fältassistent.' }
     ],
     mexicocity: [
       { title: 'Taqueria-kock', employer: 'Taquería El Zócalo', hours: 4, payFactor: 0.72, role: 'kock', tag: 'Kök · 4 tim', adText: 'Doña Rosa lovar hur många färska tacos du orkar äta plus fin timpeng om du hjälper till vid stekbordet i lunchrusningen!' },
-      { title: 'Utrikeskrönikör', employer: 'El Diario Mundial', hours: 8, payFactor: 1.40, role: 'journalist', tag: 'Redaktion · 8 tim', adText: 'Redaktör Carlos söker en världsvan resenär som kan skriva dagens stora utrikeskrönika — bra betalt och gott kaffe hela passet.' }
+      { title: 'Utrikeskrönikör', employer: 'El Diario Mundial', hours: 8, payFactor: 1.40, role: 'journalist', tag: 'Redaktion · 8 tim', adText: 'Redaktör Carlos söker en världsvan resenär som kan skriva dagens stora utrikeskrönika, bra betalt och gott kaffe hela passet.' }
     ]
   };
 

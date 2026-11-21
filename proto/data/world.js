@@ -1,4 +1,4 @@
-// Globetrotter — Världsdata och innehåll för prototyp och vertikal slice.
+// Globetrotter, Världsdata och innehåll för prototyp och vertikal slice.
 // Fritt från BackPacker 2-koordinater och skyddat material.
 // Bilder och fakta baserade på öppna källor (Wikimedia Commons / Wikipedia).
 // Frågorna testar allmänbildning – svaret finns INTE direkt i faktatexten!
@@ -309,7 +309,7 @@ root.GT_WORLD = {
         { t: 'mc', q: 'Vilken marinarkeolog och ingenjör lokaliserade Vasas vrak på 32 meters djup år 1956?', a: ['Anders Franzén', 'Carl Gustaf Wrangel', 'Sven Hedin', 'Thor Heyerdahl'] },
         { t: 'mc', q: 'Vilket hårt träslag byggdes skeppet främst av, som motstod skeppsmask i Östersjöns bräckta vatten?', a: ['Ek', 'Furu', 'Gran', 'Bok'] },
         { t: 'num', q: 'Vilket årtal under stormaktstiden kantrade och sjönk Vasa på sin jungfrufärd?', ans: 1628, min: 1550, max: 1750, step: 1, unit: 'år' },
-        { t: 'globe', q: 'Peka på 3D-jordgloben: Var ligger Östersjöns grannhuvudstad Helsingfors?', targetLat: 60.17, targetLon: 24.94, targetName: 'Helsingfors', startLat: 56, startLon: 16, explain: 'Helsingfors ligger tvärs över Östersjön från Stockholm och grundades år 1550 av kung Gustav Vasa — farfar till kungen som lät bygga regalskeppet Vasa!' }
+        { t: 'globe', q: 'Peka på 3D-jordgloben: Var ligger Östersjöns grannhuvudstad Helsingfors?', targetLat: 60.17, targetLon: 24.94, targetName: 'Helsingfors', startLat: 56, startLon: 16, explain: 'Helsingfors ligger tvärs över Östersjön från Stockholm och grundades år 1550 av kung Gustav Vasa, farfar till kungen som lät bygga regalskeppet Vasa!' }
       ]
     },
     gamlastan: {
@@ -849,7 +849,7 @@ root.GT_WORLD = {
 
   // Lokala basarhandlare för prutning och 90-talscharm
   shopkeepers: {
-    stockholm: { name: 'Antik-Bengt på Västerlånggatan', greet: 'Välkommen in från blåsten! Här finns bara äkta svenskt hantverk — men visst går det att diskutera priset.' },
+    stockholm: { name: 'Antik-Bengt på Västerlånggatan', greet: 'Välkommen in från blåsten! Här finns bara äkta svenskt hantverk, men visst går det att diskutera priset.' },
     kairo: { name: 'Farid i Khan el-Khalili', greet: 'Ahlan wa sahlan, min vän! Sätt dig ner på ett glas myntate. Mitt första pris är bara början på samtalet!' },
     delhi: { name: 'Ramesh på Chandni Chowk', greet: 'Namaste! Kryddor, siden och historier. Visa att du kan konsten att pruta så blir vi vänner!' },
     tokyo: { name: 'Mästare Kenji i Asakusa', greet: 'Irasshaimase. Kvalitet har sitt pris, men en artig resenär kan ibland få en liten rabatt.' },
@@ -860,7 +860,7 @@ root.GT_WORLD = {
   // Vandrarhemmets gästbok (tips & skvaller från andra resenärer)
   guestbook: {
     stockholm: [
-      { author: 'Maja, Uppsala', note: 'Tips: Köp vandringskängor här innan du siktar på Grand Canyon — sparar massor av timmar!' },
+      { author: 'Maja, Uppsala', note: 'Tips: Köp vandringskängor här innan du siktar på Grand Canyon, sparar massor av timmar!' },
       { author: 'Lasse-89', note: 'Dalahästen sålde för nästan tredubbla priset borta i Tokyo. Ta med en!' }
     ],
     kairo: [
@@ -869,7 +869,7 @@ root.GT_WORLD = {
     ],
     delhi: [
       { author: 'Pelle på vift', note: 'Kryddpåsarna här kostar nästan ingenting men ger grym vinst i New York eller Stockholm.' },
-      { author: 'Hanna', note: 'Spara lite tid till Taj Mahal — utflykten tar nästan en hel dag men är värd varenda krona!' }
+      { author: 'Hanna', note: 'Spara lite tid till Taj Mahal, utflykten tar nästan en hel dag men är värd varenda krona!' }
     ],
     tokyo: [
       { author: 'Kalle-Foto', note: 'Kameran i basaren är dyr, men +50 % på alla jobbpass betalar igen sig blixtsnabbt.' },
@@ -881,7 +881,7 @@ root.GT_WORLD = {
     ],
     newyork: [
       { author: 'Astrid', note: 'Kolla alltid efter sista-minuten-lappen på flygplatsen. Sparade 600 kr hem till Stockholm!' },
-      { author: 'Diego', note: 'Sälj asiatiska souvenirer här — Manhattan betalar toppris för långväga saker.' }
+      { author: 'Diego', note: 'Sälj asiatiska souvenirer här, Manhattan betalar toppris för långväga saker.' }
     ]
   },
 
@@ -961,10 +961,10 @@ root.GT_WORLD = {
 
   // Fördjupade "Visste du att?"-beskrivningar som visas efter svar (nyckel = exakt rätt svar)
   answerExplanations: {
-    'Anders Franzén': 'Marinarkeologen Anders Franzén (1918–1993) letade efter Vasa i flera år genom att dra ett egenkonstruerat lod över Stockholms ström. År 1956 fick han upp en bit svartnad ek — och 1961 bärgades hela skeppet efter 333 år på botten.',
+    'Anders Franzén': 'Marinarkeologen Anders Franzén (1918–1993) letade efter Vasa i flera år genom att dra ett egenkonstruerat lod över Stockholms ström. År 1956 fick han upp en bit svartnad ek, och 1961 bärgades hela skeppet efter 333 år på botten.',
     'Ek': 'Skeppet Vasa byggdes av över 1 000 utvalda ekar. Eftersom Östersjöns vatten är bräckt trivs inte skeppsmasken (Teredo navalis) här, vilket är huvudorsaken till att skrovet är så otroligt välbevarat.',
     'Mårten Trotzigs gränd': 'Mårten Trotzigs gränd i Gamla stan är uppkallad efter en tysk köpman från 1500-talet. Gränden har 36 trappsteg och smalnar av till endast 90 centimeter på sitt trängsta ställe.',
-    'Kristian II': 'Under Stockholms blodbad i november 1520 lät unionskungen Kristian II (i Sverige kallad Kristian Tyrann) avrätta över 80 adelsmän och borgare på Stortorget — en händelse som utlöste Gustav Vasas uppror.',
+    'Kristian II': 'Under Stockholms blodbad i november 1520 lät unionskungen Kristian II (i Sverige kallad Kristian Tyrann) avrätta över 80 adelsmän och borgare på Stortorget, en händelse som utlöste Gustav Vasas uppror.',
     'Nobelprismuseet': 'I det praktfulla Börshuset från 1776 vid Stortorget huserar både Svenska Akademien och Nobelprismuseet, där pristagarnas egna föremål och signaturer under kaféstolarna visas upp.',
     'Artur Hazelius': 'Filologen och folklivsforskaren Artur Hazelius (1833–1901) skapade både Nordiska museet och Skansen för att rädda det gamla svenska allmogearvet innan industrialiseringen suddade ut det.',
     'Blå hallen': 'Trots namnet är Blå hallen i Stockholms stadshus helt i varmt rött tegel! Arkitekten Ragnar Östberg hade ursprungligen tänkt putsa väggarna blå, men föll så handlöst för teglets lyster att han lät det vara omålat.',
@@ -976,11 +976,11 @@ root.GT_WORLD = {
     'Koh-i-Noor': 'Diamanten Koh-i-Noor ("Ljusets berg") vägde ursprungligen 186 karat och har bytt ägare mellan indiska, persiska och afghanska härskare innan den 1849 överlämnades till drottning Viktoria och idag sitter i de brittiska kronjuvelerna.',
     'Shah Jahan': 'Stormogulen Shah Jahan regerade 1628–1658 under mogulrikets arkitektoniska guldålder. Förutom Röda fortet i Delhi lät han uppföra Taj Mahal som ett evigt gravmonument åt sin älskade hustru Mumtaz Mahal.',
     'Shinto': 'Shinto ("gudarnas väg") är Japans uråldriga naturreligion utan helig skrift eller grundare. Den betonar renhet och vördnad för naturens andar (kami) som bor i berg, träd, vattenfall och stenar.',
-    'Fuji': 'Vulkanen Fuji (3 776 m ö.h.) är Japans högsta berg och ett av landets tre heliga berg. Dess perfekta, snötäckta kon har avbildats i tusentals träsnitt — mest berömt av konstnären Hokusai.',
-    'Hachiko': 'Akita-hunden Hachiko väntade troget på sin husse, professor Ueno, vid Shibuya-stationen varje dag — och fortsatte komma dit i nästan tio år efter att professorn plötsligt gått bort 1925.',
+    'Fuji': 'Vulkanen Fuji (3 776 m ö.h.) är Japans högsta berg och ett av landets tre heliga berg. Dess perfekta, snötäckta kon har avbildats i tusentals träsnitt, mest berömt av konstnären Hokusai.',
+    'Hachiko': 'Akita-hunden Hachiko väntade troget på sin husse, professor Ueno, vid Shibuya-stationen varje dag, och fortsatte komma dit i nästan tio år efter att professorn plötsligt gått bort 1925.',
     'Al Capone': 'Maffiabossen Alphonse "Al" Capone styrde Chicagos undre värld under förbudstiden men fälldes till slut för skattebrott 1931. På Alcatraz var han fånge nr 85 och fick arbeta i tvätteriet och spela banjo i fängelsebandet.',
     'Gustave Eiffel': 'Innan Gustave Eiffel byggde Eiffeltornet 1889 konstruerade han det geniala, flexibla fackverksskelettet inuti Frihetsgudinnan så att den tunna kopparhuden skulle tåla Atlantens hårda stormvindar.',
-    'Ellis Island': 'Mellan 1892 och 1954 passerade över 12 miljoner emigranter — däribland hundratusentals svenskar — genom mottagningshallen på Ellis Island. Idag uppskattas omkring 40 % av USA:s befolkning ha minst en förfader som steg iland här.',
+    'Ellis Island': 'Mellan 1892 och 1954 passerade över 12 miljoner emigranter, däribland hundratusentals svenskar, genom mottagningshallen på Ellis Island. Idag uppskattas omkring 40 % av USA:s befolkning ha minst en förfader som steg iland här.',
     'John Lennon': 'Minnesplatsen Strawberry Fields i Central Park ligger mitt emot Dakota Building där John Lennon bodde. Mosaiken "Imagine" skänktes av staden Neapel och pryds dagligen av färska blommor från besökare världen över.',
     'Stora sfinxen': 'Stora sfinxen i Giza är uthuggen direkt ur ett enda massivt kalkstensblock för cirka 4 500 år sedan. Den är 73 meter lång och tros bära farao Chefrens anletsdrag.',
     'Herodotos': 'Den grekiske resenären Herodotos (ca 484–425 f.Kr.) kallas ofta "historiens fader". Han besökte Egypten runt 450 f.Kr. och skrev den första kända europeiska skildringen av hur pyramiderna uppfördes.'
@@ -1030,7 +1030,7 @@ root.GT_WORLD = {
       {
         id: 'flight_exchange',
         title: 'Gynnsam växlingskurs i terminalen',
-        text: 'På växlingskontoret i ankomsthallen har kursen precis slagit om till din fördel — och en gammal svensk resenär vill byta överblivna sedlar.',
+        text: 'På växlingskontoret i ankomsthallen har kursen precis slagit om till din fördel, och en gammal svensk resenär vill byta överblivna sedlar.',
         choices: [
           { label: 'Växla smart (+220 kr extra i reskassan!)', cash: 220, log: 'Gjorde ett klipp vid växlingskontoret direkt efter landning (+220 kr).' },
           { label: 'Byt kontaktuppgifter istället (Ger 25 % rabatt på nästa avgång)', deal: 25, log: 'Fick en rabattkupong på flyg av en resenär i ankomsthallen.' }

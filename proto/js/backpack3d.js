@@ -1,4 +1,4 @@
-// Globetrotter — Fotorealistisk 3D-skulpterad Vandringsryggsäck (WebGL)
+// Globetrotter, Fotorealistisk 3D-skulpterad Vandringsryggsäck (WebGL)
 // Laddar en äkta 67 907-trianglars 3D-modell (Survival Backpack, CC BY Berk Gedik / LearnOpenGL)
 // med fotorealistisk diffuse- och specular-textur, studiobelysning och fri 3D-rotering!
 

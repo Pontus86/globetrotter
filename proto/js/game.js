@@ -1,4 +1,4 @@
-// Globetrotter — Spelmotor och UI-logik för vertikal slice (BackPacker-estetik)
+// Globetrotter, Spelmotor och UI-logik för vertikal slice (BackPacker-estetik)
 
 (function () {
   'use strict';
@@ -9,7 +9,7 @@
     return;
   }
 
-  // --- 100 % egen Web Audio-ljudmotor (mysiga 90-tals-ljud & foley — noll upphovsrättsskyddade ljudfiler!) ---
+  // --- 100 % egen Web Audio-ljudmotor (mysiga 90-tals-ljud & foley, noll upphovsrättsskyddade ljudfiler!) ---
   const AudioMgr = {
     enabled: true,
     ctx: null,
@@ -264,11 +264,11 @@
     jobsDoneToday: {}, // { "city_day_jobIdx": true }
     usedQuestionIds: new Set(), // Så samma fråga aldrig kommer två gånger under en resa!
     departureBoard: null, // { city, day, flights: [{ to, flightNo, standby, status }] } (BP1/BP2 daglig klappertavla)
-    competencies: [], // Array av { key, title, city } — yrkeskompetenser intjänade med godkänt jobbprov (BP1-krav)
+    competencies: [], // Array av { key, title, city }, yrkeskompetenser intjänade med godkänt jobbprov (BP1-krav)
     goals: null, // { requiredRegions: 3, requiredCompetencies: 3, souvenirCities: [cityKey1, cityKey2, cityKey3] }
     discoveredPlaces: new Set(), // Avslöjade sevärdheter på stadskartan (BP2-utforskningskänsla!)
     backpackLevel: 1, // 1 = 5 platser, 2 = 7 platser, 3 = 9 platser
-    mailedHome: [] // Array av { id, name, origin, mailedDay } — souvenirer postade hem till Stockholm!
+    mailedHome: [] // Array av { id, name, origin, mailedDay }, souvenirer postade hem till Stockholm!
   };
 
   const BACKPACK_TIERS = [
@@ -490,7 +490,7 @@
     "I morgon: Vackert väder väntas. Perfekt läge för en expedition till ett av antikens underverk!",
     "I morgon: Nya avgångar anslås på flygplatsen med chans till förmånliga sista-minuten-priser.",
     "I morgon: Lokala arbetsgivare söker nyfikna globetrotters med god allmänbildning.",
-    "I morgon: Slå upp 3D-jordgloben — tillfälliga festivaler och händelser runt världen kan ge stor bonus!"
+    "I morgon: Slå upp 3D-jordgloben, tillfälliga festivaler och händelser runt världen kan ge stor bonus!"
   ];
 
   // --- DOM-element ---
@@ -642,7 +642,7 @@
     const cityEv = getCityEvent(state.city);
     if (el.cityEventRibbon) {
       if (cityEv) {
-        el.cityEventRibbon.textContent = `PÅGÅR NU: ${cityEv.title} — ${cityEv.effectText}`;
+        el.cityEventRibbon.textContent = `PÅGÅR NU: ${cityEv.title}, ${cityEv.effectText}`;
         el.cityEventRibbon.classList.remove('hidden');
       } else {
         el.cityEventRibbon.classList.add('hidden');
@@ -949,7 +949,7 @@
           <div class="sight-fact-card">${sig.desc}</div>
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <span style="font-size:13px; color:#ffd875;">
-              ${doneToday ? 'Du har redan njutit av detta idag — kom tillbaka imorgon!' : (!isOpen ? `Just nu är klockan ${String(state.hour).padStart(2, '0')}:00. Stängt tills kl ${String(sig.openFrom).padStart(2, '0')}:00!` : 'Öppet just nu — kliv in!')}
+              ${doneToday ? 'Du har redan njutit av detta idag, kom tillbaka imorgon!' : (!isOpen ? `Just nu är klockan ${String(state.hour).padStart(2, '0')}:00. Stängt tills kl ${String(sig.openFrom).padStart(2, '0')}:00!` : 'Öppet just nu, kliv in!')}
             </span>
             <div>
               ${(!doneToday && isOpen) ? `<button class="stamp-action-btn" onclick="window.GT.doSignatureActivity()">Upplev ${sig.name} (-${sig.cost} kr, ${sig.hours} tim)</button>` : ''}
@@ -1026,7 +1026,7 @@
     const isDone = state.donePlaces.has(placeKey);
 
     if (!isDone && state.cash < place.fee) {
-      showToast(`Inträdet till ${place.name} kostar ${place.fee} kr — du behöver lite mer i reskassan!`, 3200);
+      showToast(`Inträdet till ${place.name} kostar ${place.fee} kr, du behöver lite mer i reskassan!`, 3200);
       return;
     }
 
@@ -1052,7 +1052,7 @@
     `;
     showModal(html);
 
-    // Beslutet fattades när man klickade på landmärket — hoppa direkt in till första frågan!
+    // Beslutet fattades när man klickade på landmärket, hoppa direkt in till första frågan!
     startPlaceQuiz(placeKey, isDone);
   }
 
@@ -1348,7 +1348,7 @@
             AudioMgr.play('right1');
             state.questionsCorrect++;
             ok = true;
-            note = `Du gissade ${userVal.toLocaleString('sv-SE')} ${q.unit} — imponerande nära det exakta värdet ${q.ans.toLocaleString('sv-SE')} ${q.unit}!`;
+            note = `Du gissade ${userVal.toLocaleString('sv-SE')} ${q.unit}, imponerande nära det exakta värdet ${q.ans.toLocaleString('sv-SE')} ${q.unit}!`;
             addJournal(`Satte en knivskarp uppskattning (${userVal.toLocaleString('sv-SE')} ${q.unit}) i ${W.cities[state.city].name}!`);
           } else if (grade === 'close') {
             display.innerHTML = `<span style="color:#ffd875">Nära! Rätt svar var ${q.ans.toLocaleString('sv-SE')} ${q.unit} (godkänt!)</span>`;
@@ -1357,7 +1357,7 @@
             ok = true;
             note = `Din gissning (${userVal.toLocaleString('sv-SE')} ${q.unit}) var tillräckligt nära det exakta svaret ${q.ans.toLocaleString('sv-SE')} ${q.unit} för delpoäng.`;
           } else {
-            display.innerHTML = `<span style="color:#ff7675">En bit ifrån — rätt svar var ${q.ans.toLocaleString('sv-SE')} ${q.unit}.</span>`;
+            display.innerHTML = `<span style="color:#ff7675">En bit ifrån, rätt svar var ${q.ans.toLocaleString('sv-SE')} ${q.unit}.</span>`;
             AudioMgr.play('wrong1');
             note = `Du gissade ${userVal.toLocaleString('sv-SE')} ${q.unit}, medan det exakta svaret är ${q.ans.toLocaleString('sv-SE')} ${q.unit}.`;
           }
@@ -1471,7 +1471,7 @@
     const evMult = (cityEv && cityEv.jobBonus) ? (1 + cityEv.jobBonus) : 1;
     const activeEvs = getActiveWorldEvents();
     const worldLead = activeEvs.length > 0
-      ? `<b>${W.cities[activeEvs[0].city]?.name.toUpperCase()}:</b> ${activeEvs[0].title} — ${activeEvs[0].effectText}`
+      ? `<b>${W.cities[activeEvs[0].city]?.name.toUpperCase()}:</b> ${activeEvs[0].title}, ${activeEvs[0].effectText}`
       : `<b>RESEBREV:</b> Flygbolagen släpper nya avgångar varje morgon kl 08:00.`;
     const dealCityKey = Object.keys(state.deals).find(k => k !== state.city && state.deals[k] > 0);
     const dealNotis = dealCityKey
@@ -1483,7 +1483,7 @@
       const doneKey = `${state.city}_${state.day}_${idx}`;
       const alreadyDone = !!state.jobsDoneToday[doneKey];
       const boxClass = idx === 0 ? 'job-ad-circled' : 'job-ad-box';
-      const pitch = job.adText || `${job.employer} söker en pigg resenär för dagens pass — kontant lön direkt i handen.`;
+      const pitch = job.adText || `${job.employer} söker en pigg resenär för dagens pass, kontant lön direkt i handen.`;
 
       return `
         <div class="news-col">
@@ -1735,7 +1735,7 @@
             correctInJob++;
             state.questionsCorrect++;
           } else {
-            display.innerHTML = `<span style="color:#a33">För långt ifrån — rätt svar var ${q.ans.toLocaleString('sv-SE')} ${q.unit}</span>`;
+            display.innerHTML = `<span style="color:#a33">För långt ifrån, rätt svar var ${q.ans.toLocaleString('sv-SE')} ${q.unit}</span>`;
             AudioMgr.play('wrong2');
           }
           setTimeout(() => {
@@ -1876,7 +1876,7 @@
   }
 
   const GEAR_SHOP_ITEMS = [
-    { id: 'parlor',      name: 'Språkparlör',    price: 650, photo: 'assets/souvenirs/guide_amerika.jpg', desc: 'Lär dig artiga fraser på 20 språk — höjer chansen att lyckas pruta från 62 % till 85 %!', effect: '85 % prutchans', unique: true },
+    { id: 'parlor',      name: 'Språkparlör',    price: 650, photo: 'assets/souvenirs/guide_amerika.jpg', desc: 'Lär dig artiga fraser på 20 språk, höjer chansen att lyckas pruta från 62 % till 85 %!', effect: '85 % prutchans', unique: true },
     { id: 'guide_asien', name: 'Fickguidebok',   price: 550, photo: 'assets/souvenirs/guide_asien.jpg',   desc: 'Avslöjar outforskade landmärken på stadskartan och stryker ett felaktigt svar i quiz (3 ggr).', effect: 'Avslöjar kartan + 3 tips', uses: 3, unique: false },
     { id: 'kamera',      name: 'Systemkamera',   price: 900, photo: 'assets/souvenirs/kamera.jpg',        desc: 'Kompakt 35mm-kamera som gör dig eftertraktad på redaktioner och uppdrag.', effect: '+50 % lön på alla jobb', unique: true },
     { id: 'kangor',      name: 'Vandringskängor',price: 700, photo: 'assets/souvenirs/kangor.jpg',        desc: 'Ingångna läderkängor som kortar restiden på långa underverksexpeditioner.', effect: 'Snabbare underverk', unique: true }
@@ -1956,7 +1956,7 @@
     AudioMgr.play('paper');
     addJournal(`Postade hem ${item.name} (från ${W.cities[item.origin]?.name || item.origin}) till Stockholm för ${MAIL_HOME_COST} kr.`);
     showToast(`${item.name} är på väg hem till Stockholm! Plats frigjord i ryggsäcken.`, 2800);
-    openBazaarModal(`Paketet med ${item.name} är frankerat och stämplat — tryggt på väg hem till Stockholm!`, 'gear');
+    openBazaarModal(`Paketet med ${item.name} är frankerat och stämplat, tryggt på väg hem till Stockholm!`, 'gear');
   }
 
   function openBazaarModal(customSpeech = null, activeTab = 'market') {
@@ -1965,7 +1965,7 @@
     const localSouvenirKeys = city.souvenirs || [];
     const keeper = (W.shopkeepers && W.shopkeepers[state.city]) || {
       name: mInfo.keeperFallback,
-      greet: 'Välkommen! Titta på dagens varor — vågar du lägga ett bud?'
+      greet: 'Välkommen! Titta på dagens varor, vågar du lägga ett bud?'
     };
     const cityEv = getCityEvent(state.city);
     const goals = ensureJourneyGoals();
@@ -2168,7 +2168,7 @@
                   <div class="market-item-desc">
                     Köpt i <b>${W.cities[item.origin]?.name || item.origin}</b> för ${item.buyPrice} kr ·
                     ${valInfo.isLocal
-                      ? '<span style="color:#8c2b2b;">Lokal vara — lågt inbytespris här</span>'
+                      ? '<span style="color:#8c2b2b;">Lokal vara, lågt inbytespris här</span>'
                       : `${valInfo.dist.toLocaleString('sv-SE')} km bort (${valInfo.factor.toFixed(2)}×)`}
                   </div>
                   <div class="market-card-footer">
@@ -2250,7 +2250,7 @@
       state.haggleState[hKey] = { price: discounted, won: true, locked: true };
       AudioMgr.play('right1');
       addJournal(`Prutade fram ett kanonpris på ${s.name} (${discounted} kr) i ${W.cities[state.city].name}!`);
-      openBazaarModal(`Haha, du är en skarp förhandlare! Okej då — ${discounted} kr för ${s.name}, men inte ett öre lägre!`);
+      openBazaarModal(`Haha, du är en skarp förhandlare! Okej då, ${discounted} kr för ${s.name}, men inte ett öre lägre!`);
     } else if (roll < 0.88) {
       const slight = Math.max(20, Math.round(basePrice * 0.90));
       state.haggleState[hKey] = { price: slight, won: true, locked: true };
@@ -2301,7 +2301,7 @@
     addJournal(`Sålde ${item.name} (från ${W.cities[item.origin]?.name || item.origin}) i ${W.cities[state.city].name} för ${valInfo.price} kr.`);
     showToast(`Sålde ${item.name} för ${valInfo.price} kr!`, 1800);
     const speech = valInfo.isLocal
-      ? `Tja, jag har ju hyllan full av sådana här redan — men jag tar tillbaka ${item.name} i inbyte för ${valInfo.price} kr.`
+      ? `Tja, jag har ju hyllan full av sådana här redan, men jag tar tillbaka ${item.name} i inbyte för ${valInfo.price} kr.`
       : `Vilket fynd från ${W.cities[item.origin]?.name || item.origin}! Här har du ${valInfo.price} kr kontant.`;
     openBazaarModal(speech);
   }
@@ -2542,7 +2542,7 @@
               </div>
               <div>${boatsHtml}</div>
               <div class="board-footnote">
-                Sjöresor tar flera dagar men är ofta billigare än flyg — och på däck kan oväntade resehändelser hända!
+                Sjöresor tar flera dagar men är ofta billigare än flyg, och på däck kan oväntade resehändelser hända!
               </div>
             </div>
           </div>
@@ -2657,7 +2657,7 @@
     const eventsHtml = activeEvs.length > 0
       ? `<div style="margin-top:5px; padding-top:5px; border-top:1px dashed rgba(212,166,74,0.45);">
            <b style="color:#ffd875;">Aktiva världshändelser (Dag ${state.day}):</b>
-           ${activeEvs.map(ev => `<div style="font-size:11.5px;">• <b style="color:${ev.color || '#ffd875'};">${W.cities[ev.city]?.name}: ${ev.title}</b> — ${ev.effectText}</div>`).join('')}
+           ${activeEvs.map(ev => `<div style="font-size:11.5px;">• <b style="color:${ev.color || '#ffd875'};">${W.cities[ev.city]?.name}: ${ev.title}</b>, ${ev.effectText}</div>`).join('')}
          </div>`
       : '';
 
@@ -2667,12 +2667,22 @@
 
         <div class="globe-overlay-top">
           <div class="globe-title-plate">
-            <h3>3D-JORDGLOB · VÄRLDSKARTA</h3>
-            <div class="globe-sub">Totalt rest: <b style="color:#78e08f;">${totalDist.toLocaleString('sv-SE')} km</b> · Dra för att rotera · Scrolla eller +/− för att zooma</div>
+            <div class="globe-plate-kicker">GLOBETROTTER · NAVIGATION</div>
+            <h3>VÄRLDSKARTA</h3>
+            <div class="globe-sub">AVVERKAD STRÄCKA: <b style="color:#8cf0a4;">${totalDist.toLocaleString('sv-SE')} KM</b></div>
           </div>
           <div class="globe-top-actions">
-            <button class="bp-icon-close-btn zoom-btn" id="globeZoomInBtn" title="Zooma in" aria-label="Zooma in">+</button>
-            <button class="bp-icon-close-btn zoom-btn" id="globeZoomOutBtn" title="Zooma ut" aria-label="Zooma ut">−</button>
+            <button class="bp-icon-close-btn zoom-btn" id="globeZoomInBtn" title="Zooma in" aria-label="Zooma in">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+            <button class="bp-icon-close-btn zoom-btn" id="globeZoomOutBtn" title="Zooma ut" aria-label="Zooma ut">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
             ${exitIconBtn('Stäng jordgloben')}
           </div>
         </div>
@@ -2696,7 +2706,7 @@
         activeGlobeRenderer.centerLat = curCity.lat;
       }
 
-      // Snurra långsamt tills användaren klickar, drar eller zoomar — sen står den still!
+      // Snurra långsamt tills användaren klickar, drar eller zoomar, sen står den still!
       let autoSpin = true;
       const stopSpin = () => { autoSpin = false; };
       canvas.addEventListener('mousedown', stopSpin);
@@ -2827,7 +2837,7 @@
       if (finished || !vigWrap || !vigImg) { finishTrip(); return; }
       const airClips = [
         { img: 'assets/travel/plane_wing.jpg', tag: 'INFLYGNING', text: `Går ner genom molntäcket mot ${dest.name}...` },
-        { img: 'assets/travel/plane_landing.jpg', tag: 'LANDNING', text: `Landningsstället ute — hjulen tar mark i ${dest.name}!` },
+        { img: 'assets/travel/plane_landing.jpg', tag: 'LANDNING', text: `Landningsstället ute, hjulen tar mark i ${dest.name}!` },
         { img: 'assets/travel/plane_runway.jpg', tag: 'ANKOMSTTERMINAL', text: `Taxar in mot gaten på flygplatsen i ${dest.name}...` }
       ];
       const seaClips = [
@@ -2869,7 +2879,7 @@
     }, isBoat);
   }
 
-  // --- Hotell (90-tals diegetisk receptionsdisk & separat Pub/Kafé-scen — ingen gästbok!) ---
+  // --- Hotell (90-tals diegetisk receptionsdisk & separat Pub/Kafé-scen, ingen gästbok!) ---
   function openHotelModal(tab = 'reception', tavernHtml = null) {
     const city = W.cities[state.city];
     const hotel = city.hotel || { name: 'Vandrarhem', price: 400 };
@@ -2921,7 +2931,7 @@
 
             <div>
               ${deliverCard}
-              ${tavernHtml || `<div class="tavern-encounter-box">Sorlet går högt inne på <b>${tavern.name}</b>. Bjuder du grannbordet på en runda lossnar tungorna — kanske söker någon en pålitlig kurir till nästa världsdel!</div>`}
+              ${tavernHtml || `<div class="tavern-encounter-box">Sorlet går högt inne på <b>${tavern.name}</b>. Bjuder du grannbordet på en runda lossnar tungorna, kanske söker någon en pålitlig kurir till nästa världsdel!</div>`}
             </div>
           </div>
         </div>
@@ -3143,7 +3153,7 @@
     updateHUD();
     const daysLeft = W.dayLimit - state.day;
     if (daysLeft <= 5 && state.city !== W.startCity) {
-      showToast(`SLUTSPURT! Endast ${daysLeft} dagar kvar — dags att ta dig hem till Stockholm!`, 4000);
+      showToast(`SLUTSPURT! Endast ${daysLeft} dagar kvar, dags att ta dig hem till Stockholm!`, 4000);
     } else {
       showToast(`Dag ${state.day} har grytt! Klockan är 08:00.`, 2500);
     }
@@ -3248,7 +3258,7 @@
     let rightPageHtml = '';
 
     if (spread === 0) {
-      // UPPSLAG 1: Redan uppslaget pass — Sida 1 (Datasidan till vänster) + Sida 2 (Officiella anteckningar & Resestatus till höger)
+      // UPPSLAG 1: Redan uppslaget pass, Sida 1 (Datasidan till vänster) + Sida 2 (Officiella anteckningar & Resestatus till höger)
       const regionsVisited = getVisitedRegions().size;
       leftPageHtml = `
         <div class="passport-page left polycarbonate-id">
@@ -3305,7 +3315,7 @@
       const regDone = regionsVisited >= goals.requiredRegions;
       const compNames = compCount > 0
         ? state.competencies.map(c => c.title).join(', ')
-        : 'Inga ännu — ta jobb i dagstidningen (minst 3/4 rätt)';
+        : 'Inga ännu, ta jobb i dagstidningen (minst 3/4 rätt)';
 
       const souvenirChecklistHtml = goals.souvenirCities.map(ck => {
         const cName = W.cities[ck]?.name || ck;
@@ -3381,7 +3391,7 @@
               <div style="font-family:Georgia,serif; font-weight:bold; font-size:13px; color:${stamped ? '#7a1c21' : '#4a3d2e'};">${c.name}</div>
               <div style="font-size:10.5px; color:#6b5c49;">${c.country} · Sevärdheter: <b>${doneCount}/${totalCount}</b></div>
               <div style="font-size:10px; color:${stamped ? '#2f7d43' : '#887a68'}; margin-top:2px;">
-                ${stamped ? 'Officiellt stämplad!' : (state.visitedCities.has(k) ? `Besökt — gör alla ${totalCount} för stämpel` : 'Ej besökt ännu')}
+                ${stamped ? 'Officiellt stämplad!' : (state.visitedCities.has(k) ? `Besökt, gör alla ${totalCount} för stämpel` : 'Ej besökt ännu')}
               </div>
             </div>
             ${stamped

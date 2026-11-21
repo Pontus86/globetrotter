@@ -4491,3 +4491,77 @@ h1, h2, h3, h4,
   font-weight: 900;
   line-height: 1;
 }
+
+/* =====================================================================
+   90-TALS CD-ROM KARTOGRAFI-MENY PÅ JORDGLOBEN (MÄSSING, MAHOGNY & NITAR)
+   ===================================================================== */
+.scene-globe-full {
+  box-shadow:
+    inset 0 0 0 6px #2a1a0c,
+    inset 0 0 0 9px #b88b43,
+    inset 0 0 0 11px #1a0f06;
+}
+.scene-globe-full .globe-overlay-top {
+  padding: 20px 24px 0;
+}
+.scene-globe-full .globe-title-plate {
+  position: relative;
+  background: linear-gradient(180deg, #3b2614 0%, #1d1208 100%);
+  border: 3px ridge #c99a45;
+  border-radius: 3px;
+  padding: 9px 18px 10px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 224, 150, 0.35);
+}
+.globe-plate-kicker {
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 9.5px;
+  letter-spacing: 2px;
+  color: #c9a66b;
+  margin-bottom: 2px;
+}
+.scene-globe-full .globe-title-plate h3 {
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: #ffe08a;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+}
+.scene-globe-full .globe-title-plate .globe-sub {
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 10.5px;
+  letter-spacing: 0.8px;
+  color: #e2cfa8;
+  margin-top: 3px;
+}
+.scene-globe-full .globe-top-actions {
+  background: linear-gradient(180deg, #332010 0%, #1a1007 100%);
+  border: 3px ridge #c99a45;
+  border-radius: 4px;
+  padding: 6px 8px;
+  gap: 8px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.85);
+}
+.bp-icon-close-btn {
+  padding: 0;
+  border: 2.5px outset #d4a64a;
+  line-height: 0;
+}
+.bp-icon-close-btn:active {
+  border-style: inset;
+  transform: translateY(1px) scale(0.98);
+}
+.bp-icon-close-btn svg {
+  display: block;
+}
+.scene-globe-full .globe-overlay-bottom {
+  padding: 0 24px 20px;
+}
+.scene-globe-full .globe-info-strip {
+  background: linear-gradient(180deg, #382413 0%, #1d1208 100%);
+  border: 3px ridge #b88b43;
+  border-radius: 3px;
+  padding: 10px 16px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(255, 224, 150, 0.25);
+  font-family: var(--font-body, Georgia, serif);
+  font-size: 12px;
+  line-height: 1.45;
+}

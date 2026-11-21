@@ -1,39 +1,51 @@
 # Globetrotter
 
-Ett webbläsarspel om att resa jorden runt på egen hand.
-Inspirerat av BackPacker 1 och 2 och *80 Days*, men ett helt eget spel med öppet innehåll.
+Ett svenskt reseäventyr i webbläsaren, inspirerat av 90-talets klassiska *BackPacker*-spel och *80 Days*. Du startar i Stockholm med 10 000 kr, ett tomt svenskt pass och 45 dagar på dig att resa jorden runt, arbeta längs vägen, handla på lokala marknader och ta dig hem igen.
 
-**Status:** Spelbar vertikal slice (minimalspel enligt kapitel 12 i designdokumentet).
+**Spela direkt i webbläsaren:** https://pontus86.github.io/globetrotter/
 
-- **Spelbar prototyp:** Öppna [proto/index.html](proto/index.html) direkt i webbläsaren.
-- **Designdokument:** [docs/DESIGN.md](docs/DESIGN.md)
-- **Visuell förlaga:** [sketches/fotomontage/index.html](sketches/fotomontage/index.html)
+## Så fungerar spelet
 
-## Vad vertikala slicen innehåller
+Varje ny resa slumpar fram personliga mål som skrivs in på sida 2 i ditt pass:
+- Besök minst **3 världsdelar** och återvänd till Stockholm innan tiden tar slut.
+- Skaffa **yrkeskompetens i 3 olika yrken** genom att ta jobbpass i lokaltidningen och klara arbetsprovet.
+- Ta med (eller posta hem) **souvenirer från 3 utvalda städer** runt om i världen.
 
-1. **Jorden-runt-rutt med 6 städer och 3 underverk:**
-   - Stockholm $\rightarrow$ Kairo $\rightarrow$ Delhi $\rightarrow$ Tokyo $\rightarrow$ San Francisco $\rightarrow$ New York $\rightarrow$ Stockholm.
-   - Underverk: Giza-pyramiderna, Taj Mahal och Grand Canyon.
-2. **Resurs- och tidsmodell:**
-   - 16 speltimmar per dygn (08:00–24:00), 30 dagars tidsgräns, startkassa 10 000 kr.
-   - Hotellnatt återställer timmarna och visar **kvällsrapport** med teaser inför morgondagen.
-3. **Kunskapsmoment (Lär först, svara sedan):**
-   - Faktakort och frågor för varje höjdpunkt och underverk.
-   - Full pott på en stads höjdpunkter ger pass-stämpel ("Staden gjord").
-4. **Ekonomi och Souvenirer:**
-   - Avståndspris: souvenirer ökar i värde ju längre bort de säljs.
-   - Praktisk användning: guideböcker stryker fel svar, kamera ger +50 % lön på jobb, kängor förkortar expeditionstiden vid Grand Canyon.
-5. **Jobb och resor:**
-   - Arbetspass i varje stad som betalar lön baserat på rätt svar.
-   - Flyg- och båtresor med distans- och tidsberäkning samt sista-minuten-erbjudanden.
-6. **3D-Jordglob och BackPacker-flyglinje:**
-   - Interaktiv roterbar 3D-jordglob som nås via snabbknapp (🌍 *Jordglob*).
-   - Vid resor ritas en animerad röd storcirkellinje ut över klotet med flygplansikon och motorljud.
-   - Visar totalt tillryggalagda kilometer och alla avverkade rutter.
-7. **Slutrevy och Hemmamuseum:**
-   - Utvärdering och titel (*Turist*, *Resenär*, *Upptäckare*, *Globetrotter*).
-   - Hemförda souvenirer sparas till spelarens permanenta museum i webbläsaren (`localStorage`).
+### Innehåll i korthet
 
-## Innehåll och licenser
+- **16 spelbara städer över 6 kontinenter:** Stockholm, Paris, Rom, London, Istanbul, Kairo, Kapstaden, Delhi, Bangkok, Peking, Tokyo, Sydney, San Francisco, New York, Mexico City och Rio de Janeiro.
+- **64 sevärdheter och 4 underverk:** Sevärdheterna börjar som outforskade landmärken på stadskartan tills du besöker dem, frågar runt i hotellbaren eller har en guidebok i packningen.
+- **48 jobb i dagstidningen:** Varje stad har tre olika jobbpass (4, 6 eller 8 timmar) med olika lön och egna yrkesfrågor.
+- **Dagliga avgångstavlor och oceanhamnar:** Du kan inte flyga vart som helst när som helst. Varje stad har ett realistiskt ruttnätverk där dagens avgångar, flightnummer och eventuella Stand by-biljetter lottas fram varje morgon.
+- **Marknader, basarer och postkontor:** Pruta på lokala varor, sälj dem längre bort på jordgloben för vinst, uppgradera ryggsäcken (5, 7 och 9 platser), köp reseutrustning eller posta hem dina målsouvenirer till Stockholm.
+- **Stadens bibliotek:** Varje stad har sitt eget bibliotek där du kan slå upp landets flagga, basfakta och trivia.
+- **3D-jordglob och 3D-ryggsäck i WebGL:** Interaktiv jordglob med topografisk bergsrelief, röda flyglinjer och zoom, samt en vridbar 3D-vandringsryggsäck.
+- **Egen ljudmotor och sparande:** Alla ljudeffekter skapas direkt med Web Audio API och din resa sparas automatiskt lokalt i webbläsaren.
 
-Spelet använder uteslutande fritt användbara bilder, kartor och fakta från **Wikimedia Commons** och **Wikipedia** (CC BY, CC BY-SA, Public Domain / CC0). Alla referenser till BackPacker 2:s fasta koordinater har rensats bort till förmån för en responsiv 16:9 fotomontagedesign.
+## Köra spelet lokalt
+
+Eftersom spelet laddar WebGL-texturer och en binär 3D-modell behöver det köras över en lokal webbserver (inte direkt via `file://`).
+
+```bash
+python -m http.server 8080 --directory proto
+```
+
+Öppna sedan http://localhost:8080 i webbläsaren.
+
+## Projektstruktur
+
+- `proto/index.html` - Huvudsida för spelet
+- `proto/js/game.js` - Spelmotor, UI, ljudmotor och sparhantering
+- `proto/js/globe.js` - 3D-jordglob i WebGL med relief och flyglinjer
+- `proto/js/backpack3d.js` - 3D-renderare för vandringsryggsäcken
+- `proto/data/` - Städer, frågor, jobbkatalog, världens huvudstäder och landsfakta
+- `proto/assets/` - Foton, stadskartor, flaggor, jordglobstexturer och 3D-modell
+- `docs/DESIGN.md` - Designdokument och anteckningar
+
+## Öppna källor och licenser
+
+Spelet är byggt helt utan upphovsrättsskyddat material från äldre kommersiella spel och använder fria källor:
+- **Foton, historiska kartor och flaggor:** Wikimedia Commons / Wikipedia (Public Domain, CC0, CC BY, CC BY-SA)
+- **Jordglobens texturer och höjddata:** NASA Visible Earth / Blue Marble & SRTM (Public Domain)
+- **3D-modell (Survival Backpack):** Berk Gedik / LearnOpenGL (CC BY)
+- **Typsnitt:** Google Fonts (Playfair Display, Lora, Special Elite)
