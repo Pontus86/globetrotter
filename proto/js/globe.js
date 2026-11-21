@@ -160,9 +160,9 @@
       vec3 T = normalize(vec3(cos(dLam), sinP0 * sin(dLam), -cosP0 * sin(dLam)));
       vec3 B = normalize(cross(N, T));
 
-      // Förstärk reliefen på land (noll på vatten via 1.0 - specMask) så bergskedjorna verkligen reser sig
+      // Förstärk reliefen på land (noll på vatten via 1.0 - specMask) så bergskedjorna verkligen reser sig (1.5x förstärkt!)
       float landMask = clamp(1.0 - specMask * 1.15, 0.0, 1.0);
-      float bumpStrength = (u_isMini > 0.5 ? 2.2 : 3.6) * landMask;
+      float bumpStrength = (u_isMini > 0.5 ? 3.3 : 5.4) * landMask;
       vec3 Nbumped = normalize(N + T * (mapN.x * bumpStrength) + B * (mapN.y * bumpStrength));
 
       // 3D-studiobelysning (snedställt solljus från övre vänster för tydliga bergskuggor)
@@ -174,10 +174,10 @@
       float diff = mix(baseDiff, bumpDiff, landMask);
       float lit = 0.26 + 0.86 * pow(diff, 0.88);
 
-      // Extra reliefkontrast i bergskedjorna (ljusa kammar, djupare dalar)
+      // Extra reliefkontrast i bergskedjorna (ljusa kammar, djupare dalar — 1.5x förstärkt)
       float slope = length(mapN.xy) * landMask;
-      float ridgeHighlight = max(0.0, bumpDiff - baseDiff) * 0.45 * landMask;
-      float valleyShadow = max(0.0, baseDiff - bumpDiff) * 0.42 * landMask;
+      float ridgeHighlight = max(0.0, bumpDiff - baseDiff) * 0.68 * landMask;
+      float valleyShadow = max(0.0, baseDiff - bumpDiff) * 0.63 * landMask;
 
       // Blinn-Phong spegelblänk enbart på haven (via specular-masken)
       vec3 halfVec = normalize(lightDir + viewDir);
@@ -185,7 +185,7 @@
 
       vec3 surface = dayCol * (lit - valleyShadow) + vec3(1.0, 0.96, 0.88) * ridgeHighlight + vec3(0.82, 0.92, 1.0) * spec;
       // Diskret relief-skärpning på höga berg
-      surface *= (1.0 + slope * 0.08);
+      surface *= (1.0 + slope * 0.12);
 
       // Diskret guldtonat gradnät på större globen (antikt reseinstrument)
       if (u_isMini < 0.5) {
@@ -414,8 +414,8 @@
       // Mushjulszoom för att kunna zooma in på kontinenter och resrutter
       c.addEventListener('wheel', e => {
         e.preventDefault();
-        const delta = e.deltaY > 0 ? -24 : 24;
-        this.radius = Math.max(this.baseRadius * 0.85, Math.min(680, this.radius + delta));
+        const delta = e.deltaY > 0 ? -36 : 36;
+        this.radius = Math.max(this.baseRadius * 0.72, Math.min(780, this.radius + delta));
       }, { passive: false });
 
       c.addEventListener('touchstart', e => {

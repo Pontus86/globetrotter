@@ -160,6 +160,17 @@
     mexicocity:   { code: 'MEX', color: '#8f2c1b', shape: 'rect',  rot: 5 }
   };
 
+  // Enhetlig 90-tals symbolknapp för att stänga / lämna en vy (utan överflödig text)
+  function exitIconBtn(tooltip = 'Tillbaka') {
+    return `<button class="bp-icon-close-btn" onclick="window.GT.closeModal()" title="${tooltip}" aria-label="${tooltip}">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    </button>`;
+  }
+
   function renderCityStampHtml(cityKey, large = false) {
     const c = W.cities[cityKey] || { name: cityKey, country: '' };
     const m = CITY_STAMP_META[cityKey] || { code: cityKey.slice(0, 3).toUpperCase(), color: '#7a2222', shape: 'round', rot: -5 };
@@ -602,7 +613,6 @@
     el.hudCash.innerHTML = `
       <div class="wallet-card-css" aria-hidden="true"><span>GT</span></div>
       <div class="wallet-text">
-        <span class="wallet-label">Kassa</span>
         <span class="wallet-amount"><b>${state.cash.toLocaleString('sv-SE')} kr</b></span>
       </div>
     `;
@@ -615,7 +625,7 @@
 
     // Dock-brickor nere i hörnet
     el.dockBackpackCount.textContent = `${state.backpack.length}/${getMaxBackpackSlots()}`;
-    el.dockStampCount.textContent = `${state.stamps.length} stämplar`;
+    el.dockStampCount.textContent = `${state.stamps.length} st`;
 
     const totalDist = state.travelHistory.reduce((sum, leg) => sum + (leg.dist || 0), 0);
     if (el.dockGlobeDist) {
@@ -771,7 +781,7 @@
     el.spotsContainer.innerHTML = '';
 
     // Samla alla ikoner i staden och ge dem en unik, fri layout för just denna stad
-    const spotKeys = ['hotel', 'job', 'shop', 'airport'];
+    const spotKeys = ['hotel', 'job', 'shop', 'library', 'airport'];
     if (city.boats && city.boats.length > 0) spotKeys.push('harbor');
     (city.highlights || []).forEach(k => spotKeys.push(k));
     (city.extras || []).forEach(k => spotKeys.push(k));
@@ -814,6 +824,19 @@
       () => openBazaarModal()
     );
     el.spotsContainer.appendChild(shopSpot);
+
+    // 3b. Bibliotek på kartan (med stadens eget bibliotek på knappen! Öppnar landets uppslagsbok)
+    const cf = (window.GT_COUNTRY_FACTS && window.GT_COUNTRY_FACTS[state.city]) || null;
+    if (cf && posMap.library) {
+      const libSpot = createSpot(
+        posMap.library[0], posMap.library[1],
+        'service library',
+        `<div class="spot-badge"><img class="spot-model-img" src="${cf.libraryPhoto}" onerror="this.src='assets/photos/libraries/lib_stockholm.jpg'" alt="Bibliotek"></div>`,
+        `Bibliotek`,
+        () => openLibraryModal()
+      );
+      el.spotsContainer.appendChild(libSpot);
+    }
 
     // 4. Flygplats & Resor på kartan
     const airPos = posMap.airport;
@@ -920,7 +943,7 @@
             <h3>${sig.name}</h3>
             <div class="sight-meta">Unikt för ${city.name} · Öppettider: ${String(sig.openFrom).padStart(2, '0')}:00–${String(sig.openUntil).padStart(2, '0')}:00 · Kostnad: ${sig.cost} kr (${sig.hours} tim)</div>
           </div>
-          <button class="globe-brass-btn close-btn" onclick="window.GT.closeModal()">Tillbaka</button>
+          ${exitIconBtn('Tillbaka till staden')}
         </div>
         <div class="sight-bottom-panel">
           <div class="sight-fact-card">${sig.desc}</div>
@@ -1018,7 +1041,7 @@
                 : `Besök: ${place.hours} tim · Inträde: ${place.fee > 0 ? '-' + place.fee + ' kr' : 'Gratis'}`}
             </div>
           </div>
-          <button class="globe-brass-btn close-btn" onclick="window.GT.closeModal()">Tillbaka till staden</button>
+          ${exitIconBtn('Tillbaka till staden')}
         </div>
 
         <div class="sight-bottom-panel">
@@ -1070,7 +1093,7 @@
               ${isDone ? ' · <span style="color:#78e08f; font-weight:bold;">EXPEDITION KLAR</span>' : ''}
             </div>
           </div>
-          <button class="globe-brass-btn close-btn" onclick="window.GT.closeModal()">Tillbaka</button>
+          ${exitIconBtn('Tillbaka till staden')}
         </div>
 
         <div class="sight-bottom-panel">
@@ -1510,7 +1533,7 @@
               <span style="font-size:11.5px; color:#5b4a36; font-style:italic;">
                 Klockan är ${String(state.hour).padStart(2, '0')}:00 · Välj det pass som passar din reskassa och dagens schema bäst.
               </span>
-              <button class="stamp-ghost-btn" onclick="window.GT.closeModal()">Vik ihop tidningen</button>
+              ${exitIconBtn('Vik ihop tidningen')}
             </div>
           </div>
         </div>
@@ -1726,7 +1749,68 @@
     nextJobQ();
   }
 
-  // --- Basar / Handla, Pruta & Sälja (90-tals Basardisk!) ---
+  // --- Stadens Bibliotek & Uppslagsverk om Landet (BackPacker 1-stil!) ---
+  function openLibraryModal() {
+    AudioMgr.play('paper');
+    const city = W.cities[state.city];
+    const cf = (window.GT_COUNTRY_FACTS && window.GT_COUNTRY_FACTS[state.city]) || null;
+    if (!cf) {
+      showToast('Biblioteket är stängt för inventering idag.', 2200);
+      return;
+    }
+
+    const triviaHtml = (cf.trivia || []).map(t => `<li>${t}</li>`).join('');
+    const html = `
+      <div class="scene-fullscreen scene-room-bg" style="background-image:url(${cf.libraryPhoto}), url(assets/photos/libraries/lib_stockholm.jpg)">
+        <div class="room-top-bar">
+          <div class="sight-plaque">
+            <h3>${cf.libraryName}</h3>
+            <div class="sight-meta">${city.name} · Läsesalen · Fri entré</div>
+          </div>
+          ${exitIconBtn('Lämna biblioteket')}
+        </div>
+
+        <div class="library-book-dock">
+          <div class="library-encyclopedia">
+            <div class="encyc-header">
+              <img class="encyc-flag" src="${cf.flag}" alt="Flagga ${cf.country}" onerror="this.style.display='none'">
+              <div>
+                <div class="encyc-kicker">VÄRLDSATLAS &amp; UPPSLAGSVERK</div>
+                <h2 class="encyc-country">${cf.country}</h2>
+                <div class="encyc-sub">${city.name} · ${city.region}</div>
+              </div>
+            </div>
+
+            <div class="encyc-columns">
+              <div class="encyc-facts-box">
+                <div class="encyc-section-title">SNABBFAKTA OM LANDET</div>
+                <div class="encyc-fact-grid">
+                  <div><span>Huvudstad</span><b>${cf.capital}</b></div>
+                  <div><span>Folkmängd</span><b>${cf.population}</b></div>
+                  <div><span>Yta</span><b>${cf.area}</b></div>
+                  <div><span>Språk</span><b>${cf.language}</b></div>
+                  <div><span>Valuta</span><b>${cf.currency}</b></div>
+                  <div><span>Statsskick</span><b>${cf.government}</b></div>
+                  <div><span>Tidszon</span><b>${cf.timezone}</b></div>
+                  <div><span>Klassisk mat</span><b>${cf.dish}</b></div>
+                </div>
+              </div>
+
+              <div class="encyc-trivia-box">
+                <div class="encyc-section-title">VISSTE DU ATT…?</div>
+                <ul class="encyc-trivia-list">
+                  ${triviaHtml}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    showModal(html);
+  }
+
+  // --- Basar / Marknad, Pruta & Sälja (90-tals Basardisk!) ---
   function getEffectiveBuyPrice(key) {
     const s = W.souvenirs[key];
     if (!s) return 0;
@@ -2127,7 +2211,7 @@
             <h3>${mInfo.title}</h3>
             <div class="sight-meta">${keeper.name} · Dag ${state.day} · Kassa: ${state.cash.toLocaleString('sv-SE')} kr</div>
           </div>
-          <button class="globe-brass-btn close-btn" onclick="window.GT.closeModal()">${mInfo.leaveText}</button>
+          ${exitIconBtn(mInfo.leaveText)}
         </div>
 
         <div class="market-counter-dock">
@@ -2447,7 +2531,7 @@
             </div>
             <div style="display:flex; gap:8px;">
               <button class="globe-brass-btn" onclick="window.GT.openTravelModal('air')">Till flygplatsen »</button>
-              <button class="globe-brass-btn close-btn" onclick="window.GT.closeModal()">Stanna kvar i ${currentCity.name}</button>
+              ${exitIconBtn(`Stanna kvar i ${currentCity.name}`)}
             </div>
           </div>
           <div class="room-counter-dock" style="display:flex; justify-content:center;">
@@ -2530,7 +2614,7 @@
           </div>
           <div style="display:flex; gap:8px;">
             ${hasBoats ? `<button class="globe-brass-btn" onclick="window.GT.openTravelModal('sea')">Till oceanhamnen »</button>` : ''}
-            <button class="globe-brass-btn close-btn" onclick="window.GT.closeModal()">Stanna kvar i ${currentCity.name}</button>
+            ${exitIconBtn(`Stanna kvar i ${currentCity.name}`)}
           </div>
         </div>
         <div class="room-counter-dock" style="display:flex; justify-content:center;">
@@ -2584,12 +2668,12 @@
         <div class="globe-overlay-top">
           <div class="globe-title-plate">
             <h3>3D-JORDGLOB · VÄRLDSKARTA</h3>
-            <div class="globe-sub">Totalt rest: <b style="color:#78e08f;">${totalDist.toLocaleString('sv-SE')} km</b> · Dra för att rotera · Scrolla för att zooma</div>
+            <div class="globe-sub">Totalt rest: <b style="color:#78e08f;">${totalDist.toLocaleString('sv-SE')} km</b> · Dra för att rotera · Scrolla eller +/− för att zooma</div>
           </div>
           <div class="globe-top-actions">
-            <button class="globe-brass-btn" id="globeFocusBtn">Centrera ${W.cities[state.city].name}</button>
-            <button class="globe-brass-btn" id="globeSpinBtn">Auto-snurra</button>
-            <button class="globe-brass-btn close-btn" onclick="window.GT.closeModal()">Stäng globen</button>
+            <button class="bp-icon-close-btn zoom-btn" id="globeZoomInBtn" title="Zooma in" aria-label="Zooma in">+</button>
+            <button class="bp-icon-close-btn zoom-btn" id="globeZoomOutBtn" title="Zooma ut" aria-label="Zooma ut">−</button>
+            ${exitIconBtn('Stäng jordgloben')}
           </div>
         </div>
 
@@ -2612,17 +2696,27 @@
         activeGlobeRenderer.centerLat = curCity.lat;
       }
 
-      document.getElementById('globeFocusBtn').onclick = () => {
-        if (curCity) activeGlobeRenderer.focusOn(curCity.lat, curCity.lon, null, 278);
-      };
+      // Snurra långsamt tills användaren klickar, drar eller zoomar — sen står den still!
+      let autoSpin = true;
+      const stopSpin = () => { autoSpin = false; };
+      canvas.addEventListener('mousedown', stopSpin);
+      canvas.addEventListener('touchstart', stopSpin, { passive: true });
+      canvas.addEventListener('wheel', stopSpin, { passive: true });
 
-      let autoSpin = false;
-      const spinBtn = document.getElementById('globeSpinBtn');
-      spinBtn.onclick = () => {
-        autoSpin = !autoSpin;
-        spinBtn.style.borderColor = autoSpin ? '#ffd875' : '';
-        spinBtn.style.color = autoSpin ? '#ffd875' : '';
-      };
+      const zoomInBtn = document.getElementById('globeZoomInBtn');
+      const zoomOutBtn = document.getElementById('globeZoomOutBtn');
+      if (zoomInBtn) {
+        zoomInBtn.onclick = () => {
+          stopSpin();
+          activeGlobeRenderer.radius = Math.min(780, activeGlobeRenderer.radius + 70);
+        };
+      }
+      if (zoomOutBtn) {
+        zoomOutBtn.onclick = () => {
+          stopSpin();
+          activeGlobeRenderer.radius = Math.max(activeGlobeRenderer.baseRadius * 0.72, activeGlobeRenderer.radius - 70);
+        };
+      }
 
       const loop = () => {
         if (el.modalOverlay.classList.contains('hidden') || !document.getElementById('globeCanvas')) {
@@ -2630,7 +2724,7 @@
           return;
         }
         if (autoSpin && !activeGlobeRenderer.isDragging) {
-          activeGlobeRenderer.centerLon += 0.45;
+          activeGlobeRenderer.centerLon = (activeGlobeRenderer.centerLon + 0.22) % 360;
         }
         activeGlobeRenderer.render(state.travelHistory, state.city, getActiveWorldEvents());
         globeAnimFrameId = requestAnimationFrame(loop);
@@ -2808,7 +2902,7 @@
             </div>
             <div style="display:flex; gap:8px;">
               <button class="globe-brass-btn" onclick="window.GT.openHotelModal('reception')">« Tillbaka till receptionen</button>
-              <button class="globe-brass-btn close-btn" onclick="window.GT.closeModal()">Ut på stan</button>
+              ${exitIconBtn('Ut på stan')}
             </div>
           </div>
 
@@ -2844,7 +2938,7 @@
             <h3>${hotel.name}</h3>
             <div class="sight-meta">${city.name} · Dag ${state.day} · ${hasFreeNight ? 'GRATIS NATT INNESTÅENDE!' : hotel.price + ' kr / natt'}</div>
           </div>
-          <button class="globe-brass-btn close-btn" onclick="window.GT.closeModal()">Ut på stan</button>
+          ${exitIconBtn('Ut på stan')}
         </div>
 
         <div class="hotel-mahogany-counter">
@@ -3108,7 +3202,7 @@
               <h3>DIN VANDRINGSRYGGSÄCK (${state.backpack.length} / ${getMaxBackpackSlots()} PLATSER)</h3>
               <div class="sight-meta">Dra på ryggsäcken för att snurra 3D-modellen · Packning & kurirpaket</div>
             </div>
-            <button class="globe-brass-btn close-btn" onclick="window.GT.closeModal()">Stäng ryggsäcken</button>
+            ${exitIconBtn('Stäng ryggsäcken')}
           </div>
 
           <div style="flex:1; min-height:0; display:grid; grid-template-columns: 320px 1fr; gap:16px; align-items:center;">
@@ -3352,7 +3446,7 @@
             <div style="font-family:Georgia,serif; color:#ffd875; font-size:14px; font-weight:bold;">
               SVENSKT RESEPASS · Uppslag ${spread + 1} av ${totalSpreads}
             </div>
-            <button class="globe-brass-btn close-btn" onclick="window.GT.closeModal()">Stäng passet</button>
+            ${exitIconBtn('Stäng passet')}
           </div>
 
           <div class="passport-spread">
@@ -3562,46 +3656,46 @@
   function openStartScreen() {
     const saved = getSavedSummary();
     const continueBtn = saved
-      ? `<button class="stamp-action-btn" style="background:#2f7d43; border-color:#78e08f; width:100%; margin-bottom:10px;" onclick="window.GT.continueSavedGame()">
-           Fortsätt sparad resa (${saved.playerFirstName || 'Resenär'} · Dag ${saved.day} i ${W.cities[saved.city]?.name})
+      ? `<button class="bp90-menu-btn continue" onclick="window.GT.continueSavedGame()">
+           <span class="bp90-btn-title">FORTSÄTT RESAN</span>
+           <span class="bp90-btn-sub">${(saved.playerFirstName || 'Resenär').toUpperCase()} · DAG ${saved.day} I ${(W.cities[saved.city]?.name || saved.city).toUpperCase()}</span>
          </button>`
       : '';
 
     const html = `
-      <div class="scene-fullscreen scene-start-full">
-        <div class="start-desk-grid">
-          <div class="start-plaque">
-            <div style="font-size:11px; letter-spacing:2.5px; color:#c9b48f; text-transform:uppercase;">Svenskt 90-tals Reseäventyr</div>
-            <h1 class="start-logo-main">GLOBETROTTER</h1>
-            <p style="font-family:Georgia,serif; font-size:13.5px; line-height:1.5; color:#e6d7bd; margin:8px 0 14px;">
-              Res jorden runt mot klockan, tjäna dina pengar på vägen, pruta i basarer, jaga stafettuppdrag på lokala värdshus och fyll ditt svenska pass med stämplar!
-            </p>
+      <div class="scene-fullscreen bp90-start-scene">
+        <!-- Stor roterande 3D-jordglob rakt bakom titeln (90-tals BackPacker-stil!) -->
+        <div class="bp90-globe-backdrop">
+          <canvas id="startGlobeCanvas" width="760" height="760"></canvas>
+        </div>
+        <div class="bp90-vignette"></div>
 
-            ${continueBtn}
+        <!-- Centrerat 90-tals huvudmeny-skikt -->
+        <div class="bp90-start-foreground">
+          <div class="bp90-hero-title-wrap">
+            <div class="bp90-edition-tag">SVENSKT RESEÄVENTYR · CD-ROM EDITION</div>
+            <h1 class="bp90-red-logo" data-text="GLOBETROTTER">GLOBETROTTER</h1>
+            <div class="bp90-tagline">Jorden runt mot klockan · Tjäna reskassan på vägen · Fyll ditt svenska pass</div>
+          </div>
 
-            <div style="border-top:1px dashed rgba(212,166,74,0.45); padding-top:10px;">
-              <div style="font-size:11px; color:#ffd875; font-weight:bold; letter-spacing:0.8px;">NY RESA · SKRIV DITT NAMN I PASSET:</div>
-              <div class="start-passport-inputs">
-                <div>
-                  <label for="inpFirstName">Förnamn</label>
-                  <input id="inpFirstName" type="text" value="ALEX" maxlength="16">
-                </div>
-                <div>
-                  <label for="inpLastName">Efternamn</label>
-                  <input id="inpLastName" type="text" value="GLOBETROTTER" maxlength="18">
-                </div>
-              </div>
-              <button class="stamp-action-btn" style="width:100%; font-size:15px; padding:11px;" onclick="window.GT.startNewJourney()">
-                STÄMPLA PASS &amp; STARTA RESAN FRÅN STOCKHOLM »
+          <div class="bp90-menu-dock">
+            <div class="bp90-passport-strip">
+              <span class="bp90-strip-label">NAMN I PASSET:</span>
+              <input id="inpFirstName" class="bp90-name-input" type="text" value="ALEX" maxlength="16" placeholder="Förnamn" aria-label="Förnamn">
+              <input id="inpLastName" class="bp90-name-input" type="text" value="GLOBETROTTER" maxlength="18" placeholder="Efternamn" aria-label="Efternamn">
+            </div>
+
+            <div class="bp90-menu-buttons">
+              ${continueBtn}
+              <button class="bp90-menu-btn primary" onclick="window.GT.startNewJourney()">
+                <span class="bp90-btn-title">STARTA NY RESA</span>
+                <span class="bp90-btn-sub">STÄMPLA PASS &amp; AVRESA FRÅN STOCKHOLM »</span>
               </button>
             </div>
           </div>
 
-          <div class="start-globe-showcase">
-            <canvas id="startGlobeCanvas" width="360" height="360" style="width:320px; height:320px; max-width:100%;"></canvas>
-            <div style="font-family:Georgia,serif; font-size:12px; color:#d6c5a5; margin-top:6px; font-style:italic;">
-              ${Object.keys(W.cities).length} utbyggda städer · ${Object.keys(W.places).length} sevärdheter · ${Object.keys(W.wonders).length} underverk · ${(window.GT_QUESTIONS || []).length} frågor
-            </div>
+          <div class="bp90-footer-credits">
+            ${Object.keys(W.cities).length} STÄDER · ${Object.keys(W.places).length} SEVÄRDHETER · ${Object.keys(W.cities).length * 3} JOBB · ${Object.keys(W.wonders).length} UNDERVERK · ${(window.GT_QUESTIONS || []).length + 60} FRÅGOR
           </div>
         </div>
       </div>
@@ -3610,13 +3704,13 @@
 
     const sc = document.getElementById('startGlobeCanvas');
     if (sc && window.GlobeRenderer) {
-      const sg = new window.GlobeRenderer(sc, { interactive: false, radius: 155, centerLat: 28, centerLon: 18 });
+      const sg = new window.GlobeRenderer(sc, { interactive: false, radius: 318, centerLat: 24, centerLon: 16 });
       const loop = () => {
         if (!document.getElementById('startGlobeCanvas')) {
           cancelAnimationFrame(startGlobeFrame);
           return;
         }
-        sg.centerLon = (sg.centerLon + 0.35) % 360;
+        sg.centerLon = (sg.centerLon + 0.24) % 360;
         sg.render([], 'stockholm', getActiveWorldEvents());
         startGlobeFrame = requestAnimationFrame(loop);
       };
@@ -3763,6 +3857,7 @@
     doSignatureActivity,
     openJobModal,
     startJobShift,
+    openLibraryModal,
     openBazaarModal,
     upgradeBackpack,
     buyGearItem,
