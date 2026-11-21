@@ -1,6 +1,6 @@
 // Globetrotter - 3D Vandringsryggsäck (WebGL)
-// Laddar Quaternius klassiska vandringsryggsäck (CC0 Public Domain) med rullat liggunderlag,
-// mässingsspännen, sidofickor och fri 3D-rotering.
+// Laddar DailyArt vandringsryggsäck (Sketchfab, CC BY-NC) med UDIM-texturatlas
+// och fri 3D-rotering.
 
 (function () {
   'use strict';
@@ -8,19 +8,17 @@
   const VERT_SRC = `
     attribute vec3 a_pos;
     attribute vec3 a_norm;
-    attribute vec3 a_col;
+    attribute vec2 a_uv;
 
     uniform mat4 u_mvp;
     uniform mat3 u_normMat;
 
     varying vec3 v_norm;
-    varying vec3 v_col;
-    varying vec3 v_localPos;
+    varying vec2 v_uv;
 
     void main() {
       v_norm = normalize(u_normMat * a_norm);
-      v_col = a_col;
-      v_localPos = a_pos;
+      v_uv = a_uv;
       gl_Position = u_mvp * vec4(a_pos, 1.0);
     }
   `;
@@ -28,9 +26,10 @@
   const FRAG_SRC = `
     precision mediump float;
 
+    uniform sampler2D u_tex;
+
     varying vec3 v_norm;
-    varying vec3 v_col;
-    varying vec3 v_localPos;
+    varying vec2 v_uv;
 
     void main() {
       vec3 N = normalize(v_norm);
@@ -41,37 +40,28 @@
       float d1 = max(dot(N, L1), 0.0);
       float d2 = max(dot(N, L2), 0.0);
 
-      // Procedur-ripstop / cordura-nylonväv så tyget får äkta taktil struktur
-      float weave = (sin(v_localPos.x * 165.0) * sin(v_localPos.y * 165.0) +
-                     sin(v_localPos.z * 165.0) * sin(v_localPos.y * 165.0)) * 0.022;
+      vec3 albedo = texture2D(u_tex, v_uv).rgb;
 
-      // Materialkänsla: svarta plastspännen & silverdragkedjor glänser mer än matt cordura-tyg
-      float lum = dot(v_col, vec3(0.299, 0.587, 0.114));
-      float isMetal = smoothstep(0.60, 0.74, lum);
-      float isDarkPlastic = smoothstep(0.16, 0.11, lum);
+      // Mjuk studioglans och varm kantglöd mot mörk bakgrund
       vec3 H = normalize(L1 + V);
-      float shininess = mix(16.0, 56.0, max(isMetal, isDarkPlastic * 0.7));
-      float specStrength = mix(0.10, 0.65, isMetal) + isDarkPlastic * 0.22;
-      float spec = pow(max(dot(N, H), 0.0), shininess) * specStrength;
+      float spec = pow(max(dot(N, H), 0.0), 28.0) * 0.18;
+      float rim = pow(1.0 - max(dot(N, V), 0.0), 3.0) * 0.24;
 
-      // Mjuk varm kantglöd så ryggsäcken lyser ut snyggt mot mörk bakgrund
-      float rim = pow(1.0 - max(dot(N, V), 0.0), 3.0) * 0.26;
-
-      vec3 albedo = clamp(v_col + weave * (1.0 - isMetal), 0.0, 1.0);
-      vec3 col = albedo * (0.36 + 0.74 * d1 + 0.24 * d2)
+      vec3 col = albedo * (0.40 + 0.72 * d1 + 0.22 * d2)
                + vec3(1.0, 0.96, 0.90) * spec
-               + vec3(0.95, 0.85, 0.68) * rim;
+               + vec3(0.95, 0.86, 0.70) * rim;
 
       gl_FragColor = vec4(col, 1.0);
     }
   `;
 
-  // Delad cache så 3D-modellen bara laddas EN gång för både dockan och ryggsäcksvyn
+  // Delad cache så 3D-modellen och texturatlasen bara laddas EN gång
   const SHARED = {
     loading: false,
     ready: false,
     verts: null,
     indices: null,
+    image: null,
     listeners: []
   };
 
@@ -84,21 +74,35 @@
     if (SHARED.loading) return;
     SHARED.loading = true;
 
-    fetch('assets/models/backpack_hiking.bin')
+    const meshPromise = fetch('assets/models/backpack_dailyart.bin')
       .then(r => r.arrayBuffer())
       .then(buf => {
         const header = new Uint32Array(buf, 0, 2);
         const vertCount = header[0];
         const idxCount = header[1];
-        const vByteLen = vertCount * 9 * 4;
-        SHARED.verts = new Float32Array(buf, 8, vertCount * 9);
+        const vByteLen = vertCount * 8 * 4;
+        SHARED.verts = new Float32Array(buf, 8, vertCount * 8);
         SHARED.indices = new Uint16Array(buf, 8 + vByteLen, idxCount);
+      });
+
+    const texPromise = new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        SHARED.image = img;
+        resolve();
+      };
+      img.onerror = reject;
+      img.src = 'assets/models/dailyart_backpack_atlas.jpg';
+    });
+
+    Promise.all([meshPromise, texPromise])
+      .then(() => {
         SHARED.ready = true;
         SHARED.listeners.forEach(fn => { try { fn(); } catch (e) {} });
         SHARED.listeners = [];
       })
       .catch(err => {
-        console.warn('Kunde inte ladda backpack_hiking.bin:', err);
+        console.warn('Kunde inte ladda backpack_dailyart:', err);
       });
   }
 
@@ -193,9 +197,10 @@
 
       this.locPos = gl.getAttribLocation(prog, 'a_pos');
       this.locNorm = gl.getAttribLocation(prog, 'a_norm');
-      this.locCol = gl.getAttribLocation(prog, 'a_col');
+      this.locUV = gl.getAttribLocation(prog, 'a_uv');
       this.uMVP = gl.getUniformLocation(prog, 'u_mvp');
       this.uNorm = gl.getUniformLocation(prog, 'u_normMat');
+      this.uTex = gl.getUniformLocation(prog, 'u_tex');
 
       gl.enable(gl.DEPTH_TEST);
     }
@@ -205,23 +210,37 @@
       const gl = this.gl;
       gl.useProgram(this.program);
 
-      // Interleaved VBO: 9 floats (36 bytes) per vertex [px,py,pz, nx,ny,nz, r,g,b]
+      // Interleaved VBO: 8 floats (32 bytes) per vertex [px,py,pz, nx,ny,nz, u,v]
       const vbo = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
       gl.bufferData(gl.ARRAY_BUFFER, SHARED.verts, gl.STATIC_DRAW);
 
-      const stride = 9 * 4;
+      const stride = 8 * 4;
       gl.enableVertexAttribArray(this.locPos);
       gl.vertexAttribPointer(this.locPos, 3, gl.FLOAT, false, stride, 0);
       gl.enableVertexAttribArray(this.locNorm);
       gl.vertexAttribPointer(this.locNorm, 3, gl.FLOAT, false, stride, 12);
-      gl.enableVertexAttribArray(this.locCol);
-      gl.vertexAttribPointer(this.locCol, 3, gl.FLOAT, false, stride, 24);
+      gl.enableVertexAttribArray(this.locUV);
+      gl.vertexAttribPointer(this.locUV, 2, gl.FLOAT, false, stride, 24);
 
       const ibo = gl.createBuffer();
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
       gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, SHARED.indices, gl.STATIC_DRAW);
       this.indexCount = SHARED.indices.length;
+
+      const tex = gl.createTexture();
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      // glTF UV (0,0) ligger i övre vänstra hörnet och matchar atlasbilden utan Y-flip
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, SHARED.image);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.uniform1i(this.uTex, 0);
+      this.texture = tex;
 
       this.uploaded = true;
     }
@@ -265,6 +284,8 @@
       const aspect = this.canvas.width / Math.max(1, this.canvas.height);
       const { mvp, normMat } = makeMVP(this.yaw, this.pitch, aspect, this.zoom);
       gl.useProgram(this.program);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, this.texture);
       gl.uniformMatrix4fv(this.uMVP, false, mvp);
       gl.uniformMatrix3fv(this.uNorm, false, normMat);
       gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_SHORT, 0);
