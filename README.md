@@ -47,5 +47,5 @@ python -m http.server 8080 --directory proto
 Spelet är byggt helt utan upphovsrättsskyddat material från äldre kommersiella spel och använder fria källor:
 - **Foton, historiska kartor och flaggor:** Wikimedia Commons / Wikipedia (Public Domain, CC0, CC BY, CC BY-SA)
 - **Jordglobens texturer och höjddata:** NASA Visible Earth / Blue Marble & SRTM (Public Domain)
-- **3D-modell (Survival Backpack):** Berk Gedik / LearnOpenGL (CC BY)
+- **3D-modell (Hiking Backpack):** Quaternius / Poly Pizza (CC0 Public Domain)
 - **Typsnitt:** Google Fonts (Playfair Display, Lora, Special Elite)

@@ -4559,9 +4559,202 @@ h1, h2, h3, h4,
   background: linear-gradient(180deg, #382413 0%, #1d1208 100%);
   border: 3px ridge #b88b43;
   border-radius: 3px;
-  padding: 10px 16px;
+  padding: 9px 15px;
+  max-height: none;
+  overflow: hidden;
+  max-width: 64%;
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(255, 224, 150, 0.25);
   font-family: var(--font-body, Georgia, serif);
   font-size: 12px;
   line-height: 1.45;
+}
+
+/* =====================================================================
+   UPPSLAGSVERKET: LANDSKARTA & INTERAKTIV HISTORIETIDSLINJE
+   ===================================================================== */
+.library-encyclopedia {
+  max-width: 1020px;
+}
+.encyc-tabs {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.encyc-tab-btn {
+  background: rgba(122, 84, 34, 0.14);
+  color: #4a3116;
+  border: 2px solid #9e7537;
+  border-radius: 4px;
+  padding: 7px 14px;
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.encyc-tab-btn:hover {
+  background: rgba(158, 117, 55, 0.28);
+}
+.encyc-tab-btn.active {
+  background: linear-gradient(180deg, #8c2323 0%, #5e1313 100%);
+  color: #fff6e6;
+  border-color: #b88b43;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+.encyc-columns-3 {
+  display: grid;
+  grid-template-columns: 220px 1fr 1.08fr;
+  gap: 14px;
+  align-items: start;
+}
+.encyc-map-frame {
+  background: #f5ebd4;
+  border: 2px solid #8c6428;
+  border-radius: 4px;
+  padding: 6px;
+  box-shadow: inset 0 0 12px rgba(90, 62, 24, 0.22), 0 3px 8px rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 196px;
+}
+.encyc-map-frame img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.encyc-dish-note {
+  margin-top: 7px;
+  font-size: 11.5px;
+  color: #3a2716;
+  background: rgba(255, 252, 244, 0.65);
+  border: 1px solid rgba(158, 117, 55, 0.35);
+  border-radius: 3px;
+  padding: 5px 8px;
+}
+.encyc-dish-note span {
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  color: #7d6140;
+  display: block;
+}
+.timeline-track {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 4px 10px;
+  margin-bottom: 12px;
+}
+.timeline-track::before {
+  content: '';
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: 23px;
+  height: 3px;
+  background: linear-gradient(90deg, #8c6428, #c99a45, #8c6428);
+  z-index: 0;
+}
+.timeline-node {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  text-align: center;
+  color: #3a2716;
+}
+.timeline-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #faf2df;
+  border: 3px solid #8c6428;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s, background 0.15s, border-color 0.15s;
+}
+.timeline-node:hover .timeline-dot {
+  transform: scale(1.22);
+  border-color: #8c2323;
+}
+.timeline-node.active .timeline-dot {
+  transform: scale(1.28);
+  background: #8c2323;
+  border-color: #ffd875;
+  box-shadow: 0 0 0 3px rgba(140, 35, 35, 0.25);
+}
+.timeline-year {
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 11px;
+  font-weight: 900;
+  color: #6b3f12;
+  background: rgba(250, 242, 223, 0.92);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.timeline-node.active .timeline-year {
+  background: #8c2323;
+  color: #fff6e6;
+}
+.timeline-short {
+  font-family: var(--font-body, Georgia, serif);
+  font-size: 11px;
+  font-weight: 700;
+  color: #2b1d10;
+  line-height: 1.2;
+}
+.timeline-detail-card {
+  background: rgba(255, 252, 244, 0.82);
+  border: 2px solid #9e7537;
+  border-left: 6px solid #8c2323;
+  border-radius: 4px;
+  padding: 14px 18px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+.timeline-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+.timeline-year-stamp {
+  font-family: var(--font-typewriter, 'Courier New', monospace);
+  font-size: 15px;
+  font-weight: 900;
+  color: #8c2323;
+  border: 2px dashed #8c2323;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(140, 35, 35, 0.06);
+  white-space: nowrap;
+}
+.timeline-person-name {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 21px;
+  color: #1f140a;
+  margin: 0;
+  line-height: 1.15;
+}
+.timeline-person-role {
+  font-family: var(--font-body, Georgia, serif);
+  font-style: italic;
+  font-size: 12.5px;
+  color: #6b4a26;
+}
+.timeline-person-text {
+  font-family: var(--font-body, Georgia, serif);
+  font-size: 14px;
+  line-height: 1.6;
+  color: #24170a;
+  margin: 0;
 }

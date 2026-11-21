@@ -1,4 +1,4 @@
-// Globetrotter, Fotorealistisk 3D-Jordglob (WebGL Ray-Sphere + NASA Blue Marble)
+// Globetrotter — Fotorealistisk 3D-Jordglob (WebGL Ray-Sphere + NASA Blue Marble)
 // Stödjer fri 3D-rotering, mushjulszoom, dynamisk inzoomning vid flygning,
 // molnlager, havsblänk, atmosfärglöd, röda BackPacker-reslinjer och världshändelser.
 
@@ -174,7 +174,7 @@
       float diff = mix(baseDiff, bumpDiff, landMask);
       float lit = 0.26 + 0.86 * pow(diff, 0.88);
 
-      // Extra reliefkontrast i bergskedjorna (ljusa kammar, djupare dalar, 1.5x förstärkt)
+      // Extra reliefkontrast i bergskedjorna (ljusa kammar, djupare dalar — 1.5x förstärkt)
       float slope = length(mapN.xy) * landMask;
       float ridgeHighlight = max(0.0, bumpDiff - baseDiff) * 0.68 * landMask;
       float valleyShadow = max(0.0, baseDiff - bumpDiff) * 0.63 * landMask;
