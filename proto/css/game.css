@@ -4758,3 +4758,71 @@ h1, h2, h3, h4,
   color: #24170a;
   margin: 0;
 }
+
+/* Visuella porträttmedaljonger på tidslinjen & stort inramat porträtt i detaljkortet */
+.timeline-track {
+  gap: 4px;
+  padding: 6px 2px 8px;
+}
+.timeline-track::before {
+  top: 29px;
+}
+.timeline-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2.5px solid #8c6428;
+  background: radial-gradient(circle, #5b4024, #2a1b0e);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.32);
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.timeline-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+}
+.timeline-node:hover .timeline-avatar {
+  transform: scale(1.12);
+  border-color: #8c2323;
+}
+.timeline-node.active .timeline-avatar {
+  transform: scale(1.18);
+  border-color: #8c2323;
+  box-shadow: 0 0 0 3px #ffd875, 0 5px 14px rgba(0, 0, 0, 0.4);
+}
+.timeline-short {
+  font-size: 10px;
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.timeline-detail-card.with-portrait {
+  display: grid;
+  grid-template-columns: 118px 1fr;
+  gap: 16px;
+  align-items: center;
+}
+.timeline-portrait-frame {
+  width: 118px;
+  height: 142px;
+  border: 3px solid #8c6428;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #2b1d10;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.28);
+  flex-shrink: 0;
+}
+.timeline-portrait-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+}
+.timeline-detail-right {
+  min-width: 0;
+}

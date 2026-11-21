@@ -97,6 +97,7 @@
 
   // Personliga annonstexter för varje stads signaturjobb
   const CITY_SIGNATURE_ADS = {
+    malmo: 'Rederiet vid Nyhamnen söker en glad Öresundsguide som kan berätta om både Malmöhus, Öresundsbron och skånsk historia för morgonens resenärer!',
     stockholm: 'Kapten Holm på M/S Västan har tappat rösten! Han behöver en pigg skärgårdsguide som hittar bland kobbarna och kan dra en bra historia för passagerarna.',
     kairo: 'Kapten Tariq sätter segel på sin gamla felucca vid solnedgången och söker en pratglad ciceron med koll på både Nilen och faraonerna.',
     delhi: 'Gamle mästerkocken Rashid i Old Delhi behöver ett par snabba händer bland grytorna, doften av kardemumma och varm naan ingår i lönen!',
@@ -117,6 +118,10 @@
 
   // 2 extra lokala jobb per stad: [snabbpass (4 tim), specialistpass (8 tim)] med personliga platsannonser
   const CITY_EXTRA_JOBS = {
+    malmo: [
+      { title: 'Barista vid Davidshall', employer: 'Kafé Lilla Torg', hours: 4, payFactor: 0.68, role: 'barista', tag: 'Kafé · 4 tim', adText: 'Karin och Amir vid Lilla torg bjuder på nybakade kardemummabullar och bra betalt till dig som kan brygga kaffe i förmiddagsrusningen!' },
+      { title: 'Utrikesreporter', employer: 'Öresunds Reseblad', hours: 8, payFactor: 1.38, role: 'journalist', tag: 'Redaktion · 8 tim', adText: 'Redaktör Persson på Stortorget behöver en världsvan skribent för ett helt dagspass. Eget skrivbord och obegränsat med kaffe ingår!' }
+    ],
     stockholm: [
       { title: 'Barista på Söder', employer: 'Kafé Mariatorget', hours: 4, payFactor: 0.68, role: 'barista', tag: 'Kafé · 4 tim', adText: 'Klaus och Gittan på Mariatorget bjuder på bullfika och en bra slant till den som vill jobba extra och skumma mjölk i rusningen!' },
       { title: 'Utrikesreporter', employer: 'Svenska Resebladet', hours: 8, payFactor: 1.38, role: 'journalist', tag: 'Redaktion · 8 tim', adText: 'Chefredaktör Lindqvist har skrivit fast sig och behöver en beläst reseskribent hela dagen, eget skrivbord och presskort ingår.' }

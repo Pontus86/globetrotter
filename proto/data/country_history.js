@@ -1,163 +1,206 @@
-// Globetrotter - Historiska tidslinjer och personligheter för stadens bibliotek
-// Varje land har en klickbar tidslinje med 4-5 epoker, kungar, upptäckare och kulturpersonligheter.
+// Globetrotter - Utökad visuell historietidslinje med porträtt och bilder för stadens bibliotek
+// 7-9 historiska punkter per land, alla med fria Wikimedia Commons-porträtt i assets/history/.
 
 window.GT_COUNTRY_HISTORY = {
   stockholm: {
     map: 'assets/maps/countries/se.png',
     timeline: [
-      { year: 'ca 800', name: 'Vikingatiden & Birka', role: 'Handelsplats i Mälaren', text: 'Nordiska sjöfarare reste österut längs de ryska floderna ända till Konstantinopel och Bagdad. På ön Birka i Mälaren växte Sveriges första riktiga stad fram som ett centrum för pälsverk, silver och bärnsten.' },
-      { year: '1523', name: 'Gustav Vasa', role: 'Kung och riksbyggare', text: 'Valdes till kung i Strängnäs den 6 juni 1523 efter att ha brutit Sverige ur Kalmarunionen. Han införde reformationen, byggde upp en stark statsmakt och lade grunden till det moderna Sverige.' },
-      { year: '1707', name: 'Carl von Linné', role: 'Botaniker ("Blomsterkungen")', text: 'Född i Småland och professor i Uppsala. Linné skapade det moderna namnsystemet för växter och djur (t.ex. Homo sapiens) som forskare över hela jorden fortfarande använder varje dag.' },
-      { year: '1895', name: 'Alfred Nobel', role: 'Uppfinnare och donator', text: 'Kemisten och dynamitens uppfinnare skrev sitt berömda testamente i Paris 1895, där nästan hela hans förmögenhet gick till Nobelprisen i fysik, kemi, medicin, litteratur och fred.' },
-      { year: '1945', name: 'Astrid Lindgren', role: 'Författare', text: 'Med debuten för Pippi Långstrump 1945 förändrade hon barnlitteraturen i grunden. Hennes böcker har översatts till över 100 språk och format generationer av läsare världen över.' }
+      { id: 'se_birka', year: 'ca 800', name: 'Birka', role: 'Vikingatidens handelsstad', wiki: 'Birka', text: 'På ön Björkö i Mälaren växte Sveriges första stad fram. Här möttes nordiska sjöfarare med handelsmän från både Västeuropa och kalifatet i Bagdad.' },
+      { id: 'se_birgitta', year: '1303', name: 'Heliga Birgitta', role: 'Författare och helgon', wiki: 'Bridget_of_Sweden', text: 'En av medeltidens mest inflytelserika kvinnor i Europa. Hon grundade Birgittinorden i Vadstena och blev senare skyddshelgon för Europa.' },
+      { id: 'se_vasa', year: '1523', name: 'Gustav Vasa', role: 'Kung och riksbyggare', wiki: 'Gustav_I_of_Sweden', text: 'Valdes till kung den 6 juni 1523 efter att ha brutit Sverige ur Kalmarunionen. Han byggde en stark statsmakt och lade grunden till det moderna Sverige.' },
+      { id: 'se_g2a', year: '1611', name: 'Gustav II Adolf', role: 'Stormaktstidens kung', wiki: 'Gustavus_Adolphus', text: 'Gjorde Sverige till en europeisk stormakt under 1600-talet, grundade Göteborg och reformerade både skolväsende och förvaltning.' },
+      { id: 'se_kristina', year: '1632', name: 'Drottning Kristina', role: 'Regent och kulturälskare', wiki: 'Christina,_Queen_of_Sweden', text: 'Blev drottning som sexåring, bjöd in filosofen Descartes till Stockholm och chockade Europa när hon 1654 abdikerade och flyttade till Rom.' },
+      { id: 'se_linne', year: '1707', name: 'Carl von Linné', role: 'Blomsterkungen', wiki: 'Carl_Linnaeus', text: 'Professor i Uppsala som skapade det moderna namnsystemet för växter och djur som forskare över hela jorden fortfarande använder.' },
+      { id: 'se_lind', year: '1820', name: 'Jenny Lind', role: '"Den svenska näktergalen"', wiki: 'Jenny_Lind', text: 'En av 1800-talets största operastjärnor. Hennes turnéer genom Europa och USA skapade ren hysteri och hon skänkte stora summor till skolor.' },
+      { id: 'se_nobel', year: '1895', name: 'Alfred Nobel', role: 'Uppfinnare och donator', wiki: 'Alfred_Nobel', text: 'Kemisten och dynamitens uppfinnare skrev 1895 sitt testamente där nästan hela förmögenheten gick till Nobelprisen.' },
+      { id: 'se_lindgren', year: '1945', name: 'Astrid Lindgren', role: 'Författare', wiki: 'Astrid_Lindgren', text: 'Med Pippi Långstrump 1945 förändrade hon barnlitteraturen i grunden. Hennes böcker har översatts till över 100 språk.' }
     ]
   },
   kairo: {
     map: 'assets/maps/countries/eg.png',
     timeline: [
-      { year: '2560 f.Kr.', name: 'Farao Cheops (Khufu)', role: 'Byggherre vid Giza', text: 'Under Cheops regeringstid restes den stora pyramiden i Giza, byggd av över två miljoner kalkstensblock. I nästan 3 800 år var den världens högsta byggnad.' },
-      { year: '1332 f.Kr.', name: 'Tutankhamon', role: 'Pojkfaraon', text: 'Blev farao redan som nioåring och dog ung, men blev världsberömd 1922 när Howard Carter hittade hans nästan helt orörda grav och gyllene dödsmask i Konungarnas dal.' },
-      { year: '51 f.Kr.', name: 'Kleopatra VII', role: 'Egyptens sista drottning', text: 'En skarp diplomat som talade minst nio språk. Hon allierade sig med både Julius Caesar och Marcus Antonius i ett sista försök att hålla Egypten självständigt från Rom.' },
-      { year: '1176', name: 'Saladin (Salah ad-Din)', role: 'Sultan och fältherre', text: 'Grundade Ayyubiddynastin i Kairo och lät bygga det mäktiga citadellet som fortfarande blickar ut över staden. Känd både i öst och väst för sin ridderlighet.' },
-      { year: '1869', name: 'Suezkanalens öppnande', role: 'Världshandelns genväg', text: 'När kanalen mellan Medelhavet och Röda havet invigdes 1869 förkortades sjövägen mellan Europa och Asien med tusentals kilometer.' }
+      { id: 'eg_khufu', year: '2560 f.Kr.', name: 'Farao Cheops', role: 'Stora pyramidens byggherre', wiki: 'Khufu', text: 'Under Cheops regeringstid restes den stora pyramiden i Giza av över två miljoner kalkstensblock, världens högsta byggnad i 3 800 år.' },
+      { id: 'eg_hatshepsut', year: '1478 f.Kr.', name: 'Hatshepsut', role: 'Kvinnlig farao', wiki: 'Hatshepsut', text: 'En av Egyptens mest framgångsrika regenter. Hon ledde stora handelsexpeditioner till landet Punt och lät bygga det storslagna terrass-templet vid Deir el-Bahari.' },
+      { id: 'eg_nefertiti', year: '1350 f.Kr.', name: 'Nefertiti', role: 'Drottning i Amarna', wiki: 'Nefertiti', text: 'Känd över hela världen genom sin målade kalkstensbyst. Tillsammans med Akhenaton inledde hon en kort men unik konstnärlig epok.' },
+      { id: 'eg_tut', year: '1332 f.Kr.', name: 'Tutankhamon', role: 'Pojkfaraon', wiki: 'Tutankhamun', text: 'Blev farao redan som nioåring och blev världsberömd 1922 när Howard Carter hittade hans nästan orörda grav och gyllene dödsmask.' },
+      { id: 'eg_ramses', year: '1279 f.Kr.', name: 'Ramses II', role: 'Ramses den store', text: 'Regerade i 66 år, slöt världens äldsta kända fredsfördrag och lät hugga ut klipptemplen vid Abu Simbel.', wiki: 'Ramesses_II' },
+      { id: 'eg_cleopatra', year: '51 f.Kr.', name: 'Kleopatra VII', role: 'Sista drottningen', wiki: 'Cleopatra', text: 'En skarp diplomat som talade minst nio språk och allierade sig med Julius Caesar och Marcus Antonius i kampen för Egyptens självständighet.' },
+      { id: 'eg_saladin', year: '1176', name: 'Saladin', role: 'Sultan av Egypten', wiki: 'Saladin', text: 'Grundade Ayyubiddynastin i Kairo, byggde citadellet ovanför staden och blev berömd både i öst och väst för sin ridderlighet.' },
+      { id: 'eg_umm', year: '1930-tal', name: 'Umm Kulthum', role: '"Österns stjärna"', wiki: 'Umm_Kulthum', text: 'Egyptens mest älskade sångerska. När hennes månatliga konserter sändes i radio tömdes gatorna i hela arabvärlden.' }
     ]
   },
   delhi: {
     map: 'assets/maps/countries/in.png',
     timeline: [
-      { year: '268 f.Kr.', name: 'Kejsar Ashoka', role: 'Mauryarikets härskare', text: 'Efter ett blodigt krig i Kalinga vände Ashoka våldet ryggen, omfamnade buddhismen och lät hugga in budskap om tolerans och medkänsla på stenpelare över hela Indien.' },
-      { year: '1556', name: 'Akbar den store', role: 'Mogulkejsare', text: 'Enade stora delar av norra Indien och blev berömd för sin religiösa tolerans. Vid sitt hov samlade han tänkare, poeter och konstnärer från många olika kulturer.' },
-      { year: '1632', name: 'Shah Jahan', role: 'Mogulrikets arkitektkung', text: 'Lät uppföra både Röda fortet i Delhi och det vita marmormausoleet Taj Mahal i Agra till minne av sin hustru Mumtaz Mahal.' },
-      { year: '1930', name: 'Mahatma Gandhi', role: 'Frihetskämpe', text: 'Ledde Indiens självständighetsrörelse genom icke-våld och civil olydnad, bland annat den berömda Saltmarschen till havet 1930.' },
-      { year: '1947', name: 'Indiens självständighet', role: 'Världens största demokrati', text: 'Vid midnatt den 15 augusti 1947 blev Indien en självständig stat med Jawaharlal Nehru som sin förste premiärminister.' }
+      { id: 'in_ashoka', year: '268 f.Kr.', name: 'Kejsar Ashoka', role: 'Mauryarikets härskare', wiki: 'Ashoka', text: 'Efter kriget i Kalinga valde Ashoka fredens väg, omfamnade buddhismen och lät hugga in budskap om medkänsla på stenpelare över hela Indien.' },
+      { id: 'in_aryabhata', year: '499', name: 'Aryabhata', role: 'Matematiker och astronom', wiki: 'Aryabhata', text: 'Beräknade jordens rotation och året med häpnadsväckande precision, och lade grunden till det decimala talsystemet.' },
+      { id: 'in_akbar', year: '1556', name: 'Akbar den store', role: 'Mogulkejsare', wiki: 'Akbar', text: 'Enade stora delar av norra Indien och blev berömd för sin religiösa tolerans och sitt lysande hov av poeter och tänkare.' },
+      { id: 'in_shahjahan', year: '1632', name: 'Shah Jahan', role: 'Taj Mahals byggherre', wiki: 'Shah_Jahan', text: 'Lät uppföra både Röda fortet i Delhi och det vita marmormausoleet Taj Mahal i Agra till minne av sin hustru Mumtaz Mahal.' },
+      { id: 'in_lakshmibai', year: '1857', name: 'Rani Lakshmibai', role: 'Drottning av Jhansi', wiki: 'Rani_of_Jhansi', text: 'En orädd ledare under det indiska upproret 1857 som blev en varaktig symbol för mod och självständighetsvilja.' },
+      { id: 'in_tagore', year: '1913', name: 'Rabindranath Tagore', role: 'Poet och Nobelpristagare', wiki: 'Rabindranath_Tagore', text: 'Blev 1913 den första icke-europén att vinna Nobelpriset i litteratur. Han skrev både Indiens och Bangladeshs nationalsånger.' },
+      { id: 'in_gandhi', year: '1930', name: 'Mahatma Gandhi', role: 'Frihetskämpe', wiki: 'Mahatma_Gandhi', text: 'Ledde Indiens frihetskamp genom icke-våld och civil olydnad, bland annat den berömda Saltmarschen 1930.' },
+      { id: 'in_nehru', year: '1947', name: 'Jawaharlal Nehru', role: 'Förste premiärministern', wiki: 'Jawaharlal_Nehru', text: 'Höll det berömda midnattstalet den 15 augusti 1947 när Indien blev en självständig nation och ledde uppbyggnaden av demokratin.' }
     ]
   },
   tokyo: {
     map: 'assets/maps/countries/jp.png',
     timeline: [
-      { year: '1008', name: 'Murasaki Shikibu', role: 'Författare vid kejsarhovet', text: 'Skrev "Berättelsen om Genji" i Kyoto, som av många litteraturhistoriker räknas som världens allra första roman.' },
-      { year: '1603', name: 'Tokugawa Ieyasu', role: 'Shogun och enare', text: 'Gjorde den lilla fiskebyn Edo (dagens Tokyo) till sitt maktcentrum och inledde över 250 år av fred, hantverk, teater och träsnittskonst.' },
-      { year: '1831', name: 'Katsushika Hokusai', role: 'Konstnär', text: 'Skapade det världsberömda träsnittet "Under vågen utanför Kanagawa" vid 70 års ålder. Hans stil inspirerade senare franska impressionister som Monet och Van Gogh.' },
-      { year: '1868', name: 'Meijirestaurationen', role: 'Japan öppnas mot världen', text: 'Kejsar Meiji flyttade huvudstaden till Edo och döpte om den till Tokyo ("Östra huvudstaden"). På bara några decennier förvandlades landet till en modern industrination.' },
-      { year: '1964', name: 'Shinkansen & OS i Tokyo', role: 'Snabbtågets födelse', text: 'Samma höst som Tokyo arrangerade de olympiska spelen rullade världens första riktiga höghastighetståg, Shinkansen, ut på rälsen.' }
+      { id: 'jp_murasaki', year: '1008', name: 'Murasaki Shikibu', role: 'Författare', wiki: 'Murasaki_Shikibu', text: 'Skrev "Berättelsen om Genji" vid kejsarhovet i Kyoto, ofta kallad världens allra första roman.' },
+      { id: 'jp_nobunaga', year: '1568', name: 'Oda Nobunaga', role: 'Fältherre och enare', wiki: 'Oda_Nobunaga', text: 'Inledde enandet av Japan efter ett sekel av inbördeskrig och uppmuntrade handel och nya idéer från omvärlden.' },
+      { id: 'jp_ieyasu', year: '1603', name: 'Tokugawa Ieyasu', role: 'Shogun av Edo', wiki: 'Tokugawa_Ieyasu', text: 'Gjorde den lilla fiskebyn Edo (dagens Tokyo) till sitt maktcentrum och inledde över 250 år av fred och blomstrande hantverk.' },
+      { id: 'jp_basho', year: '1689', name: 'Matsuo Bashō', role: 'Haikupoet', wiki: 'Matsuo_Bashō', text: 'Vandrade till fots genom norra Japan och gjorde den tre-radiga haikudikten till en världsberömd konstform.' },
+      { id: 'jp_hokusai', year: '1831', name: 'Katsushika Hokusai', role: 'Träsnittsmästare', wiki: 'Hokusai', text: 'Skapade det ikoniska verket "Under vågen utanför Kanagawa" vid 70 års ålder och inspirerade konstnärer över hela Europa.' },
+      { id: 'jp_meiji', year: '1868', name: 'Kejsar Meiji', role: 'Modernisatören', wiki: 'Emperor_Meiji', text: 'Flyttade huvudstaden till Tokyo och ledde omvandlingen från samurajsamhälle till modern industrination på bara några decennier.' },
+      { id: 'jp_kurosawa', year: '1954', name: 'Akira Kurosawa', role: 'Filmregissör', wiki: 'Akira_Kurosawa', text: 'Med mästerverk som "De sju samurajerna" och "Rashomon" inspirerade han filmskapare i hela världen, från västernfilmer till Star Wars.' }
     ]
   },
   sanfrancisco: {
     map: 'assets/maps/countries/us.png',
     timeline: [
-      { year: '1776', name: 'USA:s självständighet', role: 'Grundlagsfäderna', text: 'Den 4 juli 1776 antogs självständighetsförklaringen i Philadelphia. Samma år grundades den spanska missionsstationen som blev början till San Francisco.' },
-      { year: '1849', name: 'Guldruschen i Kalifornien', role: '"The Forty-Niners"', text: 'När guld hittades i Sierra Nevada strömmade hundratusentals lycksökare in genom Golden Gate. På två år växte San Francisco från en liten utpost till en livlig hamnstad.' },
-      { year: '1863', name: 'Abraham Lincoln', role: 'USA:s 16:e president', text: 'Ledde unionen genom det amerikanska inbördeskriget och avskaffade slaveriet genom frigörelseproklamationen.' },
-      { year: '1873', name: 'Levi Strauss', role: 'Uppfinnaren bakom jeansen', text: 'Tillsammans med skräddaren Jacob Davis tog han patent på nitförstärkta arbetsbyxor i denim i San Francisco, plagget som hela världen idag kallar jeans.' },
-      { year: '1969', name: 'Månlandningen (Apollo 11)', role: 'Neil Armstrong & Buzz Aldrin', text: 'Den 20 juli 1969 tog människan sina första steg på månen, direktsänt till hundratals miljoner TV-tittare runt jorden.' }
+      { id: 'us_washington', year: '1776', name: 'George Washington', role: 'Förste presidenten', wiki: 'George_Washington', text: 'Ledde kontinentalarmén under frihetskriget och blev USA:s förste president 1789.' },
+      { id: 'us_sacagawea', year: '1805', name: 'Sacagawea', role: 'Vägvisare västerut', wiki: 'Sacagawea', text: 'Guidad och tolkade för Lewis och Clarks berömda expedition över Klippiga bergen ända fram till Stilla havet.' },
+      { id: 'us_lincoln', year: '1863', name: 'Abraham Lincoln', role: '16:e presidenten', wiki: 'Abraham_Lincoln', text: 'Höll ihop nationen under inbördeskriget och avskaffade slaveriet genom frigörelseproklamationen.' },
+      { id: 'us_strauss', year: '1873', name: 'Levi Strauss', role: 'Jeansen i San Francisco', wiki: 'Levi_Strauss', text: 'Skapade de nitförstärkta arbetsbyxorna i denim i San Francisco 1873, plagget som blev älskat över hela världen.' },
+      { id: 'us_edison', year: '1879', name: 'Thomas Edison', role: 'Uppfinnare', wiki: 'Thomas_Edison', text: 'Tog över tusen patent och förändrade vardagen med fonografen, filmkameran och kommersiell glödlampsbelysning.' },
+      { id: 'us_earhart', year: '1932', name: 'Amelia Earhart', role: 'Flygpionjär', wiki: 'Amelia_Earhart', text: 'Blev den första kvinnan som flög ensam över Atlanten och inspirerade en hel generation äventyrare.' },
+      { id: 'us_armstrong', year: '1969', name: 'Neil Armstrong', role: 'Astronaut (Apollo 11)', wiki: 'Neil_Armstrong', text: 'Tog mänsklighetens första steg på månen den 20 juli 1969 inför hundratals miljoner TV-tittare.' }
     ]
   },
   newyork: {
     map: 'assets/maps/countries/us.png',
     timeline: [
-      { year: '1624', name: 'Nya Amsterdam', role: 'Holländsk handelspost', text: 'Holländska handelsmän slog sig ner på södra spetsen av Manhattan och byggde en skyddsmur som gav namn åt dagens Wall Street.' },
-      { year: '1789', name: 'George Washington', role: 'Förste presidenten', text: 'Svors in som USA:s allra förste president på Federal Hall på Manhattan när New York fungerade som landets första huvudstad.' },
-      { year: '1886', name: 'Frihetsgudinnan invigs', role: 'Gåva från Frankrike', text: 'Skulpterad av Frédéric Auguste Bartholdi med en inre stålkonstruktion av Gustave Eiffel. För miljoner immigranter var hon den första synen av Amerika.' },
-      { year: '1920-talet', name: 'Harlem-renässansen', role: 'Jazz, poesi & kultur', text: 'New York blev världens jazzhuvudstad med storheter som Duke Ellington och författaren Langston Hughes.' },
-      { year: '1931', name: 'Empire State Building', role: 'Skyskrapornas era', text: 'Byggdes på rekordtiden 410 dagar mitt under depressionen och var världens högsta byggnad i nästan fyrtio år.' }
+      { id: 'ny_hamilton', year: '1789', name: 'Alexander Hamilton', role: 'Förste finansministern', wiki: 'Alexander_Hamilton', text: 'Bodde på Manhattan, grundade landets finanssystem och skapade grunden för det som blev Wall Street.' },
+      { id: 'ny_tubman', year: '1850', name: 'Harriet Tubman', role: 'Frihetskämpe', wiki: 'Harriet_Tubman', text: 'Rymde själv från slaveriet och återvände gång på gång för att leda människor till frihet längs den underjordiska järnvägen.' },
+      { id: 'ny_roebling', year: '1883', name: 'Emily Warren Roebling', role: 'Brooklyn Bridge', wiki: 'Emily_Warren_Roebling', text: 'När chefsingenjören insjuknade tog hon över ledningen av bygget av Brooklyn Bridge och blev den första som korsade bron.' },
+      { id: 'ny_tesla', year: '1890-tal', name: 'Nikola Tesla', role: 'Uppfinnare i New York', wiki: 'Nikola_Tesla', text: 'Arbetade i sitt laboratorium på Manhattan och skapade växelströmssystemet som driver dagens elnät.' },
+      { id: 'ny_ellington', year: '1927', name: 'Duke Ellington', role: 'Jazzkompositör', wiki: 'Duke_Ellington', text: 'Satte tonen för Harlem-renässansen på Cotton Club och komponerade över tusen jazzstycken.' },
+      { id: 'ny_roosevelt', year: '1948', name: 'Eleanor Roosevelt', role: 'Människorättskämpe', wiki: 'Eleanor_Roosevelt', text: 'Ledde arbetet med FN:s allmänna förklaring om de mänskliga rättigheterna, som antogs 1948.' },
+      { id: 'ny_warhol', year: '1962', name: 'Andy Warhol', role: 'Popkonstnär', wiki: 'Andy_Warhol', text: 'Gjorde sin ateljé The Factory på Manhattan till navet för 1960-talets konst, musik och popkultur.' }
     ]
   },
   paris: {
     map: 'assets/maps/countries/fr.png',
     timeline: [
-      { year: '1429', name: 'Jeanne d’Arc', role: 'Bondflickan från Orléans', text: 'Som tonåring ledde hon den franska armén till seger vid Orléans under hundraårskriget och blev en av Frankrikes mest kända historiska gestalter.' },
-      { year: '1661', name: 'Ludvig XIV', role: 'Solkungen', text: 'Regerade i 72 år och gjorde slottet i Versailles och Paris till Europas självklara centrum för mode, arkitektur, balett och hovliv.' },
-      { year: '1789', name: 'Franska revolutionen', role: 'Frihet, jämlikhet, broderskap', text: 'Stormningen av Bastiljen den 14 juli 1789 störtade enväldet och födde deklarationen om människans och medborgarens rättigheter.' },
-      { year: '1804', name: 'Napoleon Bonaparte', role: 'Kejsare och fältherre', text: 'Formade om hela Europas karta och införde lagboken Code Napoléon, vars principer fortfarande påverkar lagstiftningen i många länder.' },
-      { year: '1903', name: 'Marie Curie', role: 'Fysiker och kemist', text: 'Forskade i Paris och blev den första kvinnan som fick Nobelpriset, och den första personen i historien att vinna priset i två olika vetenskaper.' }
+      { id: 'fr_jeanne', year: '1429', name: 'Jeanne d’Arc', role: 'Hjältinnan från Orléans', wiki: 'Joan_of_Arc', text: 'Som tonåring vände hon hundraårskriget vid Orléans och blev en av Frankrikes mest kända historiska gestalter.' },
+      { id: 'fr_louis14', year: '1661', name: 'Ludvig XIV', role: 'Solkungen', wiki: 'Louis_XIV', text: 'Regerade i 72 år och gjorde Versailles och Paris till Europas centrum för konst, balett och arkitektur.' },
+      { id: 'fr_voltaire', year: '1759', name: 'Voltaire', role: 'Upplysningsfilosof', wiki: 'Voltaire', text: 'Kämpade med skarp penna för yttrandefrihet och tolerans, och inspirerade tänkare över hela världen.' },
+      { id: 'fr_napoleon', year: '1804', name: 'Napoleon Bonaparte', role: 'Kejsare och fältherre', wiki: 'Napoleon', text: 'Formade om Europas karta och införde lagboken Code Napoléon som fortfarande påverkar många länders lagar.' },
+      { id: 'fr_hugo', year: '1862', name: 'Victor Hugo', role: 'Författare', wiki: 'Victor_Hugo', text: 'Skrev klassikerna "Ringaren i Notre-Dame" (som räddade katedralen från rivning!) och "Samhällets olycksbarn".' },
+      { id: 'fr_eiffel', year: '1889', name: 'Gustave Eiffel', role: 'Ingenjör', wiki: 'Gustave_Eiffel', text: 'Ritade järnkonstruktionen till både Eiffeltornet i Paris och Frihetsgudinnan i New York.' },
+      { id: 'fr_curie', year: '1903', name: 'Marie Curie', role: 'Dubbel Nobelpristagare', wiki: 'Marie_Curie', text: 'Upptäckte radium och polonium i Paris och blev den första människan i historien att vinna två Nobelpris i olika vetenskaper.' },
+      { id: 'fr_piaf', year: '1945', name: 'Édith Piaf', role: '"Sparven från Paris"', wiki: 'Édith_Piaf', text: 'Började som gatusångerska i Paris och blev en av världens mest älskade artister med "La Vie en rose".' }
     ]
   },
   rom: {
     map: 'assets/maps/countries/it.png',
     timeline: [
-      { year: '44 f.Kr.', name: 'Julius Caesar', role: 'Fältherre och statsman', text: 'Erövrade Gallien, reformerade kalendern (som gav oss månaden juli) och banade väg för övergången från romersk republik till kejsardöme.' },
-      { year: '27 f.Kr.', name: 'Kejsar Augustus', role: 'Roms förste kejsare', text: 'Inledde "Pax Romana", tvåhundra år av relativ fred då romerska vägar, akvedukter och städer spreds runt hela Medelhavet.' },
-      { year: '1500-talet', name: 'Leonardo da Vinci & Michelangelo', role: 'Renässansens mästare', text: 'Under den italienska renässansen skapades mästerverk som takmålningarna i Sixtinska kapellet, Peterskyrkans kupol och Mona Lisa.' },
-      { year: '1609', name: 'Galileo Galilei', role: 'Astronom och fysiker', text: 'Riktade sitt förbättrade teleskop mot natthimlen, upptäckte Jupiters månar och lade grunden för modern naturvetenskap.' },
-      { year: '1861', name: 'Italiens enande', role: 'Giuseppe Garibaldi', text: 'Efter århundraden av splittrade stadsstater och kungadömen enades Italien till en nation under ledning av bland andra Garibaldi.' }
+      { id: 'it_caesar', year: '44 f.Kr.', name: 'Julius Caesar', role: 'Fältherre och statsman', wiki: 'Julius_Caesar', text: 'Erövrade Gallien, reformerade kalendern (som gav oss månaden juli) och förändrade Roms historia i grunden.' },
+      { id: 'it_augustus', year: '27 f.Kr.', name: 'Kejsar Augustus', role: 'Förste kejsaren', wiki: 'Augustus', text: 'Inledde Pax Romana, tvåhundra år då vägar, akvedukter och städer band samman hela Medelhavet.' },
+      { id: 'it_polo', year: '1271', name: 'Marco Polo', role: 'Upptäcktsresande', wiki: 'Marco_Polo', text: 'Reste från Venedig längs Sidenvägen till Kina och beskrev Asiens städer och uppfinningar för ett häpet Europa.' },
+      { id: 'it_dante', year: '1320', name: 'Dante Alighieri', role: 'Poet', wiki: 'Dante_Alighieri', text: 'Skrev "Den gudomliga komedin" på italienska istället för latin och lade grunden till det moderna italienska språket.' },
+      { id: 'it_davinci', year: '1503', name: 'Leonardo da Vinci', role: 'Renässansgeni', wiki: 'Leonardo_da_Vinci', text: 'Målare, uppfinnare och anatom som skissade helikoptrar och broar samtidigt som han målade Mona Lisa.' },
+      { id: 'it_michelangelo', year: '1512', name: 'Michelangelo', role: 'Skulptör och målare', wiki: 'Michelangelo', text: 'Skulpterade David, målade taket i Sixtinska kapellet och ritade Peterskyrkans mäktiga kupol.' },
+      { id: 'it_galileo', year: '1609', name: 'Galileo Galilei', role: 'Astronom', wiki: 'Galileo_Galilei', text: 'Riktade teleskopet mot himlen, upptäckte Jupiters månar och visade att jorden kretsar kring solen.' },
+      { id: 'it_garibaldi', year: '1861', name: 'Giuseppe Garibaldi', role: 'Italiens enare', wiki: 'Giuseppe_Garibaldi', text: 'Ledde rödskjortorna i kampen som enade de italienska småstaterna till ett enda kungarike 1861.' }
     ]
   },
   london: {
     map: 'assets/maps/countries/gb.png',
     timeline: [
-      { year: '1215', name: 'Magna Carta', role: 'Kung Johan utan land', text: 'Det berömda frihetsbrevet som slog fast att inte ens kungen står över lagen. Originalexemplar finns idag att se på British Library.' },
-      { year: '1558', name: 'Drottning Elizabeth I', role: 'Den elisabetanska guldåldern', text: 'Under hennes 45 år på tronen blomstrade teatern i London med William Shakespeare, samtidigt som engelska skepp seglade ut över världshaven.' },
-      { year: '1687', name: 'Isaac Newton', role: 'Fysiker och matematiker', text: 'Publicerade "Principia" och beskrev tyngdlagen och rörelselagarna som förklarade både fallande äpplen och planeternas banor.' },
-      { year: '1837', name: 'Drottning Victoria', role: 'Ångmaskinens tidevarv', text: 'Under den viktorianska eran byggdes världens första tunnelbana i London (1863) och industrialismen förvandlade hela samhället.' },
-      { year: '1940', name: 'Winston Churchill', role: 'Premiärminister under krigsåren', text: 'Höll modet uppe i Storbritannien med sina radiotal under blitzen mot London och ledde landet genom andra världskriget.' }
+      { id: 'gb_boudica', year: '60 e.Kr.', name: 'Drottning Boudica', role: 'Keltisk drottning', wiki: 'Boudica', text: 'Ledde de brittiska stammarna i ett mäktigt uppror mot romarna. Hennes bronsstaty står idag vid Westminster Bridge.' },
+      { id: 'gb_elizabeth1', year: '1558', name: 'Drottning Elizabeth I', role: 'Guldålderns drottning', wiki: 'Elizabeth_I', text: 'Under hennes 45 år på tronen blomstrade teatern i London och engelska skepp seglade ut över världshaven.' },
+      { id: 'gb_shakespeare', year: '1599', name: 'William Shakespeare', role: 'Dramatiker', wiki: 'William_Shakespeare', text: 'Skrev Hamlet, Romeo och Julia och Macbeth för Globe-teatern vid Themsen och skapade hundratals engelska ord.' },
+      { id: 'gb_newton', year: '1687', name: 'Isaac Newton', role: 'Fysiker och matematiker', wiki: 'Isaac_Newton', text: 'Beskrev tyngdlagen och rörelselagarna i "Principia" och förändrade vetenskapen för alltid.' },
+      { id: 'gb_austen', year: '1813', name: 'Jane Austen', role: 'Författare', wiki: 'Jane_Austen', text: 'Med vass humor och skarpt öga för vardagslivet skrev hon odödliga klassiker som "Stolthet och fördom".' },
+      { id: 'gb_darwin', year: '1859', name: 'Charles Darwin', role: 'Naturforskare', wiki: 'Charles_Darwin', text: 'Efter sin världsomsegling med HMS Beagle publicerade han "Om arternas uppkomst" och evolutionsteorin.' },
+      { id: 'gb_nightingale', year: '1860', name: 'Florence Nightingale', role: 'Sjukvårdspionjär', wiki: 'Florence_Nightingale', text: 'Grundade den moderna sjuksköterskeutbildningen i London och använde statistik för att rädda liv på sjukhus.' },
+      { id: 'gb_churchill', year: '1940', name: 'Winston Churchill', role: 'Premiärminister', wiki: 'Winston_Churchill', text: 'Ledde Storbritannien genom andra världskriget och fick senare även Nobelpriset i litteratur.' }
     ]
   },
   istanbul: {
     map: 'assets/maps/countries/tr.png',
     timeline: [
-      { year: '330', name: 'Konstantin den store', role: 'Romersk kejsare', text: 'Grundade sin nya huvudstad Konstantinopel vid Bosporen, mitt i korsningen mellan Europa och Asien.' },
-      { year: '537', name: 'Kejsar Justinianus I', role: 'Hagia Sofias byggherre', text: 'Lät bygga den väldiga kupolkyrkan Hagia Sofia på bara fem år, ett arkitektoniskt underverk som saknade motstycke i tusen år.' },
-      { year: '1453', name: 'Mehmed II (Erövraren)', role: 'Osmansk sultan', text: 'Intog Konstantinopel vid 21 års ålder, gjorde staden till det Osmanska rikets huvudstad och grundade kärnan i dagens Stora basaren.' },
-      { year: '1520', name: 'Süleyman den magnifike', role: 'Lagstiftaren', text: 'Under hans regeringstid nådde Osmanska riket sin kulturella höjdpunkt, med mästerarkitekten Mimar Sinan som ritade stadens mest kända moskéer.' },
-      { year: '1923', name: 'Mustafa Kemal Atatürk', role: 'Republikens grundare', text: 'Grundade den moderna republiken Turkiet 1923, införde det latinska alfabetet och genomförde stora samhällsreformer.' }
+      { id: 'tr_constantine', year: '330', name: 'Konstantin den store', role: 'Romersk kejsare', wiki: 'Constantine_the_Great', text: 'Grundade sin nya huvudstad Konstantinopel vid Bosporen, mitt mellan Europa och Asien.' },
+      { id: 'tr_justinian', year: '537', name: 'Kejsar Justinianus I', role: 'Hagia Sofias byggherre', wiki: 'Justinian_I', text: 'Lät bygga Hagia Sofia på fem år och samlade romersk rätt i en lagbok som användes i sekler.' },
+      { id: 'tr_rumi', year: '1250', name: 'Rumi (Mevlana)', role: 'Poet och filosof', wiki: 'Rumi', text: 'En av världslitteraturens mest lästa poeter, vars dikter om vänskap och tolerans lever starkt än idag.' },
+      { id: 'tr_mehmed2', year: '1453', name: 'Sultan Mehmed II', role: 'Erövraren', wiki: 'Mehmed_the_Conqueror', text: 'Intog Konstantinopel vid 21 års ålder, gjorde staden till osmansk huvudstad och grundade Stora basaren.' },
+      { id: 'tr_suleiman', year: '1520', name: 'Süleyman den magnifike', role: 'Lagstiftaren', wiki: 'Suleiman_the_Magnificent', text: 'Ledde Osmanska rikets guldålder för konst, arkitektur, poesi och lagstiftning.' },
+      { id: 'tr_sinan', year: '1557', name: 'Mimar Sinan', role: 'Mästerarkitekt', wiki: 'Mimar_Sinan', text: 'Ritade över 300 byggnader inklusive Süleymaniye-moskén och formade Istanbuls berömda siluett.' },
+      { id: 'tr_ataturk', year: '1923', name: 'Mustafa Kemal Atatürk', role: 'Republikens grundare', wiki: 'Mustafa_Kemal_Atatürk', text: 'Grundade den moderna republiken Turkiet 1923, införde latinska alfabetet och moderniserade landet.' }
     ]
   },
   bangkok: {
     map: 'assets/maps/countries/th.png',
     timeline: [
-      { year: '1238', name: 'Kungariket Sukhothai', role: 'Det thailändska alfabetets födelse', text: 'Kung Ramkhamhaeng lät skapa det thailändska skriftspråket och inledde en klassisk guldålder för konst och tempelbyggande.' },
-      { year: '1351', name: 'Ayutthaya', role: 'Handelsmetropol vid floden', text: 'I över 400 år var Ayutthaya en av Asiens rikaste städer, besökt av handelsmän från Kina, Indien, Japan och Europa.' },
-      { year: '1782', name: 'Kung Rama I', role: 'Bangkoks grundare', text: 'Grundade Chakridynastin, flyttade huvudstaden till flodbanken vid dagens Bangkok och lät börja bygga Grand Palace.' },
-      { year: '1868', name: 'Kung Chulalongkorn (Rama V)', role: 'Modernisatören', text: 'Avskaffade slaveriet, byggde järnvägar och lyckades genom skicklig diplomati hålla Thailand fritt från kolonialstyre. Han besökte till och med Sverige 1897!' }
+      { id: 'th_ramkhamhaeng', year: '1283', name: 'Kung Ramkhamhaeng', role: 'Sukhothais kung', wiki: 'Ram_Khamhaeng', text: 'Skapade det thailändska alfabetet och inledde en blomstrande tid för kultur och handel.' },
+      { id: 'th_naresuan', year: '1590', name: 'Kung Naresuan', role: 'Ayutthayas försvarare', wiki: 'Naresuan', text: 'Återupprättade kungariket Ayutthayas självständighet och är en av Thailands mest firade historiska kungar.' },
+      { id: 'th_narai', year: '1680', name: 'Kung Narai', role: 'Diplomaten', wiki: 'Narai', text: 'Skickade thailändska ambassadörer ända till Ludvig XIV:s hov i Versailles och knöt band med hela världen.' },
+      { id: 'th_rama1', year: '1782', name: 'Kung Rama I', role: 'Bangkoks grundare', wiki: 'Buddha_Yodfa_Chulaloke', text: 'Grundade Chakridynastin, flyttade huvudstaden till Bangkok och påbörjade bygget av Grand Palace.' },
+      { id: 'th_mongkut', year: '1851', name: 'Kung Mongkut (Rama IV)', role: 'Astronom och språklärd', wiki: 'Mongkut', text: 'Förutsade en solförmörkelse med egna beräkningar och öppnade Thailand för modern vetenskap.' },
+      { id: 'th_chulalongkorn', year: '1868', name: 'Kung Chulalongkorn', role: 'Rama V', wiki: 'Chulalongkorn', text: 'Avskaffade slaveriet, byggde järnvägar och höll Thailand fritt från kolonialstyre. Han besökte även Sverige 1897!' },
+      { id: 'th_bhumibol', year: '1946', name: 'Kung Bhumibol (Rama IX)', role: '70 år på tronen', wiki: 'Bhumibol_Adulyadej', text: 'Regerade i 70 år, var en passionerad jazzsaxofonist och startade tusentals landsbygdsprojekt.' }
     ]
   },
   peking: {
     map: 'assets/maps/countries/cn.png',
     timeline: [
-      { year: '551 f.Kr.', name: 'Konfucius', role: 'Filosof och lärare', text: 'Hans tankar om utbildning, respekt, familj och gott ledarskap formade hela Östasiens kultur i över två tusen år.' },
-      { year: '221 f.Kr.', name: 'Qin Shi Huangdi', role: 'Kinas förste kejsare', text: 'Enade de stridande rikena, knöt samman de första murarna till Kinesiska muren och lät skapa den berömda terrakottaarmén i Xi’an.' },
-      { year: '1405', name: 'Amiral Zheng He', role: 'Skattflottans befälhavare', text: 'Ledde enorma kinesiska träskepp ända till Indien, Arabiska halvön och Östafrikas kust, nästan hundra år före Columbus.' },
-      { year: '1420', name: 'Kejsar Yongle', role: 'Förbjudna stadens byggherre', text: 'Flyttade huvudstaden norrut till Peking och lät uppföra det enorma kejserliga palatskomplexet Förbjudna staden.' },
-      { year: '1978', name: 'Moderniseringen', role: 'Nya städer och snabbtåg', text: 'Från slutet av 1970-talet öppnade Kina ekonomin och genomgick en av historiens snabbaste omvandlingar från jordbruksland till teknikjätte.' }
+      { id: 'cn_confucius', year: '551 f.Kr.', name: 'Konfucius', role: 'Filosof och lärare', wiki: 'Confucius', text: 'Hans idéer om bildning, respekt och gott styre formade hela Östasiens samhällen i över två tusen år.' },
+      { id: 'cn_sun_tzu', year: '500 f.Kr.', name: 'Sun Zi (Sun Tzu)', role: 'Strateg och författare', wiki: 'Sun_Tzu', text: 'Skrev "Krigskonsten", en klassiker om strategi och diplomati som fortfarande läses över hela världen.' },
+      { id: 'cn_qin', year: '221 f.Kr.', name: 'Qin Shi Huangdi', role: 'Kinas förste kejsare', wiki: 'Qin_Shi_Huang', text: 'Enade Kina, standardiserade skriften och mynten, började binda samman Kinesiska muren och lät skapa terrakottaarmén.' },
+      { id: 'cn_cailun', year: '105 e.Kr.', name: 'Cai Lun', role: 'Papperets uppfinnare', wiki: 'Cai_Lun', text: 'Utvecklade tekniken att tillverka riktigt papper av växtfibrer under Handynastin, en uppfinning som förändrade mänskligheten.' },
+      { id: 'cn_wu', year: '690', name: 'Kejsarinnan Wu Zetian', role: 'Kinas enda kejsarinna', wiki: 'Wu_Zetian', text: 'Styrde Kina under Tangdynastins glansdagar och lät ämbetsmän väljas genom kunskapsprov istället för börd.' },
+      { id: 'cn_zhenghe', year: '1405', name: 'Amiral Zheng He', role: 'Skattflottans ledare', wiki: 'Zheng_He', text: 'Seglade med väldiga träskepp till Indien, Arabien och Östafrika nästan hundra år före Columbus.' },
+      { id: 'cn_yongle', year: '1420', name: 'Kejsar Yongle', role: 'Förbjudna stadens byggherre', wiki: 'Yongle_Emperor', text: 'Flyttade huvudstaden till Peking och lät uppföra Förbjudna staden samt ett enormt uppslagsverk.' }
     ]
   },
   sydney: {
     map: 'assets/maps/countries/au.png',
     timeline: [
-      { year: '65 000 år sedan', name: 'Aboriginerna', role: 'Världens äldsta levande kultur', text: 'Australiens urfolk har levt på kontinenten i över 65 000 år med en rik berättartradition ("Drömtiden"), konst och kunskap om naturen.' },
-      { year: '1770', name: 'Kapten James Cook', role: 'Kartläggare i Stilla havet', text: 'Kartlade Australiens östkust med fartyget HMS Endeavour och landsteg i Botany Bay strax söder om dagens Sydney.' },
-      { year: '1788', name: 'First Fleet i Sydney Cove', role: 'Stadens början', text: 'Elva brittiska skepp ankrade vid Sydney Cove där den första europeiska bosättningen växte fram vid The Rocks.' },
-      { year: '1901', name: 'Australiens federation', role: 'En egen nation', text: 'De sex kolonierna gick samman och bildade Samväldet Australien år 1901, med en helt nyanlagd huvudstad i Canberra.' },
-      { year: '1973', name: 'Jørn Utzon & Operahuset', role: 'Arkitekturikonen', text: 'Den danske arkitekten Jørn Utzon ritade de vita segelformade taken i Sydneys hamn, idag en av världens mest igenkända byggnader.' }
+      { id: 'au_bennelong', year: '1789', name: 'Bennelong', role: 'Eora-folkets diplomat', wiki: 'Bennelong', text: 'En nyckelperson ur urfolket Eora som byggde broar mellan aboriginerna och nybyggarna. Operahuset står idag på Bennelong Point!' },
+      { id: 'au_cook', year: '1770', name: 'Kapten James Cook', role: 'Upptäcktsresande', wiki: 'James_Cook', text: 'Kartlade Australiens östkust med HMS Endeavour och landsteg i Botany Bay strax söder om Sydney.' },
+      { id: 'au_phillip', year: '1788', name: 'Arthur Phillip', role: 'Förste guvernören', wiki: 'Arthur_Phillip', text: 'Ledde First Fleet in i Sydney Harbour och grundade bosättningen som växte till Australiens största stad.' },
+      { id: 'au_macquarie', year: '1810', name: 'Lachlan Macquarie', role: 'Stadsbyggare', wiki: 'Lachlan_Macquarie', text: 'Förvandlade Sydney från en liten straffkoloni till en välplanerad hamnstad med breda gator, parker och sjukhus.' },
+      { id: 'au_kelly', year: '1878', name: 'Ned Kelly', role: 'Legendarisk bushranger', wiki: 'Ned_Kelly', text: 'Känd för sin hemmagjorda järnrustning och blev en av Australiens mest omskrivna folkhjältar och laglösa.' },
+      { id: 'au_melba', year: '1890-tal', name: 'Nellie Melba', role: 'Operasångerska', wiki: 'Nellie_Melba', text: 'Australiens första globala superstjärna, så berömd att både desserten Peach Melba och Melba-toast döptes efter henne.' },
+      { id: 'au_utzon', year: '1973', name: 'Jørn Utzon', role: 'Operahusets arkitekt', wiki: 'Jørn_Utzon', text: 'Ritade de ikoniska vita segeltaken på Operahuset i Sydney, inspirerad av skalen från en apelsin.' }
     ]
   },
   kapstaden: {
     map: 'assets/maps/countries/za.png',
     timeline: [
-      { year: '1488', name: 'Bartolomeu Dias', role: 'Portugisisk sjöfarare', text: 'Blev den förste europén som rundade Afrikas sydspets och kallade platsen Godahoppsudden eftersom sjövägen mot Indien nu var öppen.' },
-      { year: '1652', name: 'Kapstadens grundande', role: 'Försörjningshamn vid Taffelberget', text: 'Holländska Ostindiska kompaniet anlade grönsaksodlingar och en hamn under Taffelberget för skepp på väg mellan Europa och Asien.' },
-      { year: '1816', name: 'Kung Shaka Zulu', role: 'Zulurikets grundare', text: 'Enade flera klaner i östra Sydafrika till det mäktiga Zuluriket och förändrade regionens historia.' },
-      { year: '1994', name: 'Nelson Mandela', role: 'Frihetskämpe och president', text: 'Efter 27 år i fängelse, varav många på Robben Island utanför Kapstaden, blev Mandela 1994 Sydafrikas förste demokratiskt valde president och avskaffade apartheidsystemet.' }
+      { id: 'za_dias', year: '1488', name: 'Bartolomeu Dias', role: 'Portugisisk sjöfarare', wiki: 'Bartolomeu_Dias', text: 'Blev den förste europén som rundade Afrikas sydspets och öppnade sjövägen mot Indien.' },
+      { id: 'za_vanriebeeck', year: '1652', name: 'Jan van Riebeeck', role: 'Hamnens grundare', wiki: 'Jan_van_Riebeeck', text: 'Anlade en försörjningsstation med grönsaksodlingar under Taffelberget, början till dagens Kapstaden.' },
+      { id: 'za_shaka', year: '1816', name: 'Kung Shaka Zulu', role: 'Zulurikets grundare', wiki: 'Shaka', text: 'Enade många klaner till det mäktiga Zuluriket och omformade södra Afrikas politiska karta.' },
+      { id: 'za_barnard', year: '1967', name: 'Christiaan Barnard', role: 'Hjärtkirurg', wiki: 'Christiaan_Barnard', text: 'Genomförde världens allra första lyckade hjärttransplantation på Groote Schuur-sjukhuset i Kapstaden.' },
+      { id: 'za_makeba', year: '1960-tal', name: 'Miriam Makeba', role: '"Mama Africa"', wiki: 'Miriam_Makeba', text: 'Sångerska som spred sydafrikansk musik över hela världen och kämpade mot apartheid i FN.' },
+      { id: 'za_tutu', year: '1984', name: 'Desmond Tutu', role: 'Ärkebiskop & fredspristagare', wiki: 'Desmond_Tutu', text: 'Fick Nobels fredspris 1984 och myntade begreppet "Regnbågsnationen" om det nya Sydafrika.' },
+      { id: 'za_mandela', year: '1994', name: 'Nelson Mandela', role: 'President & frihetsikon', wiki: 'Nelson_Mandela', text: 'Efter 27 år i fängelse, bland annat på Robben Island, blev han 1994 Sydafrikas förste demokratiskt valde president.' }
     ]
   },
   rio: {
     map: 'assets/maps/countries/br.png',
     timeline: [
-      { year: '1500', name: 'Pedro Álvares Cabral', role: 'Portugisisk upptäckare', text: 'Landsteg på Brasiliens kust år 1500, vilket gjorde Brasilien till Sydamerikas enda portugisisktalande land.' },
-      { year: '1822', name: 'Kejsar Pedro I', role: 'Brasiliens självständighet', text: 'Utropade Brasiliens självständighet från Portugal med det berömda ropet vid Ipiranga och blev landets förste kejsare.' },
-      { year: '1888', name: 'Prinsessan Isabel', role: 'Gyllene lagen', text: 'Undertecknade "Lei Áurea" som slutgiltigt avskaffade slaveriet i Brasilien den 13 maj 1888.' },
-      { year: '1958', name: 'Pelé (Edson Arantes do Nascimento)', role: 'Fotbollskungen', text: 'Slog igenom som 17-åring vid fotbolls-VM i Sverige 1958 och vann totalt tre VM-guld, vilket gjorde Brasilien synonymt med fotbollsglädje.' },
-      { year: '1960', name: 'Oscar Niemeyer & Brasília', role: 'Modernistisk arkitektur', text: 'Rio lämnade över huvudstadsrollen till den helt nybyggda staden Brasília, formgiven av den världsberömde arkitekten Oscar Niemeyer.' }
+      { id: 'br_cabral', year: '1500', name: 'Pedro Álvares Cabral', role: 'Portugisisk upptäckare', wiki: 'Pedro_Álvares_Cabral', text: 'Landsteg på Brasiliens kust år 1500, vilket gjorde Brasilien till Sydamerikas portugisisktalande jätte.' },
+      { id: 'br_pedro1', year: '1822', name: 'Kejsar Pedro I', role: 'Självständighetens utropare', wiki: 'Pedro_I_of_Brazil', text: 'Utropade Brasiliens självständighet från Portugal 1822 och blev landets förste kejsare.' },
+      { id: 'br_pedro2', year: '1840', name: 'Kejsar Pedro II', role: 'Vetenskapsälskande kejsare', wiki: 'Pedro_II_of_Brazil', text: 'Regerade i 58 år, talade ett dussin språk och var en av de allra första att prova Alexander Graham Bells telefon.' },
+      { id: 'br_isabel', year: '1888', name: 'Prinsessan Isabel', role: 'Gyllene lagen', wiki: 'Isabel,_Princess_Imperial_of_Brazil', text: 'Undertecknade lagen "Lei Áurea" den 13 maj 1888 som slutgiltigt avskaffade slaveriet i Brasilien.' },
+      { id: 'br_santos', year: '1906', name: 'Alberto Santos-Dumont', role: 'Flygpionjär', wiki: 'Alberto_Santos-Dumont', text: 'Brasiliens älskade uppfinnare som flög sitt motorplan 14-bis i Paris 1906 och populariserade armbandsuret!' },
+      { id: 'br_pele', year: '1958', name: 'Pelé', role: 'Fotbollskungen', wiki: 'Pelé', text: 'Slog igenom som 17-åring vid VM i Sverige 1958 och vann totalt tre VM-guld för Brasilien.' },
+      { id: 'br_niemeyer', year: '1960', name: 'Oscar Niemeyer', role: 'Arkitekt', wiki: 'Oscar_Niemeyer', text: 'Formgav den modernistiska huvudstaden Brasília med sina berömda böjda betonglinjer.' }
     ]
   },
   mexicocity: {
     map: 'assets/maps/countries/mx.png',
     timeline: [
-      { year: '1325', name: 'Tenochtitlán grundas', role: 'Aztekernas ö-stad', text: 'Enligt legenden byggde aztekerna sin huvudstad mitt i Texcocosjön där de såg en örn med en orm i näbben på en kaktus, dagens symbol på Mexikos flagga.' },
-      { year: '1502', name: 'Moctezuma II', role: 'Aztekrikets härskare', text: 'Styrde ett rike med miljoner invånare, kanaler, flytande trädgårdar och storslagna tempel när spanjorerna anlände 1519.' },
-      { year: '1810', name: 'Miguel Hidalgo', role: 'Självständighetsropet', text: 'Prästen Hidalgo ringde i kyrkklockan i Dolores den 16 september 1810 och startade kampen för Mexikos självständighet.' },
-      { year: '1858', name: 'Benito Juárez', role: 'Reformpresident', text: 'Född i en zapotekisk by blev han landets förste president med urfolksbakgrund och försvarade Mexikos demokrati och självständighet.' },
-      { year: '1930-talet', name: 'Frida Kahlo & Diego Rivera', role: 'Konst och muralmålningar', text: 'Frida Kahlos uttrycksfulla självporträtt och Diego Riveras väldiga väggmålningar i Mexico City satte mexikansk konst på världskartan.' }
+      { id: 'mx_moctezuma', year: '1502', name: 'Moctezuma II', role: 'Aztekrikets härskare', wiki: 'Moctezuma_II', text: 'Styrde den praktfulla ö-staden Tenochtitlán med flytande trädgårdar, kanaler och storslagna tempel.' },
+      { id: 'mx_sorjuana', year: '1680', name: 'Sor Juana Inés de la Cruz', role: 'Poet och vetenskapskvinna', wiki: 'Juana_Inés_de_la_Cruz', text: 'Ett briljant renässansgeni i 1600-talets Mexico City som försvarade kvinnors rätt till utbildning och böcker.' },
+      { id: 'mx_hidalgo', year: '1810', name: 'Miguel Hidalgo', role: 'Självständighetsropet', wiki: 'Miguel_Hidalgo_y_Costilla', text: 'Ringde i kyrkklockan i Dolores den 16 september 1810 och tände gnistan till Mexikos självständighet.' },
+      { id: 'mx_juarez', year: '1858', name: 'Benito Juárez', role: 'Reformpresident', wiki: 'Benito_Juárez', text: 'Landets förste president med urfolksbakgrund som försvarade Mexikos demokrati och självständighet.' },
+      { id: 'mx_zapata', year: '1911', name: 'Emiliano Zapata', role: 'Revolutionsledare', wiki: 'Emiliano_Zapata', text: 'Kämpade för böndernas rätt till sin egen jord under den mexikanska revolutionen med mottot "Jord och frihet".' },
+      { id: 'mx_rivera', year: '1929', name: 'Diego Rivera', role: 'Muralmålare', wiki: 'Diego_Rivera', text: 'Målade enorma, färgsprakande väggmålningar om Mexikos hela historia i Nationalpalatset vid Zócalo.' },
+      { id: 'mx_kahlo', year: '1939', name: 'Frida Kahlo', role: 'Konstnär', wiki: 'Frida_Kahlo', text: 'Skapade djupt personliga och färgstarka självporträtt i sitt blå hus i Coyoacán och blev en världsikon.' }
     ]
   }
 };
+
+window.GT_COUNTRY_HISTORY.malmo = window.GT_COUNTRY_HISTORY.stockholm;

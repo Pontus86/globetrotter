@@ -142,6 +142,7 @@
 
   // --- Egna unika bläckstämplar för passet (100 % egen design med IATA-kod, land & sliten bläckstil) ---
   const CITY_STAMP_META = {
+    malmo:        { code: 'MMX', color: '#8f2424', shape: 'oval',  rot: 4 },
     stockholm:    { code: 'ARN', color: '#1b4f8c', shape: 'round', rot: -6 },
     kairo:        { code: 'CAI', color: '#8f2424', shape: 'oval',  rot: 5 },
     delhi:        { code: 'DEL', color: '#9c4a12', shape: 'rect',  rot: -4 },
@@ -253,7 +254,7 @@
     },
     deals: { kairo: 20 }, // Starta med ett sista-minuten-fynd så spelaren direkt ser REA-lappen!
     journal: [
-      { day: 1, text: 'Avresa från Stockholm med nystämplat pass, tom ryggsäck och 10 000 kr i reskassan.' }
+      { day: 1, text: `Avresa från ${W.cities[W.startCity]?.name || 'Malmö'} med nystämplat pass, tom ryggsäck och 10 000 kr i reskassan.` }
     ],
     haggleState: {}, // { "city_day_item": { price, mood, locked } }
     completedRelays: new Set(),
@@ -692,6 +693,7 @@
 
   // Regionala hotellfoton (fria Wikimedia Commons-foton) så varje del av världen har sin egen hotellkänsla
   const CITY_HOTEL_PHOTO = {
+    malmo:        'assets/photos/hotel_lobby.jpg',
     stockholm:    'assets/photos/hotel_lobby.jpg',
     paris:        'assets/photos/hotels/hotel_paris.jpg',
     rom:          'assets/photos/hotels/hotel_paris.jpg',
@@ -715,6 +717,7 @@
   }
 
   const CITY_TAVERN_PHOTO = {
+    malmo:        'assets/photos/hotel_tavern.jpg',
     stockholm:    'assets/photos/hotel_tavern.jpg',
     paris:        'assets/photos/taverns/tavern_paris.jpg',
     rom:          'assets/photos/taverns/tavern_paris.jpg',
@@ -1764,9 +1767,12 @@
     if (activeTab === 'history' && ch && Array.isArray(ch.timeline) && ch.timeline.length > 0) {
       const safeIdx = Math.max(0, Math.min(ch.timeline.length - 1, timelineIdx));
       const item = ch.timeline[safeIdx];
+      const itemImg = `assets/history/${item.id}.jpg`;
       const nodesHtml = ch.timeline.map((ev, i) => `
-        <button class="timeline-node ${i === safeIdx ? 'active' : ''}" onclick="window.GT.openLibraryModal('history', ${i})">
-          <span class="timeline-dot"></span>
+        <button class="timeline-node ${i === safeIdx ? 'active' : ''}" onclick="window.GT.openLibraryModal('history', ${i})" title="${ev.year}: ${ev.name}">
+          <div class="timeline-avatar">
+            <img src="assets/history/${ev.id}.jpg" alt="${ev.name}" onerror="this.style.display='none'">
+          </div>
           <span class="timeline-year">${ev.year}</span>
           <span class="timeline-short">${ev.name}</span>
         </button>
@@ -1774,17 +1780,22 @@
 
       bodyHtml = `
         <div class="encyc-timeline-wrap">
-          <div class="encyc-section-title">HISTORISK TIDSLINJE · KLICKA PÅ EN EPOK ELLER PERSONLIGHET</div>
+          <div class="encyc-section-title">HISTORISK TIDSLINJE (${ch.timeline.length} PUNKTER) · KLICKA PÅ ETT PORTRÄTT</div>
           <div class="timeline-track">${nodesHtml}</div>
-          <div class="timeline-detail-card">
-            <div class="timeline-detail-meta">
-              <span class="timeline-year-stamp">${item.year}</span>
-              <div>
-                <h3 class="timeline-person-name">${item.name}</h3>
-                <div class="timeline-person-role">${item.role}</div>
-              </div>
+          <div class="timeline-detail-card with-portrait">
+            <div class="timeline-portrait-frame">
+              <img src="${itemImg}" alt="${item.name}" onerror="this.parentElement.style.display='none'">
             </div>
-            <p class="timeline-person-text">${item.text}</p>
+            <div class="timeline-detail-right">
+              <div class="timeline-detail-meta">
+                <span class="timeline-year-stamp">${item.year}</span>
+                <div>
+                  <h3 class="timeline-person-name">${item.name}</h3>
+                  <div class="timeline-person-role">${item.role}</div>
+                </div>
+              </div>
+              <p class="timeline-person-text">${item.text}</p>
+            </div>
           </div>
         </div>
       `;
@@ -1900,6 +1911,7 @@
       kairo:        { shortLabel: 'Basar',   title: 'Basaren i Kairo',            leaveText: 'Lämna basaren',   keeperFallback: 'Basarhandlaren i Kairo' },
       istanbul:     { shortLabel: 'Basar',   title: 'Stora basaren i Istanbul',   leaveText: 'Lämna basaren',   keeperFallback: 'Basarhandlaren i Istanbul' },
       delhi:        { shortLabel: 'Basar',   title: 'Kryddbasaren i Delhi',       leaveText: 'Lämna basaren',   keeperFallback: 'Basarhandlaren i Delhi' },
+      malmo:        { shortLabel: 'Marknad', title: 'Möllevångstorget · Marknad', leaveText: 'Lämna marknaden', keeperFallback: 'Torghandlaren på Möllan' },
       stockholm:    { shortLabel: 'Marknad', title: 'Torghandel & Marknad',       leaveText: 'Lämna marknaden', keeperFallback: 'Torghandlaren i Stockholm' },
       paris:        { shortLabel: 'Marknad', title: 'Marknaden på Rue Mouffetard',leaveText: 'Lämna marknaden', keeperFallback: 'Marknadshandlaren i Paris' },
       rom:          { shortLabel: 'Marknad', title: 'Marknaden på Campo de’ Fiori',leaveText: 'Lämna marknaden', keeperFallback: 'Marknadshandlaren i Rom' },
@@ -2357,30 +2369,35 @@
   // Varje stad har ett realistiskt ruttnätverk (grannstäder + utvalda långdistansnav)
   // med sannolikhet (chance) och eventuell Stand by-linje, precis som i BP1/BP2.
   const CITY_AIRLINE_PREFIX = {
-    stockholm: 'SK', london: 'BA', paris: 'AF', rom: 'AZ', istanbul: 'TK',
+    malmo: 'SK', stockholm: 'SK', london: 'BA', paris: 'AF', rom: 'AZ', istanbul: 'TK',
     kairo: 'MS', kapstaden: 'SA', delhi: 'AI', bangkok: 'TG', peking: 'CA',
     tokyo: 'JL', sydney: 'QF', sanfrancisco: 'UA', newyork: 'AA',
     mexicocity: 'AM', rio: 'RG'
   };
 
   const CITY_ROUTES = {
+    malmo: [
+      { to: 'stockholm', chance: 90 }, { to: 'london', chance: 90 }, { to: 'paris', chance: 86 },
+      { to: 'rom', chance: 78 }, { to: 'istanbul', chance: 72 }, { to: 'kairo', chance: 62 },
+      { to: 'newyork', chance: 55, standby: true }
+    ],
     stockholm: [
-      { to: 'london', chance: 90 }, { to: 'paris', chance: 85 }, { to: 'rom', chance: 75 },
+      { to: 'malmo', chance: 90 }, { to: 'london', chance: 90 }, { to: 'paris', chance: 85 }, { to: 'rom', chance: 75 },
       { to: 'istanbul', chance: 70 }, { to: 'newyork', chance: 62 }, { to: 'kairo', chance: 58 },
       { to: 'peking', chance: 45, standby: true }
     ],
     london: [
-      { to: 'stockholm', chance: 90 }, { to: 'paris', chance: 95 }, { to: 'rom', chance: 80 },
+      { to: 'malmo', chance: 85 }, { to: 'stockholm', chance: 85 }, { to: 'paris', chance: 95 }, { to: 'rom', chance: 80 },
       { to: 'newyork', chance: 88 }, { to: 'kairo', chance: 65 }, { to: 'kapstaden', chance: 60 },
       { to: 'delhi', chance: 55, standby: true }
     ],
     paris: [
-      { to: 'london', chance: 95 }, { to: 'rom', chance: 90 }, { to: 'stockholm', chance: 80 },
+      { to: 'malmo', chance: 82 }, { to: 'london', chance: 95 }, { to: 'rom', chance: 90 }, { to: 'stockholm', chance: 78 },
       { to: 'istanbul', chance: 75 }, { to: 'newyork', chance: 78 }, { to: 'kairo', chance: 68 },
       { to: 'rio', chance: 55, standby: true }
     ],
     rom: [
-      { to: 'paris', chance: 90 }, { to: 'london', chance: 80 }, { to: 'istanbul', chance: 88 },
+      { to: 'malmo', chance: 74 }, { to: 'paris', chance: 90 }, { to: 'london', chance: 80 }, { to: 'istanbul', chance: 88 },
       { to: 'kairo', chance: 85 }, { to: 'stockholm', chance: 70 }, { to: 'kapstaden', chance: 55, standby: true }
     ],
     istanbul: [
@@ -2425,7 +2442,7 @@
     ],
     newyork: [
       { to: 'london', chance: 92 }, { to: 'sanfrancisco', chance: 95 }, { to: 'mexicocity', chance: 86 },
-      { to: 'paris', chance: 80 }, { to: 'rio', chance: 80 }, { to: 'stockholm', chance: 70 },
+      { to: 'paris', chance: 80 }, { to: 'rio', chance: 80 }, { to: 'malmo', chance: 72 }, { to: 'stockholm', chance: 68 },
       { to: 'tokyo', chance: 55, standby: true }
     ],
     mexicocity: [
@@ -3390,7 +3407,7 @@
             <div class="visa-page-title">OFFICIELLA MÅL / RESEUPPDRAG</div>
             <div style="background:rgba(255,253,247,0.65); border:1px dashed rgba(130,108,78,0.55); padding:7px 9px; border-radius:4px; margin-bottom:7px;">
               <div style="font-size:10px; font-weight:bold; letter-spacing:0.6px; color:#6b461e; text-transform:uppercase; margin-bottom:4px;">
-                Krav för att klara resan hem till Stockholm:
+                Krav för att klara resan hem till ${W.cities[W.startCity]?.name || 'Malmö'}:
               </div>
               <div style="font-size:11px; color:#2b2015; margin-bottom:3px;">
                 ${regDone ? '<b style="color:#246b36;">✓</b>' : '○'} <b>Världsdelar:</b> ${regionsVisited} / ${goals.requiredRegions}
@@ -3754,7 +3771,7 @@
               ${continueBtn}
               <button class="bp90-menu-btn primary" onclick="window.GT.startNewJourney()">
                 <span class="bp90-btn-title">STARTA NY RESA</span>
-                <span class="bp90-btn-sub">STÄMPLA PASS &amp; AVRESA FRÅN STOCKHOLM »</span>
+                <span class="bp90-btn-sub">STÄMPLA PASS &amp; AVRESA FRÅN ${(W.cities[W.startCity]?.name || 'MALMÖ').toUpperCase()} »</span>
               </button>
             </div>
           </div>
@@ -3795,7 +3812,10 @@
     state.mailedHome = [];
     state.goals = generateJourneyGoals();
     const goalNames = state.goals.souvenirCities.map(ck => W.cities[ck]?.name || ck).join(', ');
-    state.journal = [{ day: 1, text: `${fn} ${ln} påbörjade jorden-runt-resan från Stockholm! Mål i passet: ${state.goals.requiredCompetencies} yrkeskompetenser samt souvenirer från ${goalNames}.` }];
+    const startName = W.cities[W.startCity]?.name || 'Malmö';
+    state.city = W.startCity;
+    state.visitedCities = new Set([W.startCity]);
+    state.journal = [{ day: 1, text: `${fn} ${ln} påbörjade jorden-runt-resan från ${startName}! Mål i passet: ${state.goals.requiredCompetencies} yrkeskompetenser samt souvenirer från ${goalNames}.` }];
     saveGame();
     AudioMgr.play('fanfar');
     closeModal();
@@ -3842,7 +3862,7 @@
       return true;
     }
 
-    showToast(`Mellanlandning i Stockholm! Kvar för att klara spelet: ${missing.join(', ')}. Öppna passet för detaljer!`, 4800);
+    showToast(`Mellanlandning i ${W.cities[W.startCity]?.name || 'Malmö'}! Kvar för att klara spelet: ${missing.join(', ')}. Öppna passet för detaljer!`, 4800);
     return false;
   }
 

@@ -556,6 +556,86 @@
   ];
 
   // Slå ihop allt i GT_WORLD och GT_QUESTIONS!
+  W.startCity = 'malmo';
+
+  // Startstaden Malmö (hemstad för jorden-runt-resan!)
+  W.cities.malmo = {
+    name: 'Malmö',
+    country: 'Sverige',
+    region: 'Europa',
+    lat: 55.605,
+    lon: 13.004,
+    tagline: 'Öresunds port mot kontinenten, där resan börjar!',
+    skyline: 'assets/photos/turningtorso.jpg',
+    mapBg: 'assets/maps/map_stockholm.jpg',
+    hotel: { name: 'Hotel Kramer vid Stortorget', price: 420 },
+    highlights: ['turningtorso', 'malmohus', 'lillatorg', 'ribersborg'],
+    souvenirs: ['spettkaka', 'kangor'],
+    boats: [{ to: 'london', name: 'Nordsjöfärja Malmö-London', days: 4, price: 890 }],
+    job: { title: 'Öresundsguide', employer: 'Öresundslinjen', hours: 6, pay: 880 },
+    signature: {
+      name: 'Falafelrunda på Möllan',
+      openFrom: 11,
+      openUntil: 22,
+      cost: 75,
+      kind: 'deal',
+      desc: 'Strosa runt Möllevångstorget, ät stadens bästa falafel och snappa upp restips om billiga avgångar ut i Europa!'
+    }
+  };
+
+  Object.assign(W.places, {
+    turningtorso: { name: 'Turning Torso', city: 'malmo', photo: 'assets/photos/turningtorso.jpg', hours: 2, fee: 0, fact: 'Den 190 meter höga skruvade skyskrapan i Västra hamnen ritades av Santiago Calatrava och invigdes 2005.' },
+    malmohus:     { name: 'Malmöhus slott', city: 'malmo', photo: 'assets/photos/malmohus.jpg', hours: 2, fee: 90, fact: 'Nordens äldsta bevarade renässansslott, omgiven av vallgrav och slottspark mitt i staden.' },
+    lillatorg:    { name: 'Lilla torg', city: 'malmo', photo: 'assets/photos/lillatorg.jpg', hours: 1, fee: 0, fact: 'Ett kullerstensbelagt renässanstorg från 1590-talet kantat av korsvirkeshus och uteserveringar.' },
+    ribersborg:   { name: 'Ribersborgs kallbadhus', city: 'malmo', photo: 'assets/photos/ribersborg.jpg', hours: 2, fee: 85, fact: 'Det klassiska kallbadhuset i trä ute på bryggan i Öresund, med utsikt direkt mot Öresundsbron.' }
+  });
+
+  W.souvenirs.spettkaka = {
+    name: 'Skånsk spettkaka',
+    origin: 'malmo',
+    price: 160,
+    kind: 'samlar',
+    desc: 'Sprött, luftigt skånskt högtidsbakverk gräddat över öppen värme på roterande spett.'
+  };
+
+  W.shopkeepers.malmo = {
+    name: 'Sven & Amina på Möllevångstorget',
+    greet: 'Hej och välkommen till Möllan! Behöver du resekängor eller en riktig skånsk spettkaka att ta med ut i världen?'
+  };
+
+  W.taverns.malmo = {
+    name: 'Möllans Krog & Ölhall',
+    drink: 'en runda skånsk äppelmust & smörrebröd',
+    drinkCost: 115,
+    vibe: 'Lokal värme, skratt och resenärer på väg över Öresund.'
+  };
+
+  W.relayQuests.push({
+    id: 'relay_mmx_par',
+    from: 'malmo',
+    to: 'paris',
+    giver: 'Bokhandlare Lind på Södra Förstadsgatan',
+    itemName: 'En inbunden skånsk konstbok',
+    rewardCash: 950,
+    freeHotel: true
+  });
+
+  const MALMO_QUESTIONS = [
+    { id: 'mmx_tt_1', city: 'malmo', place: 'turningtorso', region: 'europa', type: 'mc', difficulty: 1, q: 'Hur många grader vrider sig Turning Torso från markplan ända upp till toppen?', a: ['90 grader', '45 grader', '180 grader', '360 grader'], explain: 'Turning Torso vrider sig exakt 90 grader (ett kvarts varv) fördelat på nio kuber.' },
+    { id: 'mmx_tt_2', city: 'malmo', place: 'turningtorso', region: 'europa', type: 'mc', difficulty: 2, q: 'Vilken känd spansk arkitekt ritade Turning Torso?', a: ['Santiago Calatrava', 'Antoni Gaudí', 'Norman Foster', 'Renzo Piano'], explain: 'Santiago Calatrava inspirerades av sin egen skulptur "Twisting Torso" i vit marmor.' },
+    { id: 'mmx_mh_1', city: 'malmo', place: 'malmohus', region: 'europa', type: 'mc', difficulty: 1, q: 'Vilket grannland hörde Malmö och hela Skåne till innan freden i Roskilde 1658?', a: ['Danmark', 'Norge', 'Tyskland', 'Polen'], explain: 'Malmö var länge en av Danmarks största och viktigaste handelsstäder innan Skåne blev svenskt 1658.' },
+    { id: 'mmx_mh_2', city: 'malmo', place: 'malmohus', region: 'europa', type: 'num', difficulty: 2, q: 'Vilket årtal slöts freden i Roskilde då Skåne, Halland och Blekinge blev svenska?', ans: 1658, min: 1580, max: 1730, step: 1, unit: 'år', explain: 'Freden i Roskilde undertecknades den 26 februari 1658 efter Karl X Gustavs tåg över Bält.' },
+    { id: 'mmx_lt_1', city: 'malmo', place: 'lillatorg', region: 'europa', type: 'mc', difficulty: 1, q: 'Vilken typ av traditionella trähus med synliga balkar är typiska runt Lilla torg i Malmö?', a: ['Korsvirkeshus', 'Timmerstugor', 'Funkishus', 'Pagoder'], explain: 'Korsvirkeshusen från 1500- och 1600-talen ger Lilla torg dess historiska skånsk-danska charm.' },
+    { id: 'mmx_lt_2', city: 'malmo', place: 'lillatorg', region: 'europa', type: 'mc', difficulty: 2, q: 'Vilken plats i storleksordning har Malmö bland Sveriges största städer?', a: ['Tredje största', 'Näst största', 'Fjärde största'], explain: 'Malmö är Sveriges tredje största stad efter Stockholm och Göteborg.' },
+    { id: 'mmx_rb_1', city: 'malmo', place: 'ribersborg', region: 'europa', type: 'text', difficulty: 1, q: 'Vad heter sundet mellan Malmö och Köpenhamn?', ans: 'Öresund', accept: ['oresund', 'öresund'], explain: 'Öresund är ett av världens mest trafikerade sund och förbinder Kattegatt med Östersjön.' },
+    { id: 'mmx_rb_2', city: 'malmo', place: 'ribersborg', region: 'europa', type: 'mc', difficulty: 1, q: 'Vilket år invigdes Öresundsbron mellan Malmö och Köpenhamn?', a: ['2000', '1994', '2005', '1998'], explain: 'Öresundsbron invigdes den 1 juli år 2000 av kung Carl XVI Gustaf och drottning Margrethe II.' },
+    { id: 'mmx_job_1', city: 'malmo', place: 'job', region: 'europa', type: 'mc', difficulty: 1, q: 'Vilken konstgjord ö mitt i Öresund kopplar ihop Öresundsbron med tunneln mot Kastrup?', a: ['Pepparholm', 'Ven', 'Saltholm', 'Bornholm'], explain: 'Pepparholm anlades av schaktmassor från tunnelbygget och har blivit ett unikt naturreservat.' },
+    { id: 'mmx_job_2', city: 'malmo', place: 'job', region: 'europa', type: 'mc', difficulty: 1, q: 'Vilken känd dansk huvudstad når man på knappt 35 minuter med tåg från Malmö C?', a: ['Köpenhamn', 'Aarhus', 'Odense', 'Aalborg'], explain: 'Öresundstågen rullar över bron dygnet runt mellan Malmö Central och Köpenhamns Hovedbanegård.' },
+    { id: 'mmx_job_3', city: 'malmo', place: 'job', region: 'europa', type: 'mc', difficulty: 2, q: 'Vilket välkänt skeppsvarv präglade Malmös siluett i över 100 år med sin enorma bockkran?', a: ['Kockums', 'Götaverken', 'Eriksberg', 'Lindholmen'], explain: 'Kockumskranen var länge Malmös symbol innan den monterades ner 2002 och såldes till Sydkorea.' },
+    { id: 'mmx_job_4', city: 'malmo', place: 'job', region: 'europa', type: 'mc', difficulty: 1, q: 'Vilken populär gaturätt har gjort Möllevången i Malmö berömt i hela Sverige?', a: ['Falafel', 'Surströmming', 'Palt', 'Kroppkakor'], explain: 'Malmö kallas ofta Sveriges falafelhuvudstad tack vare sina många prisvärda falafelställen.' }
+  ];
+  NEW_QUESTIONS.push(...MALMO_QUESTIONS);
+
   Object.assign(W.cities, NEW_CITIES);
   Object.assign(W.places, NEW_PLACES);
   Object.assign(W.wonders, NEW_WONDERS);

@@ -2,6 +2,26 @@
 // Innehåller flagga, bibliotekets namn & foto, basfakta om landet och genuint roliga trivia.
 
 window.GT_COUNTRY_FACTS = {
+  malmo: {
+    country: 'Sverige',
+    flag: 'assets/flags/se.png',
+    libraryName: 'Malmö stadsbibliotek',
+    libraryPhoto: 'assets/photos/libraries/lib_malmo.jpg',
+    capital: 'Stockholm',
+    population: 'ca 10,5 miljoner',
+    area: '450 295 km²',
+    language: 'Svenska',
+    currency: 'Svensk krona (SEK)',
+    government: 'Konstitutionell monarki',
+    timezone: 'CET (UTC+1)',
+    dish: 'Skånsk spettkaka, falafel på Möllan & köttbullar',
+    trivia: [
+      'Malmö binds samman med Köpenhamn via Öresundsbron, en 16 kilometer lång förbindelse av både bro och tunnel under havet.',
+      'Malmö kallas ofta "Parkernas stad" och har över 180 olika nationaliteter representerade bland sina invånare.',
+      'Sverige har flest öar i hela världen, över 267 000 stycken, och allemansrätten är inskriven i grundlagen.',
+      'Malmö stadsbiblioteks ljusa glasdel "Ljusets kalender" ritades av danske arkitekten Henning Larsen och öppnade 1997.'
+    ]
+  },
   stockholm: {
     country: 'Sverige',
     flag: 'assets/flags/se.png',

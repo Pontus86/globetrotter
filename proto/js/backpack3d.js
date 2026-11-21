@@ -15,10 +15,12 @@
 
     varying vec3 v_norm;
     varying vec3 v_col;
+    varying vec3 v_localPos;
 
     void main() {
       v_norm = normalize(u_normMat * a_norm);
       v_col = a_col;
+      v_localPos = a_pos;
       gl_Position = u_mvp * vec4(a_pos, 1.0);
     }
   `;
@@ -28,27 +30,37 @@
 
     varying vec3 v_norm;
     varying vec3 v_col;
+    varying vec3 v_localPos;
 
     void main() {
       vec3 N = normalize(v_norm);
-      vec3 L1 = normalize(vec3(-0.55, 0.70, 0.85)); // Huvudljus snett framifrån
+      vec3 L1 = normalize(vec3(-0.55, 0.72, 0.85)); // Huvudljus snett framifrån
       vec3 L2 = normalize(vec3(0.75, -0.10, 0.45)); // Varmt fyllnadsljus höger
       vec3 V  = vec3(0.0, 0.0, 1.0);
 
       float d1 = max(dot(N, L1), 0.0);
       float d2 = max(dot(N, L2), 0.0);
 
-      // Detektera mässingsspännen (varm gul/guld ton) för extra metallglans
-      float isBrass = clamp((v_col.r + v_col.g - v_col.b * 2.0) * 1.4 - 0.35, 0.0, 1.0);
+      // Procedur-ripstop / cordura-nylonväv så tyget får äkta taktil struktur
+      float weave = (sin(v_localPos.x * 165.0) * sin(v_localPos.y * 165.0) +
+                     sin(v_localPos.z * 165.0) * sin(v_localPos.y * 165.0)) * 0.022;
+
+      // Materialkänsla: svarta plastspännen & silverdragkedjor glänser mer än matt cordura-tyg
+      float lum = dot(v_col, vec3(0.299, 0.587, 0.114));
+      float isMetal = smoothstep(0.60, 0.74, lum);
+      float isDarkPlastic = smoothstep(0.16, 0.11, lum);
       vec3 H = normalize(L1 + V);
-      float spec = pow(max(dot(N, H), 0.0), mix(18.0, 48.0, isBrass)) * mix(0.10, 0.72, isBrass);
+      float shininess = mix(16.0, 56.0, max(isMetal, isDarkPlastic * 0.7));
+      float specStrength = mix(0.10, 0.65, isMetal) + isDarkPlastic * 0.22;
+      float spec = pow(max(dot(N, H), 0.0), shininess) * specStrength;
 
-      // Mjuk varm kantglöd så ryggsäcken poppar snyggt mot mörk bakgrund
-      float rim = pow(1.0 - max(dot(N, V), 0.0), 3.0) * 0.24;
+      // Mjuk varm kantglöd så ryggsäcken lyser ut snyggt mot mörk bakgrund
+      float rim = pow(1.0 - max(dot(N, V), 0.0), 3.0) * 0.26;
 
-      vec3 col = v_col * (0.38 + 0.72 * d1 + 0.24 * d2)
-               + vec3(1.0, 0.94, 0.78) * spec
-               + vec3(0.95, 0.84, 0.62) * rim;
+      vec3 albedo = clamp(v_col + weave * (1.0 - isMetal), 0.0, 1.0);
+      vec3 col = albedo * (0.36 + 0.74 * d1 + 0.24 * d2)
+               + vec3(1.0, 0.96, 0.90) * spec
+               + vec3(0.95, 0.85, 0.68) * rim;
 
       gl_FragColor = vec4(col, 1.0);
     }
