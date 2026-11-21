@@ -3320,7 +3320,7 @@
 
     const bpCanvas = document.getElementById('backpackModalCanvas');
     if (bpCanvas && window.Backpack3DRenderer) {
-      const bp3d = new window.Backpack3DRenderer(bpCanvas, { interactive: true, zoom: 3.1, speed: 0.012 });
+      const bp3d = new window.Backpack3DRenderer(bpCanvas, { interactive: true, zoom: 4.2, speed: 0.012 });
       const loop = () => {
         if (el.modalOverlay.classList.contains('hidden') || !document.getElementById('backpackModalCanvas')) {
           cancelAnimationFrame(backpackAnimFrameId);
