@@ -1231,10 +1231,13 @@
       return Math.max(250, Math.min(820, Math.round(desired)));
     }
 
-    // Animera den röda reslinjen från stad A till stad B med dynamisk inzoomning!
-    animateFlight(fromCityKey, toCityKey, onFinish, isBoat = false) {
-      const c1 = window.GT_WORLD.cities[fromCityKey];
-      const c2 = window.GT_WORLD.cities[toCityKey];
+    // Animera den röda reslinjen från stad A till stad B (eller världsarv!) med dynamisk inzoomning!
+    animateFlight(fromCityKey, toCityKey, onFinish, isBoat = false, customDuration = null) {
+      const resolvePt = (k) => (k && typeof k === 'object')
+        ? k
+        : (window.GT_WORLD.cities[k] || (window.GT_WORLD.wonders && window.GT_WORLD.wonders[k]));
+      const c1 = resolvePt(fromCityKey);
+      const c2 = resolvePt(toCityKey);
       if (!c1 || !c2) { if (onFinish) onFinish(); return; }
 
       const v1 = latLonToVector(c1.lat, c1.lon);
@@ -1245,7 +1248,7 @@
       const zoomRadius = this.computeRouteZoomRadius(c1, c2, midLL[0], midLL[1]);
 
       this.focusOn(midLL[0], midLL[1], () => {
-        const duration = isBoat ? 5200 : 4400;
+        const duration = customDuration || (isBoat ? 5200 : 4400);
         const startTime = performance.now();
 
         this.flightAnimation = {

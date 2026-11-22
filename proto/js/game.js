@@ -243,6 +243,8 @@
     backpack: [], // Array av { id, name, origin, buyPrice, buyDay, uses }
     donePlaces: new Set(),
     doneWonders: new Set(),
+    doneWonderSpots: new Set(), // Avklarade delplatser inne på ett världsarv ("wonderId_idx")
+    activeWonder: null, // Om spelaren just nu befinner sig på ett världsarv (egen mini-destination!)
     visitedCities: new Set([W.startCity]),
     stamps: [], // Städer som är officiellt "gjorda"
     travelHistory: [], // Array av { from, to, dist, isBoat } som ritar den röda linjen på globen
@@ -405,6 +407,8 @@
         backpack: state.backpack,
         donePlaces: Array.from(state.donePlaces),
         doneWonders: Array.from(state.doneWonders),
+        doneWonderSpots: Array.from(state.doneWonderSpots),
+        activeWonder: state.activeWonder,
         visitedCities: Array.from(state.visitedCities),
         stamps: state.stamps,
         travelHistory: state.travelHistory,
@@ -451,6 +455,8 @@
     state.backpack = Array.isArray(d.backpack) ? d.backpack : [];
     state.donePlaces = new Set(d.donePlaces || []);
     state.doneWonders = new Set(d.doneWonders || []);
+    state.doneWonderSpots = new Set(d.doneWonderSpots || []);
+    state.activeWonder = (d.activeWonder && W.wonders[d.activeWonder]) ? d.activeWonder : null;
     state.visitedCities = new Set(d.visitedCities || [W.startCity]);
     state.stamps = Array.isArray(d.stamps) ? d.stamps : [];
     state.travelHistory = Array.isArray(d.travelHistory) ? d.travelHistory : [];
@@ -657,6 +663,10 @@
   }
 
   function renderCity() {
+    if (state.activeWonder && W.wonders && W.wonders[state.activeWonder]) {
+      renderWonderDestination(W.wonders[state.activeWonder]);
+      return;
+    }
     const city = W.cities[state.city];
     if (!city) return;
 
@@ -1155,41 +1165,104 @@
     showModal(html);
   }
 
-  function startWonderTrip(wonderKey) {
-    const wonder = W.wonders[wonderKey];
-    if (!wonder) return;
-    if (state.city !== wonder.from) {
-      const gwName = W.cities[wonder.from]?.name || wonder.from;
-      showToast(`Res till ${gwName} först för att åka till ${wonder.name}.`, 3000);
-      return;
-    }
-    const hasGear = wonder.gear ? hasItem(wonder.gear) : false;
-    const actualHours = (wonder.hoursEach * 2) + (hasGear ? wonder.gearVisitHours : wonder.visitHours);
-    const totalCost = wonder.transport + wonder.fee;
+  // --- Världsarv som eget resmål ("mini-stad" utan hotell/jobb/basar!) ---
+  function renderWonderDestination(wonder) {
+    el.mapLayer.style.backgroundImage = `url(${wonder.photo})`;
+    el.photoLayer.style.backgroundImage = `url(${wonder.photo})`;
 
-    if (state.cash < totalCost) {
-      alert("Du har inte råd med expeditionen!");
-      return;
+    el.cityName.textContent = wonder.name;
+    el.cityRegion.textContent = `${wonder.country} · VÄRLDSARV`;
+
+    const badgeEl = document.querySelector('.city-badge');
+    if (badgeEl) {
+      badgeEl.className = 'city-badge theme-wonder';
     }
 
-    changeCash(-totalCost, `Expedition till ${wonder.name}`);
-    addHours(actualHours);
-    AudioMgr.play('takeoff');
+    el.spotsContainer.innerHTML = '';
 
-    const questions = (wonder.questions && wonder.questions.length > 0)
-      ? wonder.questions
-      : getQuestionsFor(wonder.from, wonderKey, []);
+    const spotCoords = [
+      [22, 48],
+      [50, 39],
+      [78, 50]
+    ];
+    const questions = wonder.questions || [];
+    const spotTitles = wonder.spots || questions.map((_, i) => `Upptäcktsplats ${i + 1}`);
 
-    runQuiz(questions, () => {
-      const firstTime = !state.doneWonders.has(wonderKey);
-      state.doneWonders.add(wonderKey);
-      state.dayLog.activities.push(`Expedition till ${wonder.name}`);
-      if (firstTime) {
-        addJournal(`Genomförde expeditionen till världsarvet ${wonder.name} (${wonder.country}) från ${W.cities[wonder.from]?.name || wonder.from}.`);
-      }
+    questions.forEach((qObj, idx) => {
+      const spotKey = `${wonder.id}_${idx}`;
+      const isDone = state.doneWonderSpots.has(spotKey);
+      const pos = spotCoords[idx % spotCoords.length];
+      const title = spotTitles[idx] || `Plats ${idx + 1}`;
 
-      if (wonder.souvenir && W.souvenirs[wonder.souvenir]) {
-        if (state.backpack.length < getMaxBackpackSlots()) {
+      const badgeHtml = isDone
+        ? `<div class="spot-photo" style="background-image:url(${wonder.photo}); border-color:#66e38c;"><span style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(20,60,30,0.45); color:#8cf0a4; font-size:24px; font-weight:900;">✓</span></div>`
+        : `<div class="spot-undiscovered-badge" style="border-color:#ffbe3d; color:#ffd875; box-shadow:0 0 18px rgba(255,190,61,0.55), 0 6px 14px rgba(0,0,0,0.85);"><span>★</span></div>`;
+
+      const spotEl = createSpot(
+        pos[0], pos[1],
+        `sight ${isDone ? 'done' : 'undiscovered'}`,
+        badgeHtml,
+        title,
+        () => openWonderSpotQuiz(wonder.id, idx)
+      );
+      el.spotsContainer.appendChild(spotEl);
+    });
+
+    // Tydlig återrese-ikon tillbaka till närmaste stad
+    const gwCity = W.cities[wonder.from];
+    const gwName = gwCity ? gwCity.name : wonder.from;
+    const returnSpot = createSpot(
+      36, 75,
+      'service',
+      `<img class="spot-service-img" src="assets/icons/airport_3d.jpg" alt="Återvänd">`,
+      `Återvänd till ${gwName}`,
+      () => returnFromWonder()
+    );
+    el.spotsContainer.appendChild(returnSpot);
+
+    updateHUD();
+  }
+
+  function openWonderSpotQuiz(wonderId, spotIdx) {
+    const wonder = W.wonders[wonderId];
+    if (!wonder || !wonder.questions || !wonder.questions[spotIdx]) return;
+    const spotTitle = (wonder.spots && wonder.spots[spotIdx]) || `${wonder.name} #${spotIdx + 1}`;
+    const qObj = wonder.questions[spotIdx];
+    const spotKey = `${wonder.id}_${spotIdx}`;
+    const isAlreadyDone = state.doneWonderSpots.has(spotKey);
+
+    const html = `
+      <div class="scene-fullscreen scene-sight-full" style="background-image:url(${wonder.photo})">
+        <div class="sight-header-bar">
+          <div class="sight-plaque" style="border-color:#ffbe3d;">
+            <h3>★ ${spotTitle.toUpperCase()}</h3>
+            <div class="sight-meta">
+              ${wonder.name} (${wonder.country}) · Världsarv
+              ${isAlreadyDone ? ' · <span style="color:#78e08f; font-weight:bold;">UTFORSKAD</span>' : ''}
+            </div>
+          </div>
+          ${exitIconBtn(`Tillbaka till ${wonder.name}`)}
+        </div>
+
+        <div class="sight-bottom-panel">
+          <div id="quizContainer"></div>
+        </div>
+      </div>
+    `;
+    showModal(html);
+
+    runQuiz([qObj], () => {
+      state.doneWonderSpots.add(spotKey);
+      const totalSpots = (wonder.questions || []).length;
+      const doneSpotsCount = (wonder.questions || []).filter((_, i) => state.doneWonderSpots.has(`${wonder.id}_${i}`)).length;
+
+      if (doneSpotsCount >= totalSpots && !state.doneWonders.has(wonder.id)) {
+        state.doneWonders.add(wonder.id);
+        state.dayLog.activities.push(`Utforskat världsarvet ${wonder.name}`);
+        addJournal(`Utforskat hela världsarvet ${wonder.name} (${wonder.country}) under expeditionen från ${W.cities[wonder.from]?.name || wonder.from}.`);
+        AudioMgr.play('fanfar');
+
+        if (wonder.souvenir && W.souvenirs[wonder.souvenir] && state.backpack.length < getMaxBackpackSlots()) {
           const itemDef = W.souvenirs[wonder.souvenir];
           state.backpack.push({
             id: wonder.souvenir,
@@ -1198,19 +1271,146 @@
             buyPrice: 0,
             buyDay: state.day
           });
-          showToast(`Världsarv avklarat! Du fann en unik souvenir: ${itemDef.name}!`, 3600);
+          showToast(`Världsarv avklarat! Du fann även en unik souvenir: ${itemDef.name}!`, 4000);
         } else {
-          showToast(`Världsarv avklarat! Ryggsäcken var dock full för ${wonder.name}-souveniren.`, 3200);
+          showToast(`Världsarvet ${wonder.name} är nu helt utforskat och stämplat i passet (${state.doneWonders.size}/${Object.keys(W.wonders).length})!`, 4000);
         }
-      } else if (firstTime) {
-        showToast(`Världsarvet ${wonder.name} registrerades i ditt pass (${state.doneWonders.size}/${Object.keys(W.wonders).length})!`, 3600);
+      } else {
+        showToast(`${spotTitle} utforskad (${doneSpotsCount}/${totalSpots} på ${wonder.name})!`, 2400);
       }
 
-      updateHUD();
       saveGame();
-      renderCitySpots(W.cities[state.city]);
       closeModal();
+      renderCity();
     }, wonder.photo);
+  }
+
+  function returnFromWonder() {
+    if (!state.activeWonder) return;
+    const wonder = W.wonders[state.activeWonder];
+    const gwKey = wonder ? wonder.from : state.city;
+    const gwCity = W.cities[gwKey];
+    const gwName = gwCity ? gwCity.name : gwKey;
+    const returnHours = wonder ? (wonder.hoursEach || 2) : 2;
+    const wonderKey = state.activeWonder;
+
+    closeModal();
+    el.travelTitle.textContent = `ÅTERRESA: ${wonder ? wonder.name.toUpperCase() : 'VÄRLDSARV'} ➔ ${gwName.toUpperCase()}`;
+    el.travelSub.textContent = `${wonder?.transportMode || 'Expedition'} · Restid tillbaka: ${returnHours} timmar`;
+
+    const canvas = document.getElementById('flightGlobeCanvas');
+    const flightGlobe = new window.GlobeRenderer(canvas, { interactive: false, radius: 220, doneWonders: state.doneWonders });
+    if (wonder) {
+      flightGlobe.centerLon = wonder.lon;
+      flightGlobe.centerLat = wonder.lat;
+    }
+
+    const globeWrap = document.getElementById('travelGlobeWrap');
+    const vigWrap = document.getElementById('travelVignetteWrap');
+    if (globeWrap) globeWrap.classList.remove('hidden');
+    if (vigWrap) vigWrap.classList.add('hidden');
+
+    el.travelCinematic.classList.remove('hidden');
+    AudioMgr.play('takeoff');
+
+    let animFrame = null;
+    const loop = () => {
+      if (el.travelCinematic.classList.contains('hidden')) return;
+      flightGlobe.render(state.travelHistory, state.city);
+      animFrame = requestAnimationFrame(loop);
+    };
+    animFrame = requestAnimationFrame(loop);
+
+    let finished = false;
+    const finishReturn = () => {
+      if (finished) return;
+      finished = true;
+      cancelAnimationFrame(animFrame);
+      el.travelCinematic.classList.add('hidden');
+      el.travelSkipBtn.onclick = null;
+
+      addHours(returnHours);
+      state.activeWonder = null;
+      state.city = gwKey;
+      saveGame();
+      AudioMgr.play('bell');
+      renderCity();
+      showToast(`Tillbaka i ${gwName} efter resan till ${wonder ? wonder.name : 'världsarvet'}!`, 3000);
+    };
+
+    el.travelSkipBtn.onclick = finishReturn;
+    flightGlobe.animateFlight(wonderKey, gwKey, () => {
+      setTimeout(finishReturn, 350);
+    }, false, 2200);
+  }
+
+  function startWonderTrip(wonderKey) {
+    const wonder = W.wonders[wonderKey];
+    if (!wonder) return;
+    if (state.activeWonder === wonderKey) {
+      closeModal();
+      renderCity();
+      return;
+    }
+    if (state.city !== wonder.from) {
+      const gwName = W.cities[wonder.from]?.name || wonder.from;
+      showToast(`Res till ${gwName} först för att åka till ${wonder.name}.`, 3000);
+      return;
+    }
+    const totalCost = wonder.transport + wonder.fee;
+    if (state.cash < totalCost) {
+      alert("Du har inte råd med expeditionen!");
+      return;
+    }
+
+    const origin = W.cities[wonder.from];
+    closeModal();
+
+    el.travelTitle.textContent = `EXPEDITION: ${origin.name.toUpperCase()} ➔ ${wonder.name.toUpperCase()}`;
+    el.travelSub.textContent = `${wonder.transportMode || 'Expedition'} · Utresa: ${wonder.hoursEach} tim · Pris t/r: ${totalCost} kr`;
+
+    const canvas = document.getElementById('flightGlobeCanvas');
+    const flightGlobe = new window.GlobeRenderer(canvas, { interactive: false, radius: 220, doneWonders: state.doneWonders });
+    flightGlobe.centerLon = origin.lon;
+    flightGlobe.centerLat = origin.lat;
+
+    const globeWrap = document.getElementById('travelGlobeWrap');
+    const vigWrap = document.getElementById('travelVignetteWrap');
+    if (globeWrap) globeWrap.classList.remove('hidden');
+    if (vigWrap) vigWrap.classList.add('hidden');
+
+    el.travelCinematic.classList.remove('hidden');
+    AudioMgr.play('takeoff');
+
+    let animFrame = null;
+    const loop = () => {
+      if (el.travelCinematic.classList.contains('hidden')) return;
+      flightGlobe.render(state.travelHistory, state.city);
+      animFrame = requestAnimationFrame(loop);
+    };
+    animFrame = requestAnimationFrame(loop);
+
+    let finished = false;
+    const arriveAtWonder = () => {
+      if (finished) return;
+      finished = true;
+      cancelAnimationFrame(animFrame);
+      el.travelCinematic.classList.add('hidden');
+      el.travelSkipBtn.onclick = null;
+
+      changeCash(-totalCost, `Expedition till ${wonder.name}`);
+      addHours(wonder.hoursEach);
+      state.activeWonder = wonderKey;
+      saveGame();
+      AudioMgr.play('bell');
+      renderCity();
+      showToast(`Framme vid världsarvet ${wonder.name}! Klicka på de 3 stjärnorna för att utforska platsen.`, 4200);
+    };
+
+    el.travelSkipBtn.onclick = arriveAtWonder;
+    flightGlobe.animateFlight(wonder.from, wonderKey, () => {
+      setTimeout(arriveAtWonder, 350);
+    }, false, 2400);
   }
 
   // --- Quiz-motor (med djupgående förklaring & bild efter varje svar!) ---
@@ -2875,17 +3075,17 @@
         doneWonders: state.doneWonders,
         onWonderClick: (wKey, w) => openWonderModal(wKey, w)
       });
-      const curCity = W.cities[state.city];
-      if (curCity) {
-        activeGlobeRenderer.centerLon = curCity.lon;
-        activeGlobeRenderer.centerLat = curCity.lat;
+      const focusPt = (state.activeWonder && W.wonders[state.activeWonder]) || W.cities[state.city];
+      if (focusPt) {
+        activeGlobeRenderer.centerLon = focusPt.lon;
+        activeGlobeRenderer.centerLat = focusPt.lat;
       }
 
-      // Rotera mjukt centrerad över nuvarande stad tills spelaren klickar, drar eller zoomar
+      // Rotera mjukt centrerad över nuvarande plats tills spelaren klickar, drar eller zoomar
       let autoSpin = true;
       let spinPhase = 0;
-      const baseLon = curCity ? curCity.lon : 18;
-      const baseLat = curCity ? curCity.lat : 30;
+      const baseLon = focusPt ? focusPt.lon : 18;
+      const baseLat = focusPt ? focusPt.lat : 30;
       const stopSpin = () => { autoSpin = false; };
       canvas.addEventListener('mousedown', stopSpin);
       canvas.addEventListener('touchstart', stopSpin, { passive: true });
@@ -3922,6 +4122,8 @@
     const goalNames = state.goals.souvenirCities.map(ck => W.cities[ck]?.name || ck).join(', ');
     const startName = W.cities[W.startCity]?.name || 'Malmö';
     state.city = W.startCity;
+    state.activeWonder = null;
+    state.doneWonderSpots = new Set();
     state.visitedCities = new Set([W.startCity]);
     state.journal = [{ day: 1, text: `${fn} ${ln} påbörjade jorden-runt-resan från ${startName}! Mål i passet: ${state.goals.requiredCompetencies} yrkeskompetenser samt souvenirer från ${goalNames}.` }];
     gameSessionStarted = true;
@@ -4049,6 +4251,7 @@
     startPlaceQuiz,
     openWonderModal,
     startWonderTrip,
+    returnFromWonder,
     openSignatureModal,
     doSignatureActivity,
     openJobModal,

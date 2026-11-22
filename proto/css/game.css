@@ -5285,3 +5285,18 @@ h1, h2, h3, h4,
   border-left: 7px solid #237a43 !important;
 }
 .city-badge.theme-mx h1 { color: #ffe4a3 !important; }
+
+
+/* Världsarvsplakett uppe till vänster när spelaren besöker ett av de 20 världsarven */
+.city-badge.theme-wonder {
+  background: linear-gradient(135deg, rgba(46, 30, 10, 0.94) 0%, rgba(22, 14, 5, 0.96) 100%);
+  border: 2px solid #ffbe3d;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.8), inset 0 0 14px rgba(255, 190, 61, 0.25);
+}
+.city-badge.theme-wonder .city-name {
+  color: #ffe394;
+}
+.city-badge.theme-wonder .city-region {
+  color: #ffbe3d;
+  letter-spacing: 1.4px;
+}
