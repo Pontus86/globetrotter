@@ -1524,40 +1524,41 @@
     const cityEv = getCityEvent(state.city);
     const evMult = (cityEv && cityEv.jobBonus) ? (1 + cityEv.jobBonus) : 1;
     const activeEvs = getActiveWorldEvents();
-    const worldLead = activeEvs.length > 0
-      ? `<b>${W.cities[activeEvs[0].city]?.name.toUpperCase()}:</b> ${activeEvs[0].title} — ${activeEvs[0].effectText}`
-      : `<b>RESEBREV:</b> Flygbolagen släpper nya avgångar varje morgon kl 08:00.`;
+    const leadEv = cityEv || activeEvs[0] || null;
+    const leadHeadline = leadEv
+      ? `${(W.cities[leadEv.city]?.name || city.name).toUpperCase()}: ${leadEv.title.toUpperCase()}`
+      : `LIVFULL DAG I ${city.name.toUpperCase()}`;
+    const leadText = leadEv
+      ? `${leadEv.effectText} Resenärer från hela världen strömmar till staden under veckan, och lokala arbetsgivare söker extra personal.`
+      : `Stadens gator, marknader och kaféer vaknar till liv. Flera lokala verksamheter annonserar idag efter tillfällig hjälp med kontant betalning.`;
     const dealCityKey = Object.keys(state.deals).find(k => k !== state.city && state.deals[k] > 0);
     const dealNotis = dealCityKey
-      ? `Sista-minuten: <b>-${state.deals[dealCityKey]} %</b> på flyg mot ${W.cities[dealCityKey].name} idag!`
-      : `Kolla avgångstavlan på flygplatsen för dagens Stand by-biljetter.`;
+      ? `Sista-minuten: -${state.deals[dealCityKey]} % på flyg mot ${W.cities[dealCityKey].name} idag.`
+      : `Kolla avgångstavlan på flygplatsen för dagens Stand by-biljetter (-25 %).`;
 
-    const jobColsHtml = cityJobs.slice(0, 3).map((job, idx) => {
+    const classifiedAdsHtml = cityJobs.slice(0, 3).map((job, idx) => {
       const finalPay = Math.round(job.pay * (hasCamera ? 1.5 : 1) * evMult);
       const doneKey = `${state.city}_${state.day}_${idx}`;
       const alreadyDone = !!state.jobsDoneToday[doneKey];
-      const boxClass = idx === 0 ? 'job-ad-circled' : 'job-ad-box';
-      const pitch = job.adText || `${job.employer} söker en pigg resenär för dagens pass — kontant lön direkt i handen.`;
+      const adClass = idx === 0 ? 'bp-classified-ad circled' : 'bp-classified-ad';
+      const pitch = job.adText || `${job.employer} söker en pålitlig resenär för dagens pass med kontant lön direkt i handen.`;
 
       return `
-        <div class="news-col">
-          <h4>${job.tag || `Platsannons #${idx + 1}`}</h4>
-          <div class="${boxClass}">
-            <div style="font-size:15px; font-weight:900; text-transform:uppercase; color:#14100b; line-height:1.2;">
-              ${job.title} sökes!
-            </div>
-            <div style="font-size:12px; color:#5b3b1c; margin:4px 0 6px;">
-              <b>${job.employer}</b><br>
-              Pass: <b>${job.hours} tim</b> · Lön: <b style="color:#8c2323;">upp till ${finalPay} kr</b>
-            </div>
-            <p style="margin:0 0 8px; font-size:12px; line-height:1.35;">${pitch}</p>
-            ${hasCamera ? `<div style="font-size:11px; color:#1b5e20; font-weight:bold; margin-bottom:3px;">+50 % Kamerabonus aktiv!</div>` : ''}
-            ${(cityEv && cityEv.jobBonus) ? `<div style="font-size:11px; color:#8c4a00; font-weight:bold; margin-bottom:4px;">+${Math.round(cityEv.jobBonus * 100)} % bonus (${cityEv.title})!</div>` : ''}
+        <article class="${adClass}">
+          <div class="bp-ad-kicker">${(job.tag || `Platsannons #${idx + 1}`).toUpperCase()}</div>
+          <h5 class="bp-ad-title">${job.title} sökes!</h5>
+          <div class="bp-ad-meta">
+            <b>${job.employer}</b> · ${job.hours} tim · <span class="bp-ad-pay">Upp till ${finalPay} kr</span>
+          </div>
+          <p class="bp-ad-copy">${pitch}</p>
+          ${hasCamera ? `<div class="bp-ad-bonus">+50 % Kamerabonus aktiv</div>` : ''}
+          ${(cityEv && cityEv.jobBonus) ? `<div class="bp-ad-bonus">+${Math.round(cityEv.jobBonus * 100)} % eventbonus (${cityEv.title})</div>` : ''}
+          <div class="bp-ad-action">
             ${alreadyDone
               ? `<div class="job-done-stamp">PASS AVKLARAT IDAG</div>`
-              : `<button class="stamp-action-btn" style="width:100%;" onclick="window.GT.startJobShift(${idx})">Ta passet (${job.hours} tim)</button>`}
+              : `<button class="bp-news-apply-btn" onclick="window.GT.startJobShift(${idx})">Sök passet (${job.hours} tim) »</button>`}
           </div>
-        </div>
+        </article>
       `;
     }).join('');
 
@@ -1565,28 +1566,51 @@
       <div class="scene-fullscreen scene-newspaper-full">
         <div class="broadsheet-paper">
           <div class="broadsheet-masthead">
-            <div class="broadsheet-title">${city.name}s Dagblad</div>
+            <div class="masthead-top-row">
+              <div class="masthead-ear">
+                <b>PRIS: 5 KR</b>
+                <span>Lösnummer</span>
+              </div>
+              <div class="broadsheet-title">${city.name}s Dagblad</div>
+              <div class="masthead-ear right">
+                <b>DAG ${state.day}</b>
+                <span>Kl. ${String(state.hour).padStart(2, '0')}:00</span>
+              </div>
+            </div>
             <div class="broadsheet-dateline">
-              <span>Årgång 96 · Nr ${100 + state.day}</span>
-              <span>${city.name.toUpperCase()}, ${city.country.toUpperCase()} · DAG ${state.day}</span>
-              <span>3 lediga jobb idag</span>
+              <span>ÅRGÅNG 96 · NR ${100 + state.day}</span>
+              <span>${city.name.toUpperCase()}, ${city.country.toUpperCase()} · MORGONUPPLAGAN</span>
+              <span>LEDIGA PLATSER &amp; RESENYTT</span>
             </div>
           </div>
 
-          <div id="quizContainer">
-            <div class="news-ticker-strip">
-              <span>${worldLead}</span>
-              <span>${dealNotis}</span>
+          <div id="quizContainer" class="broadsheet-body">
+            <div class="broadsheet-frontgrid">
+              <!-- Vänster nyhetsspalt: Canva/BackPacker-redaktionell förstasida med gråskale-tidningsfoto -->
+              <section class="news-editorial-col">
+                <div class="news-section-rule">DAGENS NYHET</div>
+                <h4 class="news-lead-headline">${leadHeadline}</h4>
+                <figure class="news-halftone-figure">
+                  <img src="${city.skyline || 'assets/skylines/skyline.jpg'}" alt="${city.name}">
+                  <figcaption>Foto: ${city.name}s Dagblad · Vy över ${city.name}.</figcaption>
+                </figure>
+                <p class="news-lead-copy">${leadText}</p>
+                <div class="news-brief-box">
+                  <b>RESENOTIS:</b> ${dealNotis}
+                </div>
+              </section>
+
+              <!-- Höger del: Klassisk BackPacker-platsannonssida (3 spalter i tidningsformat) -->
+              <section class="news-classifieds-col">
+                <div class="news-classifieds-banner">LEDIGA PLATSER · EXTRAJOBB IDAG</div>
+                <div class="bp-classifieds-grid">
+                  ${classifiedAdsHtml}
+                </div>
+              </section>
             </div>
 
-            <div class="broadsheet-columns">
-              ${jobColsHtml}
-            </div>
-
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:8px; border-top:1px solid #b5a383;">
-              <span style="font-size:11.5px; color:#5b4a36; font-style:italic;">
-                Klockan är ${String(state.hour).padStart(2, '0')}:00 · Välj det pass som passar din reskassa och dagens schema bäst.
-              </span>
+            <div class="broadsheet-footer">
+              <span>Tryckt i ${city.name} · Globetrotter Press · Kontant lön vid godkänt arbetsprov</span>
               ${exitIconBtn('Vik ihop tidningen')}
             </div>
           </div>
