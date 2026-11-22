@@ -174,7 +174,7 @@
 
   function renderCityStampHtml(cityKey, large = false) {
     const c = W.cities[cityKey] || { name: cityKey, country: '' };
-    const m = CITY_STAMP_META[cityKey] || { code: cityKey.slice(0, 3).toUpperCase(), color: '#7a2222', shape: 'round', rot: -5 };
+    const m = CITY_STAMP_META[cityKey] || (window.GT_EXTRA_STAMPS && window.GT_EXTRA_STAMPS[cityKey]) || { code: cityKey.slice(0, 3).toUpperCase(), color: '#7a2222', shape: 'round', rot: -5 };
     return `
       <div class="ink-stamp shape-${m.shape} ${large ? 'large' : ''}" style="--stamp-color:${m.color}; transform:rotate(${m.rot}deg);">
         <div class="ink-stamp-inner">
@@ -817,6 +817,9 @@
 
   function getSouvenirPhoto(souvenirId) {
     if (!souvenirId) return '';
+    if (W.souvenirs[souvenirId] && W.souvenirs[souvenirId].photo) {
+      return W.souvenirs[souvenirId].photo;
+    }
     return `assets/souvenirs/${souvenirId}.jpg`;
   }
 
@@ -3168,7 +3171,10 @@
   function openTravelModal(mode = 'air') {
     const currentCity = W.cities[state.city];
     const hasBoats = currentCity.boats && currentCity.boats.length > 0;
-    const trains = CITY_TRAINS[state.city] || [];
+    const trains = [
+      ...(CITY_TRAINS[state.city] || []),
+      ...((window.GT_EXTRA_TRAINS && window.GT_EXTRA_TRAINS[state.city]) || [])
+    ];
     const hasTrains = trains.length > 0;
 
     if (window.AmbientMgr) {
