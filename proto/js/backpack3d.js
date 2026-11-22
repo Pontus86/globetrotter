@@ -1,23 +1,29 @@
-// Globetrotter - 3D Ryggsäckar & Resväskor i 3 nivåer (WebGL)
-// Tier 1 (5 platser): Yellow Backpack av Jungle Jim (Sketchfab, CC BY)
-// Tier 2 (7 platser): Duffle Bag av MadeByYeshe (Sketchfab, CC BY)
-// Tier 3 (9 platser): Vandringsryggsäck av DailyArt (Sketchfab, CC BY-NC)
+// Globetrotter - 3D Väskor & Ryggsäckar i 4 nivåer (WebGL)
+// Tier 1 (2 platser): Juicy Couture Daydreamer Bag (Sketchfab)
+// Tier 2 (5 platser): Yellow Backpack av Jungle Jim (Sketchfab, CC BY)
+// Tier 3 (7 platser): Duffle Bag av MadeByYeshe (Sketchfab, CC BY)
+// Tier 4 (9 platser): Vandringsryggsäck av DailyArt (Sketchfab, CC BY-NC)
 
 (function () {
   'use strict';
 
   const TIER_SPECS = {
     1: {
+      mesh: 'assets/models/backpack_tier0.bin',
+      tex: 'assets/models/tier0_juicy_atlas.jpg',
+      zoomMult: 1.02
+    },
+    2: {
       mesh: 'assets/models/backpack_tier1.bin',
       tex: 'assets/models/tier1_yellow_tex.jpg',
       zoomMult: 0.96
     },
-    2: {
+    3: {
       mesh: 'assets/models/backpack_tier2.bin',
       tex: 'assets/models/tier2_duffle_atlas.jpg',
       zoomMult: 1.04
     },
-    3: {
+    4: {
       mesh: 'assets/models/backpack_dailyart.bin',
       tex: 'assets/models/dailyart_backpack_atlas.jpg',
       zoomMult: 1.0
@@ -80,7 +86,8 @@
     const n = Number(t) || 1;
     if (n <= 1) return 1;
     if (n === 2) return 2;
-    return 3;
+    if (n === 3) return 3;
+    return 4;
   }
 
   function ensureTierLoaded(tier, cb) {

@@ -276,9 +276,10 @@
   };
 
   const BACKPACK_TIERS = [
-    { level: 1, slots: 5, name: 'Klassisk 45L-ryggsäck', price: 0, desc: 'Pålitlig startryggsäck med 5 packplatser.' },
-    { level: 2, slots: 7, name: 'Expeditionsryggsäck 65L', price: 1400, desc: 'Rymligare vandringsryggsäck med 7 packplatser.' },
-    { level: 3, slots: 9, name: 'Globetrotter-ramryggsäck 85L', price: 2800, desc: 'Fullutrustad proffsryggsäck med sidofickor och hela 9 platser!' }
+    { level: 1, slots: 2, name: 'Juicy Couture Daydreamer', price: 0, desc: 'Snygg men liten startväska med plats för 2 föremål.' },
+    { level: 2, slots: 5, name: 'Gul dagstursryggsäck', price: 950, desc: 'Smidig gul ryggsäck som rymmer 5 packplatser.' },
+    { level: 3, slots: 7, name: 'Reseduffelbag 65L', price: 1700, desc: 'Rymlig duffelbag med axelrem och 7 packplatser.' },
+    { level: 4, slots: 9, name: 'Stor vandringsryggsäck 85L', price: 2800, desc: 'Fullutrustad proffsryggsäck med sidofickor och hela 9 platser!' }
   ];
 
   function getMaxBackpackSlots() {
@@ -3923,7 +3924,7 @@
       });
     }
 
-    const tierNames = { 1: 'Liten gul dagstursryggsäck', 2: 'Reseduffelbag', 3: 'Stor vandringsryggsäck' };
+    const tierNames = { 1: 'Juicy Couture Daydreamer', 2: 'Gul dagstursryggsäck', 3: 'Reseduffelbag', 4: 'Stor vandringsryggsäck' };
     const bagTitle = tierNames[state.backpackLevel] || tierNames[1];
     const html = `
       <div class="scene-fullscreen scene-passport-full">
@@ -3931,7 +3932,7 @@
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div class="sight-plaque">
               <h3>${bagTitle.toUpperCase()} (${state.backpack.length} / ${getMaxBackpackSlots()} PLATSER)</h3>
-              <div class="sight-meta">Nivå ${state.backpackLevel}/3 · Dra på väskan för att snurra 3D-modellen · Packning &amp; kurirpaket</div>
+              <div class="sight-meta">Nivå ${state.backpackLevel}/4 · Dra på väskan för att snurra 3D-modellen · Packning &amp; kurirpaket</div>
             </div>
             ${exitIconBtn('Stäng packningen')}
           </div>
