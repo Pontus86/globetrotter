@@ -687,11 +687,11 @@
       el.dockGlobeEventDot.classList.toggle('hidden', activeEvents.length === 0);
     }
 
-    // Event-remsa på stadsskylten om något pågår just i denna stad
-    const cityEv = getCityEvent(state.city);
+    // Event-remsa på stadsskylten om något pågår just i denna stad (döljs ute på världsarv)
+    const cityEv = !state.activeWonder ? getCityEvent(state.city) : null;
     if (el.cityEventRibbon) {
       if (cityEv) {
-        el.cityEventRibbon.textContent = `PÅGÅR NU: ${cityEv.title} — ${cityEv.effectText}`;
+        el.cityEventRibbon.textContent = `★ ${cityEv.title}: ${cityEv.effectText}`;
         el.cityEventRibbon.classList.remove('hidden');
       } else {
         el.cityEventRibbon.classList.add('hidden');
@@ -721,7 +721,7 @@
     el.cityRegion.textContent = `${city.country} · ${city.region.toUpperCase()}`;
 
     // Unik landstypisk stil på stadsskylten uppe till vänster!
-    const badgeEl = document.querySelector('.city-badge');
+    const badgeEl = document.querySelector('.city-plate');
     if (badgeEl) {
       const themeMap = {
         malmo: 'theme-se', stockholm: 'theme-se', kairo: 'theme-eg', delhi: 'theme-in',
@@ -730,7 +730,7 @@
         peking: 'theme-cn', sydney: 'theme-au', kapstaden: 'theme-za', rio: 'theme-br',
         mexicocity: 'theme-mx'
       };
-      badgeEl.className = `city-badge ${themeMap[state.city] || 'theme-se'}`;
+      badgeEl.className = `city-plate city-badge ${themeMap[state.city] || 'theme-se'}`;
     }
 
     // Bygg BackPacker-kartikoner på scenen
@@ -1213,9 +1213,9 @@
     el.cityName.textContent = wonder.name;
     el.cityRegion.textContent = `${wonder.country} · VÄRLDSARV`;
 
-    const badgeEl = document.querySelector('.city-badge');
+    const badgeEl = document.querySelector('.city-plate');
     if (badgeEl) {
-      badgeEl.className = 'city-badge theme-wonder';
+      badgeEl.className = 'city-plate city-badge theme-wonder';
     }
 
     el.spotsContainer.innerHTML = '';
