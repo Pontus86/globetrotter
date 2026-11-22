@@ -1219,6 +1219,74 @@
     showModal(html);
   }
 
+  // Unikt minispel kopplat till varje enskilt världsarv!
+  const WONDER_MINIGAME_MAP = {
+    ilulissat:      { id: 'arctic',           label: 'Arktisk naturbevakare (Isbjörnar)' },
+    stonehenge:     { id: 'mg_architect',     label: 'Stenbyggaren vid Stonehenge' },
+    pompeji:        { id: 'mg_archaeologist', label: 'Utgrävning i Pompeji' },
+    kappadokien:    { id: 'lander',           label: 'Ballong- & Landningspilot' },
+    giza:           { id: 'mg_antiques',      label: 'Skattkammarens antikarkiv' },
+    petra:          { id: 'mg_safe',          label: 'Skattkammarens stenlås' },
+    serengeti:      { id: 'mg_safari',        label: 'Fotosafari vid Kilimanjaro' },
+    victoriafallen: { id: 'mg_birds',         label: 'Naturspanaren vid fallen' },
+    everest:        { id: 'slalom',           label: 'Alpinslalom i Himalaya' },
+    taj:            { id: 'mg_spice',         label: 'Kryddmarknaden i Agra' },
+    angkorwat:      { id: 'mg_museum_mem',    label: 'Tempelarkivet i Angkor' },
+    halong:         { id: 'navigator',        label: 'Djonk-navigatör i bukten' },
+    kinesiskamuren: { id: 'mg_telegraph',     label: 'Vakttornets signalsändare' },
+    fuji:           { id: 'camera',           label: 'Landskapsfotograf vid Fuji' },
+    barriarrevet:   { id: 'diver',            label: 'Koralldykare på revet' },
+    uluru:          { id: 'mg_tourguide',     label: 'Ökenguiden vid Uluru' },
+    grandcanyon:    { id: 'lander',           label: 'Helikopterlandning i ravinen' },
+    chichenitza:    { id: 'mg_archaeologist', label: 'Mayatemplets arkeolog' },
+    machupicchu:    { id: 'mg_architect',     label: 'Inkas murbyggare i Anderna' },
+    iguazu:         { id: 'mg_fruit',         label: 'Regnskogens fruktsorterare' }
+  };
+
+  function openWonderMinigame(wonderId) {
+    const wonder = W.wonders[wonderId];
+    const mg = WONDER_MINIGAME_MAP[wonderId];
+    if (!wonder || !mg || !window.GT_MINIGAMES) return;
+
+    const html = `
+      <div class="scene-fullscreen scene-sight-full" style="background-image:url(${wonder.photo})">
+        <div class="sight-header-bar">
+          <div class="sight-plaque" style="border-color:#ffbe3d;">
+            <h3>★ ${mg.label.toUpperCase()}</h3>
+            <div class="sight-meta">${wonder.name} (${wonder.country}) · Världsarvsutmaning</div>
+          </div>
+          ${exitIconBtn(`Tillbaka till ${wonder.name}`)}
+        </div>
+        <div class="sight-bottom-panel">
+          <div id="quizContainer"></div>
+        </div>
+      </div>
+    `;
+    showModal(html);
+
+    const container = document.getElementById('quizContainer');
+    window.GT_MINIGAMES.start(mg.id, container, ({ score, max, passed, summary }) => {
+      const reward = passed ? 450 : Math.round((score / Math.max(1, max)) * 250);
+      if (reward > 0) {
+        changeCash(reward, `Världsarvsutmaning: ${wonder.name}`);
+      }
+      if (passed) {
+        AudioMgr.play('fanfar');
+        addJournal(`Klarade specialutmaningen "${mg.label}" vid världsarvet ${wonder.name} (+${reward} kr)!`);
+      }
+      container.innerHTML = `
+        <div style="text-align:center; padding:14px; border:2px dashed #c99a45; background:rgba(20,14,9,0.92); color:#f4ead6; border-radius:6px;">
+          <h4 style="color:${passed ? '#78e08f' : '#ffd875'}; font-size:19px; font-family:Georgia,serif; margin:0 0 6px;">
+            ${passed ? 'Utmaning avklarad!' : 'Bra försök!'}
+          </h4>
+          <p style="margin:0 0 8px;">${summary}</p>
+          <p style="font-size:17px; margin:0 0 12px; font-weight:bold; color:#ffd875;">Expeditionsbonus: +${reward} kr</p>
+          <button class="stamp-action-btn" onclick="window.GT.closeModal()">Tillbaka till ${wonder.name}</button>
+        </div>
+      `;
+    });
+  }
+
   // --- Världsarv som eget resmål ("mini-stad" utan hotell/jobb/basar!) ---
   function renderWonderDestination(wonder) {
     el.mapLayer.style.backgroundImage = `url(${wonder.photo})`;
@@ -1262,11 +1330,24 @@
       el.spotsContainer.appendChild(spotEl);
     });
 
+    // Unikt världsarvs-minispel direkt på platsen!
+    const wonderMg = WONDER_MINIGAME_MAP[wonder.id];
+    if (wonderMg && window.GT_MINIGAMES) {
+      const mgSpot = createSpot(
+        60, 74,
+        'sight',
+        `<div class="spot-photo" style="background-image:url(${wonder.photo}); border-color:#ffbe3d; box-shadow:0 0 18px rgba(255,190,61,0.65);"></div>`,
+        `★ Spela: ${wonderMg.label}`,
+        () => openWonderMinigame(wonder.id)
+      );
+      el.spotsContainer.appendChild(mgSpot);
+    }
+
     // Tydlig återrese-ikon tillbaka till närmaste stad
     const gwCity = W.cities[wonder.from];
     const gwName = gwCity ? gwCity.name : wonder.from;
     const returnSpot = createSpot(
-      36, 75,
+      30, 75,
       'service',
       `<img class="spot-service-img" src="assets/icons/airport_3d.jpg" alt="Återvänd">`,
       `Återvänd till ${gwName}`,
@@ -2006,7 +2087,7 @@
       ? `Sista-minuten: -${state.deals[dealCityKey]} % på flyg mot ${W.cities[dealCityKey].name} idag.`
       : `Kolla avgångstavlan på flygplatsen för dagens Stand by-biljetter (-25 %).`;
 
-    const cityMg = window.GT_MINIGAMES ? window.GT_MINIGAMES.getForCity(state.city) : null;
+    const cityMg = window.GT_MINIGAMES ? window.GT_MINIGAMES.getForCity(state.city, state.day) : null;
     const classifiedAdsHtml = cityJobs.slice(0, 3).map((job, idx) => {
       const finalPay = Math.round(job.pay * (hasCamera ? 1.5 : 1) * evMult);
       const doneKey = `${state.city}_${state.day}_${idx}`;
@@ -2102,7 +2183,7 @@
     const city = W.cities[state.city];
     const cityJobs = (city && Array.isArray(city.jobs) && city.jobs.length > 0) ? city.jobs : [];
     const job = cityJobs[jobIdx] || cityJobs[0] || { title: 'Praktikpass', employer: city.name, hours: 4, pay: 900 };
-    const mgInfo = window.GT_MINIGAMES ? window.GT_MINIGAMES.getForCity(state.city) : { id: gameId, title: job.title };
+    const mgInfo = window.GT_MINIGAMES ? window.GT_MINIGAMES.getForCity(state.city, state.day) : { id: gameId, title: job.title };
     const container = document.getElementById('quizContainer');
     if (!container || !window.GT_MINIGAMES) return;
 
