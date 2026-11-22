@@ -1747,6 +1747,15 @@
         const deepText = customNote || q.explain || (W.answerExplanations && W.answerExplanations[rightAnswerText]) ||
           `Det rätta svaret på frågan är ${rightAnswerText}.`;
 
+        const canChallenge = Boolean(
+          isCorrect &&
+          window.GT_MP && window.GT_MP.active &&
+          (q.t === 'mc' || q.t === 'image') &&
+          Array.isArray(q.a) && q.a.length >= 2 &&
+          state.duelSentDay !== state.day
+        );
+        const oppName = (window.GT_MP && window.GT_MP.opponent && window.GT_MP.opponent.name) || 'Motståndaren';
+
         const box = container.querySelector('.quiz-box');
         if (!box) return;
         box.innerHTML = `
@@ -1762,13 +1771,31 @@
               </div>
               <div class="quiz-explain-text">${deepText}</div>
             </div>
-            <div class="quiz-explain-action">
+            <div class="quiz-explain-action" style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+              ${canChallenge ? `<button class="globe-brass-btn" style="padding:5px 10px; font-size:11px; border-color:#38b6ff; color:#8cd7ff; white-space:nowrap;" id="quizChallengeBtn">⚡ Utmana ${oppName}</button>` : ''}
               <button class="stamp-action-btn" style="padding:8px 16px; font-size:12.5px; white-space:nowrap;" id="quizNextBtn">
                 ${qIndex + 1 < questions.length ? 'Nästa fråga »' : 'Avsluta besöket »'}
               </button>
             </div>
           </div>
         `;
+        const chBtn = document.getElementById('quizChallengeBtn');
+        if (chBtn) {
+          chBtn.onclick = () => {
+            state.duelSentDay = state.day;
+            window.GT_MP.sendChallenge({
+              fromName: state.playerFirstName || 'Spelare',
+              q: q.q,
+              a: q.a.slice(0, 4),
+              explain: deepText,
+              img: q.img || null
+            });
+            chBtn.disabled = true;
+            chBtn.textContent = '✓ Utmaning skickad!';
+            AudioMgr.play('bell');
+            showToast(`Duellfråga skickad till ${oppName}! Klarar hen den inte vinner du +250 kr!`, 3200);
+          };
+        }
         document.getElementById('quizNextBtn').onclick = () => {
           AudioMgr.play('klick');
           qIndex++;
@@ -2112,6 +2139,14 @@
         ? `Praktiskt skicklighetspass direkt på plats! Klara utmaningen för full lön och yrkeskompetens i passet.`
         : (job.adText || `${job.employer} söker en pålitlig resenär för dagens pass med kontant lön direkt i handen.`);
 
+      const recKey = `${state.city}_${idx}`;
+      const rec = (window.GT_MP && window.GT_MP.active && window.GT_MP.jobRecords[recKey]) || null;
+      const recBadge = rec
+        ? (rec.holder === state.playerFirstName
+          ? `<div class="bp-ad-bonus" style="color:#1c5c26;">★ Ditt rekord här: ${rec.score}/${rec.max}</div>`
+          : `<div class="bp-ad-bonus" style="color:#9e1f1f; background:rgba(184,35,35,0.1); padding:2px 5px; border-radius:3px;">🏆 ${rec.holder.toUpperCase()}S REKORD: ${rec.score}/${rec.max} · Slå det (+400 kr)!</div>`)
+        : '';
+
       return `
         <article class="${adClass}">
           <div class="bp-ad-kicker" style="${isMinigameAd ? 'color:#8c1f1f;' : ''}">${kickerText}</div>
@@ -2120,6 +2155,7 @@
             <b>${job.employer}</b> · ${job.hours} tim · <span class="bp-ad-pay">Upp till ${finalPay} kr</span>
           </div>
           <p class="bp-ad-copy">${pitch}</p>
+          ${recBadge}
           ${hasCamera ? `<div class="bp-ad-bonus">+50 % Kamerabonus aktiv</div>` : ''}
           ${(cityEv && cityEv.jobBonus) ? `<div class="bp-ad-bonus">+${Math.round(cityEv.jobBonus * 100)} % eventbonus (${cityEv.title})</div>` : ''}
           <div class="bp-ad-action">
@@ -2213,6 +2249,15 @@
       changeCash(earned, `Lön (minispel: ${mgInfo.title})`);
       addJournal(`Genomförde minispelet ${mgInfo.title} i ${city.name} (${score}/${max}) och tjänade ${earned} kr.`);
 
+      let recordBanner = '';
+      if (window.GT_MP && window.GT_MP.active) {
+        const resRec = window.GT_MP.postJobRecord(`${state.city}_${jobIdx}`, state.playerFirstName, score, max, mgInfo.title, city.name);
+        if (resRec.beatOpponent) {
+          changeCash(400, `Slog ${resRec.prev.holder}s jobbrekord`);
+          recordBanner = `<div style="margin:8px 0; padding:6px 10px; background:#fff4d2; border:2px solid #c99a45; color:#7a4f12; font-size:12.5px;"><b>🏆 NYTT REKORD!</b> Du slog ${resRec.prev.holder} (${resRec.prev.score}/${max}) och fick <b>+400 kr duellbonus</b>!</div>`;
+        }
+      }
+
       const goals = ensureJourneyGoals();
       const compKey = `mg_${gameId}`;
       let compBanner = '';
@@ -2240,6 +2285,7 @@
           <h4 style="color:${passed ? '#2f7d43' : '#8c4a00'}; font-size:20px; font-family:Georgia,serif;">${passed ? 'Snyggt jobbat!' : 'Passet avslutat'}</h4>
           <p>${summary}</p>
           <p style="font-size:19px; margin:10px 0; font-weight:bold; color:#7a4f12;">Utbetald lön: +${earned} kr</p>
+          ${recordBanner}
           ${compBanner}
           <button class="stamp-action-btn" onclick="window.GT.closeModal()">Stoppa sedlarna i fickan</button>
         </div>
@@ -2284,6 +2330,15 @@
       changeCash(earned, `Lön från ${job.employer}`);
       addJournal(`Arbetade som ${job.title} hos ${job.employer} i ${city.name} och fick ${earned} kr i handen.`);
 
+      let recordBanner = '';
+      if (window.GT_MP && window.GT_MP.active) {
+        const resRec = window.GT_MP.postJobRecord(`${state.city}_${jobIdx}`, state.playerFirstName, correctInJob, total, job.title, city.name);
+        if (resRec.beatOpponent) {
+          changeCash(400, `Slog ${resRec.prev.holder}s jobbrekord`);
+          recordBanner = `<div style="margin:8px 0; padding:6px 10px; background:#fff4d2; border:2px solid #c99a45; color:#7a4f12; font-size:12.5px;"><b>🏆 NYTT REKORD!</b> Du slog ${resRec.prev.holder} (${resRec.prev.score}/${total}) och fick <b>+400 kr duellbonus</b>!</div>`;
+        }
+      }
+
       // BackPacker 1 & 2-yrkeskompetens: minst 4 av 6 rätt ger yrkesintyg i passet!
       const goals = ensureJourneyGoals();
       const passThreshold = Math.ceil(total * 0.66);
@@ -2314,6 +2369,7 @@
           <h4 style="color:#2f7d43; font-size:20px; font-family:Georgia,serif;">Passet avslutat!</h4>
           <p>Du klarade <b>${correctInJob} av ${total}</b> arbetsuppgifter.</p>
           <p style="font-size:19px; margin:10px 0; font-weight:bold; color:#7a4f12;">Utbetald lön: +${earned} kr</p>
+          ${recordBanner}
           ${compBanner}
           <button class="stamp-action-btn" onclick="window.GT.closeModal()">Stoppa sedlarna i fickan</button>
         </div>
@@ -4642,9 +4698,21 @@
     showToast(`Trevlig resa, ${fn}! Se dina slumpade resmål i passet.`, 3400);
   }
 
-  // --- 2-Spelare Online Duell (WebRTC / PeerJS med 4-siffrig rumskod!) ---
+  // --- 2-Spelare Online Duell (WebRTC / PeerJS med 4-siffrig rumskod, Live Poängmätare & Jobbdueller!) ---
+  function getMyGoalProgress() {
+    const goals = ensureJourneyGoals();
+    const reg = Math.min(goals.requiredRegions, getVisitedRegions().size);
+    const comp = Math.min(goals.requiredCompetencies, state.competencies.length);
+    const souv = goals.souvenirCities.filter(ck => Boolean(hasGoalSouvenirFrom(ck))).length;
+    return {
+      done: reg + comp + souv,
+      total: goals.requiredRegions + goals.requiredCompetencies + goals.souvenirCities.length
+    };
+  }
+
   function buildMySnapshot(won = false) {
     const acc = state.questionsTotal > 0 ? Math.round((state.questionsCorrect / state.questionsTotal) * 100) : 100;
+    const gp = getMyGoalProgress();
     return {
       name: state.playerFirstName || 'Resenär',
       city: state.city,
@@ -4654,14 +4722,33 @@
       stamps: state.stamps.length,
       doneWonders: state.doneWonders.size,
       competencies: state.competencies.length,
+      goalsDone: gp.done,
+      goalsTotal: gp.total,
+      questionsCorrect: Math.round(state.questionsCorrect * 10) / 10,
       accuracy: acc,
       travelHistory: state.travelHistory.slice(-25),
       won
     };
   }
 
+  function checkKnowledgeStipend() {
+    if (!window.GT_MP || !window.GT_MP.active || !window.GT_MP.opponent) return;
+    if (state.day >= 5 && state.day % 5 === 0 && state.lastStipendDay !== state.day) {
+      state.lastStipendDay = state.day;
+      const myQ = state.questionsCorrect || 0;
+      const oppQ = window.GT_MP.opponent.questionsCorrect || 0;
+      if (myQ > oppQ && myQ >= 3) {
+        changeCash(500, `Globetrotter-stipendium (Kunskapsduell Dag ${state.day})`);
+        AudioMgr.play('fanfar');
+        addJournal(`Vann 5-dagars Kunskapsduellen mot ${window.GT_MP.opponent.name} (${Math.round(myQ)} mot ${Math.round(oppQ)} rätt) och fick +500 kr stipendium!`);
+        showToast(`🏆 KUNSKAPSDUELL DAG ${state.day}: Du leder (${Math.round(myQ)} vs ${Math.round(oppQ)} rätt) → +500 kr stipendium!`, 4600);
+      }
+    }
+  }
+
   function syncMultiplayerState() {
     if (!window.GT_MP || !window.GT_MP.active) return;
+    checkKnowledgeStipend();
     window.GT_MP.sendSnapshot(buildMySnapshot(false));
     updateOpponentHUD();
   }
@@ -4674,14 +4761,78 @@
       return;
     }
     const opp = window.GT_MP.opponent;
+    const me = buildMySnapshot(false);
     const locName = (opp.activeWonder && W.wonders[opp.activeWonder]?.name)
       || (W.cities[opp.city]?.name)
       || opp.city;
+    const challengeBtn = window.GT_MP.pendingChallenge
+      ? `<button class="mp-challenge-pill-btn" onclick="window.GT.openIncomingChallenge()">⚡ DUELLFRÅGA!</button>`
+      : '';
     bar.innerHTML = `
       <span class="mp-dot"></span>
-      <b>VS ${opp.name}</b> · Dag ${opp.day || 1} i <b>${locName}</b> · ${opp.stamps || 0} stämplar · ★ ${opp.doneWonders || 0}
+      <span><b style="color:#ffd875;">DU: ${me.goalsDone}/${me.goalsTotal}</b> (${me.accuracy}%)</span>
+      <span style="opacity:0.55;">VS</span>
+      <span><b style="color:#8cd7ff;">${opp.name}: ${opp.goalsDone || 0}/${opp.goalsTotal || me.goalsTotal}</b> (${opp.accuracy ?? 100}%) · ${locName}</span>
+      ${challengeBtn}
     `;
     bar.classList.remove('hidden');
+  }
+
+  function openIncomingChallenge() {
+    const ch = window.GT_MP && window.GT_MP.pendingChallenge;
+    if (!ch) return;
+    window.GT_MP.pendingChallenge = null;
+    updateOpponentHUD();
+
+    const shuffled = ch.a.slice().sort(() => Math.random() - 0.5);
+    const rightAns = ch.a[0];
+    const letters = ['A', 'B', 'C', 'D'];
+    const html = `
+      <div class="card-modal" style="max-width:600px; background:linear-gradient(180deg,#1d140c 0%,#120c07 100%); color:#f4ead6; border:3px ridge #38b6ff;">
+        <div style="font-size:10.5px; letter-spacing:1.6px; color:#8cd7ff; font-weight:bold; margin-bottom:4px;">⚡ DUELL-TELEGRAM FRÅN ${(ch.fromName || 'MOTSTÅNDAREN').toUpperCase()}</div>
+        <h3 style="margin:0 0 8px; font-family:Georgia,serif; color:#ffd875; font-size:18px;">Svara rätt för +250 kr — annars tar ${ch.fromName} pengarna!</h3>
+        ${ch.img ? `<div style="text-align:center; margin-bottom:8px;"><img src="${ch.img}" alt="" style="max-height:110px; border:2px solid #c99a45; border-radius:4px;"></div>` : ''}
+        <div style="font-family:Georgia,serif; font-size:15px; font-weight:bold; margin-bottom:12px;">${ch.q}</div>
+        <div class="quiz-options" id="mpChallengeOpts">
+          ${shuffled.map((opt, i) => `
+            <button class="quiz-btn" data-right="${opt === rightAns ? '1' : '0'}">
+              <span class="quiz-letter-seal">${letters[i] || (i + 1)}</span>
+              <span>${opt}</span>
+            </button>
+          `).join('')}
+        </div>
+        <div id="mpChallengeOutcome" style="margin-top:10px;"></div>
+      </div>
+    `;
+    showModal(html);
+
+    const btns = document.querySelectorAll('#mpChallengeOpts .quiz-btn');
+    btns.forEach(btn => {
+      btn.onclick = () => {
+        btns.forEach(b => b.disabled = true);
+        const ok = btn.dataset.right === '1';
+        if (ok) {
+          btn.classList.add('correct');
+          AudioMgr.play('right1');
+          changeCash(250, `Vann duellfråga från ${ch.fromName}`);
+        } else {
+          btn.classList.add('wrong');
+          AudioMgr.play('wrong1');
+          btns.forEach(b => { if (b.dataset.right === '1') b.classList.add('correct'); });
+        }
+        window.GT_MP.sendChallengeResult(ok, state.playerFirstName, ch.q);
+        const out = document.getElementById('mpChallengeOutcome');
+        if (out) {
+          out.innerHTML = `
+            <div style="padding:10px; background:rgba(255,248,230,0.08); border-left:3px solid ${ok ? '#78e08f' : '#ff7675'}; font-size:12.5px; margin-bottom:10px;">
+              <b style="color:${ok ? '#78e08f' : '#ff7675'};">${ok ? '✓ Rätt! Du vann +250 kr i duellen!' : `✕ Fel! Rätt svar var "${rightAns}" — ${ch.fromName} tog hem +250 kr.`}</b><br>
+              <span style="color:#d6c5a5;">${ch.explain || ''}</span>
+            </div>
+            <div style="text-align:right;"><button class="stamp-action-btn" onclick="window.GT.closeModal()">Tillbaka till resan</button></div>
+          `;
+        }
+      };
+    });
   }
 
   function openMultiplayerLobby() {
@@ -4769,6 +4920,25 @@
       onEvent: (msg) => {
         if (msg.type === 'WONDER_CLAIMED') {
           showToast(`${msg.playerName} hann först till världsarvet ${msg.wonderName}!`, 3800);
+        } else if (msg.type === 'JOB_RECORD') {
+          showToast(
+            msg.beatOpponent
+              ? `🏆 ${msg.holder} slog ditt jobbrekord på ${msg.jobTitle} i ${msg.cityName} (${msg.score}/${msg.max})!`
+              : `📋 ${msg.holder} satte rekord på ${msg.jobTitle} i ${msg.cityName}: ${msg.score}/${msg.max}!`,
+            4000
+          );
+        } else if (msg.type === 'CHALLENGE_Q') {
+          AudioMgr.play('bell');
+          updateOpponentHUD();
+          showToast(`⚡ ${msg.challenge.fromName} skickade en Duellfråga! Klicka på "⚡ DUELLFRÅGA!" längst upp.`, 4500);
+        } else if (msg.type === 'CHALLENGE_RESULT') {
+          if (msg.opponentGotItRight) {
+            showToast(`${msg.responderName} klarade din duellfråga och tog +250 kr!`, 3800);
+          } else {
+            changeCash(250, `Vann frågeduell mot ${msg.responderName}`);
+            AudioMgr.play('cash');
+            showToast(`⚡ ${msg.responderName} svarade fel på din duellfråga! Du vann +250 kr!`, 4200);
+          }
         } else if (msg.text) {
           showToast(msg.text, 3200);
         }
@@ -5014,6 +5184,7 @@
     mpCreateRoom,
     mpJoinRoom,
     mpCopyCode,
+    openIncomingChallenge,
     toggleSound() {
       const active = AudioMgr.toggle();
       if (window.AmbientMgr) window.AmbientMgr.setEnabled(active);

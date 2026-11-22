@@ -13,8 +13,10 @@
     roomCode: null,
     peer: null,
     conn: null,
-    opponent: null, // { name, city, activeWonder, day, cash, stamps, doneWonders, competencies, travelHistory, won }
+    opponent: null, // { name, city, activeWonder, day, cash, stamps, doneWonders, competencies, goalsDone, goalsTotal, questionsCorrect, accuracy, travelHistory, won }
     claimedWonders: new Set(),
+    jobRecords: {}, // "city_jobIdx" -> { holder, score, max, jobTitle }
+    pendingChallenge: null, // { fromName, q, a, explain, img }
     callbacks: {},
 
     isAvailable() {
@@ -31,6 +33,8 @@
       this.conn = null;
       this.opponent = null;
       this.claimedWonders = new Set();
+      this.jobRecords = {};
+      this.pendingChallenge = null;
     },
 
     createRoom(myName, sharedGoals, callbacks = {}) {
@@ -134,6 +138,14 @@
         } else if (msg.type === 'WONDER_CLAIMED') {
           this.claimedWonders.add(msg.wonderId);
           if (this.callbacks.onEvent) this.callbacks.onEvent(msg);
+        } else if (msg.type === 'JOB_RECORD') {
+          this.jobRecords[msg.key] = { holder: msg.holder, score: msg.score, max: msg.max, jobTitle: msg.jobTitle, cityName: msg.cityName };
+          if (this.callbacks.onEvent) this.callbacks.onEvent(msg);
+        } else if (msg.type === 'CHALLENGE_Q') {
+          this.pendingChallenge = msg.challenge;
+          if (this.callbacks.onEvent) this.callbacks.onEvent(msg);
+        } else if (msg.type === 'CHALLENGE_RESULT') {
+          if (this.callbacks.onEvent) this.callbacks.onEvent(msg);
         } else if (msg.type === 'VICTORY') {
           this.opponent = msg.data || this.opponent;
           if (this.callbacks.onOpponentVictory) this.callbacks.onOpponentVictory(this.opponent);
@@ -172,6 +184,27 @@
       this.claimedWonders.add(wonderId);
       this.sendRaw({ type: 'WONDER_CLAIMED', wonderId, wonderName, playerName });
       return true;
+    },
+
+    postJobRecord(key, holder, score, max, jobTitle, cityName) {
+      if (!this.active) return { beatOpponent: false };
+      const prev = this.jobRecords[key];
+      const beatOpponent = Boolean(prev && prev.holder !== holder && score > prev.score);
+      if (!prev || score > prev.score) {
+        this.jobRecords[key] = { holder, score, max, jobTitle, cityName };
+        this.sendRaw({ type: 'JOB_RECORD', key, holder, score, max, jobTitle, cityName, beatOpponent });
+      }
+      return { beatOpponent, prev };
+    },
+
+    sendChallenge(challenge) {
+      if (!this.active) return;
+      this.sendRaw({ type: 'CHALLENGE_Q', challenge });
+    },
+
+    sendChallengeResult(opponentGotItRight, responderName, qText) {
+      if (!this.active) return;
+      this.sendRaw({ type: 'CHALLENGE_RESULT', opponentGotItRight, responderName, qText });
     },
 
     sendVictory(data) {
