@@ -2006,17 +2006,23 @@
       ? `Sista-minuten: -${state.deals[dealCityKey]} % på flyg mot ${W.cities[dealCityKey].name} idag.`
       : `Kolla avgångstavlan på flygplatsen för dagens Stand by-biljetter (-25 %).`;
 
+    const cityMg = window.GT_MINIGAMES ? window.GT_MINIGAMES.getForCity(state.city) : null;
     const classifiedAdsHtml = cityJobs.slice(0, 3).map((job, idx) => {
       const finalPay = Math.round(job.pay * (hasCamera ? 1.5 : 1) * evMult);
       const doneKey = `${state.city}_${state.day}_${idx}`;
       const alreadyDone = !!state.jobsDoneToday[doneKey];
+      const isMinigameAd = (idx === 2 && cityMg);
       const adClass = idx === 0 ? 'bp-classified-ad circled' : 'bp-classified-ad';
-      const pitch = job.adText || `${job.employer} söker en pålitlig resenär för dagens pass med kontant lön direkt i handen.`;
+      const titleText = isMinigameAd ? `${cityMg.title}` : `${job.title} sökes!`;
+      const kickerText = isMinigameAd ? '★ PRAKTISKT MINISPEL' : (job.tag || `Platsannons #${idx + 1}`).toUpperCase();
+      const pitch = isMinigameAd
+        ? `Praktiskt skicklighetspass direkt på plats! Klara utmaningen för full lön och yrkeskompetens i passet.`
+        : (job.adText || `${job.employer} söker en pålitlig resenär för dagens pass med kontant lön direkt i handen.`);
 
       return `
         <article class="${adClass}">
-          <div class="bp-ad-kicker">${(job.tag || `Platsannons #${idx + 1}`).toUpperCase()}</div>
-          <h5 class="bp-ad-title">${job.title} sökes!</h5>
+          <div class="bp-ad-kicker" style="${isMinigameAd ? 'color:#8c1f1f;' : ''}">${kickerText}</div>
+          <h5 class="bp-ad-title">${titleText}</h5>
           <div class="bp-ad-meta">
             <b>${job.employer}</b> · ${job.hours} tim · <span class="bp-ad-pay">Upp till ${finalPay} kr</span>
           </div>
@@ -2026,7 +2032,9 @@
           <div class="bp-ad-action">
             ${alreadyDone
               ? `<div class="job-done-stamp">PASS AVKLARAT IDAG</div>`
-              : `<button class="bp-news-apply-btn" onclick="window.GT.startJobShift(${idx})">Sök passet (${job.hours} tim) »</button>`}
+              : (isMinigameAd
+                ? `<button class="bp-news-apply-btn" style="background:#7a1c21; border-color:#7a1c21;" onclick="window.GT.startJobMinigame(${idx}, '${cityMg.id}')">Spela minispel (${job.hours} tim) »</button>`
+                : `<button class="bp-news-apply-btn" onclick="window.GT.startJobShift(${idx})">Sök passet (${job.hours} tim) »</button>`)}
           </div>
         </article>
       `;
@@ -2088,6 +2096,62 @@
       </div>
     `;
     showModal(html);
+  }
+
+  function startJobMinigame(jobIdx = 2, gameId = 'passport') {
+    const city = W.cities[state.city];
+    const cityJobs = (city && Array.isArray(city.jobs) && city.jobs.length > 0) ? city.jobs : [];
+    const job = cityJobs[jobIdx] || cityJobs[0] || { title: 'Praktikpass', employer: city.name, hours: 4, pay: 900 };
+    const mgInfo = window.GT_MINIGAMES ? window.GT_MINIGAMES.getForCity(state.city) : { id: gameId, title: job.title };
+    const container = document.getElementById('quizContainer');
+    if (!container || !window.GT_MINIGAMES) return;
+
+    state.jobsDoneToday[`${state.city}_${state.day}_${jobIdx}`] = true;
+    addHours(job.hours);
+
+    window.GT_MINIGAMES.start(gameId || mgInfo.id, container, ({ score, max, passed, summary }) => {
+      const hasCamera = hasItem('kamera');
+      const cityEv = getCityEvent(state.city);
+      const evMult = (cityEv && cityEv.jobBonus) ? (1 + cityEv.jobBonus) : 1;
+      const maxPay = Math.round(job.pay * (hasCamera ? 1.5 : 1) * evMult);
+      const ratio = max > 0 ? Math.max(0, Math.min(1, score / max)) : 0;
+      const earned = Math.round(ratio * maxPay);
+
+      changeCash(earned, `Lön (minispel: ${mgInfo.title})`);
+      addJournal(`Genomförde minispelet ${mgInfo.title} i ${city.name} (${score}/${max}) och tjänade ${earned} kr.`);
+
+      const goals = ensureJourneyGoals();
+      const compKey = `mg_${gameId}`;
+      let compBanner = '';
+      if (passed) {
+        const alreadyHas = state.competencies.some(c => c.key === compKey);
+        if (!alreadyHas) {
+          state.competencies.push({ key: compKey, title: mgInfo.title, city: city.name });
+          saveGame();
+          AudioMgr.play('fanfar');
+          compBanner = `
+            <div style="margin:10px 0; padding:8px 12px; background:#edf7ee; border:2px solid #2f7d43; border-radius:4px; color:#1c542b; font-size:13px;">
+              <b>YRKESKOMPETENS INFÖRD I PASSET!</b><br>
+              Intyg: <b>${mgInfo.title}</b> · Nu <b>${state.competencies.length} / ${goals.requiredCompetencies}</b> yrken klara!
+            </div>
+          `;
+        } else {
+          compBanner = `<div style="margin:8px 0; font-size:12px; color:#5b4a36;"><i>Du har redan yrkeskompetens inom detta yrke.</i></div>`;
+        }
+      } else {
+        compBanner = `<div style="margin:8px 0; font-size:12px; color:#8c4a00;">Lite mer träning behövs för yrkeskompetens i passet — men du får betalt för din insats!</div>`;
+      }
+
+      container.innerHTML = `
+        <div style="text-align:center; padding:16px; border:2px dashed #6b4e2e; background:#fffaf0;">
+          <h4 style="color:${passed ? '#2f7d43' : '#8c4a00'}; font-size:20px; font-family:Georgia,serif;">${passed ? 'Snyggt jobbat!' : 'Passet avslutat'}</h4>
+          <p>${summary}</p>
+          <p style="font-size:19px; margin:10px 0; font-weight:bold; color:#7a4f12;">Utbetald lön: +${earned} kr</p>
+          ${compBanner}
+          <button class="stamp-action-btn" onclick="window.GT.closeModal()">Stoppa sedlarna i fickan</button>
+        </div>
+      `;
+    });
   }
 
   function startJobShift(jobIdx = 0) {
@@ -4599,6 +4663,7 @@
     doSignatureActivity,
     openJobModal,
     startJobShift,
+    startJobMinigame,
     openLibraryModal,
     openBazaarModal,
     upgradeBackpack,

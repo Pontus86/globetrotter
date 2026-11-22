@@ -5469,3 +5469,180 @@ h1, h2, h3, h4,
   opacity: 0.3;
   cursor: default;
 }
+
+
+/* =====================================================================
+   9 EGNA HTML5 CANVAS & WEB AUDIO MINISPEL (BACKPACKER-ARBETSPASS)
+   ===================================================================== */
+.mg-shell {
+  background: linear-gradient(180deg, #1b140d 0%, #100c08 100%);
+  border: 2px solid #b88b43;
+  border-radius: 6px;
+  padding: 10px 14px;
+  color: #f4ead6;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mg-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid rgba(212, 166, 74, 0.35);
+  padding-bottom: 6px;
+}
+.mg-title {
+  font-family: Georgia, serif;
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffd875;
+  letter-spacing: 0.8px;
+}
+.mg-sub {
+  font-size: 11px;
+  color: #d6c5a5;
+}
+.mg-hud {
+  font-family: 'Courier New', monospace;
+  font-size: 11.5px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(212, 166, 74, 0.4);
+  padding: 4px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.mg-stage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 250px;
+}
+.mg-canvas {
+  width: 100%;
+  max-width: 640px;
+  height: 250px;
+  border: 2px solid #7a5c32;
+  border-radius: 4px;
+  display: block;
+}
+.mg-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.mg-hint {
+  font-size: 11px;
+  color: #c9b48f;
+  font-style: italic;
+}
+
+/* Piano */
+.mg-piano-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.mg-piano-msg {
+  font-family: Georgia, serif;
+  font-size: 14px;
+  color: #ffd875;
+  font-weight: bold;
+}
+.mg-piano-keys {
+  display: flex;
+  gap: 6px;
+}
+.mg-key {
+  width: 58px;
+  height: 155px;
+  background: linear-gradient(180deg, #fffdf8 0%, #e7dec8 100%);
+  color: #1c140c;
+  border: 2px solid #3d2e1e;
+  border-radius: 0 0 6px 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding-bottom: 10px;
+  gap: 3px;
+  font-family: Georgia, serif;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.12s ease;
+}
+.mg-key small { font-size: 10px; opacity: 0.6; font-family: 'Courier New', monospace; }
+.mg-key.demo    { background: #ffd875; transform: translateY(3px); }
+.mg-key.correct { background: #78e08f; transform: translateY(3px); }
+.mg-key.wrong   { background: #ff7675; transform: translateY(3px); }
+
+/* Stoker */
+.mg-stoker-wrap {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-items: center;
+}
+.mg-gauge-bar {
+  position: relative;
+  width: 100%;
+  height: 36px;
+  background: linear-gradient(90deg, #2d3e50 0%, #a82828 100%);
+  border: 3px solid #c99a45;
+  border-radius: 18px;
+  overflow: hidden;
+}
+.mg-gauge-green {
+  position: absolute;
+  left: 40%;
+  width: 35%;
+  top: 0;
+  bottom: 0;
+  background: rgba(72, 219, 120, 0.75);
+}
+.mg-gauge-needle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: #fff8dc;
+  box-shadow: 0 0 10px #fff;
+  transform: translateX(-50%);
+}
+.mg-stoker-btns {
+  display: flex;
+  gap: 14px;
+}
+
+/* Passkontrollant */
+.mg-pass-card {
+  width: 100%;
+  max-width: 420px;
+  background: #f6efe0;
+  color: #1c140c;
+  border: 3px double #7a1c21;
+  border-radius: 6px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-family: Georgia, serif;
+}
+.mg-pass-row {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px dotted #b5a383;
+  padding-bottom: 4px;
+  font-size: 13.5px;
+}
+.mg-pass-btns {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 8px;
+}
