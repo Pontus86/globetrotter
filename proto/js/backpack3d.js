@@ -296,6 +296,24 @@
         this.isDragging = false;
         c.style.cursor = 'grab';
       });
+      // Touch-rotering för mobil & surfplatta
+      c.addEventListener('touchstart', e => {
+        if (e.touches.length === 1) {
+          this.isDragging = true;
+          this.lastX = e.touches[0].clientX;
+          this.lastY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+      window.addEventListener('touchmove', e => {
+        if (!this.isDragging || e.touches.length !== 1) return;
+        this.yaw += (e.touches[0].clientX - this.lastX) * 0.014;
+        this.pitch = Math.max(-0.6, Math.min(0.65, this.pitch + (e.touches[0].clientY - this.lastY) * 0.01));
+        this.lastX = e.touches[0].clientX;
+        this.lastY = e.touches[0].clientY;
+      }, { passive: true });
+      window.addEventListener('touchend', () => {
+        this.isDragging = false;
+      });
     }
 
     render() {

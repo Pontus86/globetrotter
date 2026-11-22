@@ -443,13 +443,36 @@
         this.radius = Math.max(this.baseRadius * 0.72, Math.min(780, this.radius + delta));
       }, { passive: false });
 
+      let pinchDist = null;
       c.addEventListener('touchstart', e => {
-        if (e.touches.length === 1) onStart(e.touches[0].clientX, e.touches[0].clientY);
+        if (e.touches.length === 1) {
+          pinchDist = null;
+          onStart(e.touches[0].clientX, e.touches[0].clientY);
+        } else if (e.touches.length === 2) {
+          this.isDragging = false;
+          pinchDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+        }
       }, { passive: true });
       window.addEventListener('touchmove', e => {
-        if (e.touches.length === 1) onMove(e.touches[0].clientX, e.touches[0].clientY);
+        if (e.touches.length === 1 && !pinchDist) {
+          onMove(e.touches[0].clientX, e.touches[0].clientY);
+        } else if (e.touches.length === 2 && pinchDist) {
+          const curDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          const diff = curDist - pinchDist;
+          this.radius = Math.max(this.baseRadius * 0.72, Math.min(780, this.radius + diff * 1.4));
+          pinchDist = curDist;
+        }
       }, { passive: true });
-      window.addEventListener('touchend', onEnd);
+      window.addEventListener('touchend', e => {
+        if (e.touches.length < 2) pinchDist = null;
+        if (e.touches.length === 0) onEnd(e.changedTouches && e.changedTouches[0]);
+      });
     }
 
     // Exakt invers projektion: skärmpunkt (sx, sy) -> { lat, lon } på sfären (eller null utanför)

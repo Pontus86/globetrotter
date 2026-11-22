@@ -1,0 +1,18 @@
+{
+  "name": "Globetrotter - Jorden runt mot klockan",
+  "short_name": "Globetrotter",
+  "description": "Svenskt 90-tals reseäventyr med 3D-jordglob, 67 städer, 20 världsarv, 39 minispel och online-duell.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#120d08",
+  "theme_color": "#1c140c",
+  "icons": [
+    {
+      "src": "assets/icons/airport_3d.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}

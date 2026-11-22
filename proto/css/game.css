@@ -6032,3 +6032,239 @@ h1, h2, h3, h4,
   color: #ffd875;
   margin: 4px 0 8px;
 }
+
+
+/* =====================================================================
+   MOBILANPASSNING (STÅENDE PORTRÄTT + LIGGANDE LANDSCAPE + TOUCH-PAD)
+   ===================================================================== */
+.mg-touch-pad {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  padding: 6px 0 2px;
+}
+.mg-touch-btn {
+  width: 58px;
+  height: 48px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #3a2918 0%, #1d140b 100%);
+  border: 2px solid #c99a45;
+  color: #ffd875;
+  font-size: 20px;
+  font-weight: 900;
+  touch-action: none;
+  user-select: none;
+}
+.mg-touch-btn.pressed {
+  background: #ffd875;
+  color: #1c140c;
+}
+
+@media (max-width: 820px) {
+  body, .app-container.cdrom-desk {
+    padding: 0 !important;
+    margin: 0 !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
+  }
+  .stage {
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    border-radius: 0 !important;
+    border: none !important;
+  }
+
+  /* Kompakt stadsskylt & HUD längst upp */
+  .city-plate {
+    top: 8px !important;
+    left: 8px !important;
+    max-width: 52vw !important;
+    padding: 4px 10px 5px !important;
+  }
+  .city-plate .city-name {
+    font-size: 16px !important;
+  }
+  .city-plate .city-region {
+    font-size: 9px !important;
+  }
+  .hud {
+    top: 8px !important;
+    right: 8px !important;
+    gap: 5px !important;
+    transform: scale(0.86);
+    transform-origin: top right;
+  }
+  .mp-opponent-pill {
+    top: 66px !important;
+    max-width: 94vw;
+    font-size: 10.5px;
+    padding: 4px 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Stående mobil: omvandla stadens ikoner till ett rent, tumvänligt 3-kolumns rutnät! */
+  @media (orientation: portrait) {
+    .spots-container {
+      position: absolute !important;
+      top: 102px !important;
+      bottom: 84px !important;
+      left: 8px !important;
+      right: 8px !important;
+      display: grid !important;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 10px 8px !important;
+      align-content: start !important;
+      overflow-y: auto !important;
+      padding: 6px 4px 12px !important;
+      -webkit-overflow-scrolling: touch;
+    }
+    .spots-container .spot {
+      position: relative !important;
+      left: auto !important;
+      top: auto !important;
+      transform: none !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+    }
+    .spot .spot-photo,
+    .spot .spot-service-img,
+    .spot .spot-undiscovered-badge,
+    .spot.signature .spot-badge {
+      width: 58px !important;
+      height: 58px !important;
+    }
+    .spot .spot-label {
+      max-width: 100% !important;
+      font-size: 10.5px !important;
+      padding: 2px 5px !important;
+    }
+  }
+
+  /* Fast centrerad bottendocka på mobil */
+  .travel-dock {
+    bottom: 8px !important;
+    right: 50% !important;
+    transform: translateX(50%) !important;
+    gap: 10px !important;
+    padding: 5px 12px !important;
+    background: rgba(16, 11, 7, 0.86);
+    border: 1.5px solid #9e7537;
+    border-radius: 12px;
+  }
+
+  /* Modaler: fyll skärmen snyggt och tillåt vertikal scroll på liten mobilskärm */
+  .scene-fullscreen {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .broadsheet-paper {
+    max-height: none !important;
+    overflow-y: auto !important;
+    transform: none !important;
+    padding: 10px 12px !important;
+  }
+  .masthead-top-row {
+    grid-template-columns: 1fr !important;
+  }
+  .masthead-ear { display: none !important; }
+  .broadsheet-frontgrid,
+  .bp-classifieds-grid,
+  .mp-lobby-grid,
+  .bp-match-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .news-editorial-col {
+    border-right: none !important;
+    border-bottom: 1.5px solid #2b2218;
+    padding-right: 0 !important;
+    padding-bottom: 10px;
+  }
+  .bp-classified-ad {
+    border-right: none !important;
+    border-bottom: 1px solid rgba(43, 34, 24, 0.35);
+    padding: 8px 4px !important;
+  }
+
+  /* Passet på mobil: stapla vänster & höger sida vertikalt så texten blir stor och läsbar */
+  .passport-book-shell {
+    background-image: none !important;
+    background: #2b1416 !important;
+    padding: 10px !important;
+    overflow-y: auto !important;
+  }
+  .passport-book-shell > .passport-nav-bar:first-child,
+  .passport-book-shell > .passport-nav-bar:last-child {
+    position: static !important;
+    margin: 6px 0 !important;
+  }
+  .passport-spread {
+    position: static !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .passport-page {
+    background: #f6efe0 !important;
+    border-radius: 6px !important;
+    border: 2px solid #b89f78 !important;
+    padding: 12px !important;
+    overflow: visible !important;
+  }
+
+  /* Quiz & Fotografiska Minispel på mobil */
+  .bp-image-quiz-wrap,
+  .quiz-explain-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .bp-image-quiz-frame {
+    flex: none !important;
+    height: 110px !important;
+  }
+  .mg-spy-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .mg-ing-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  .mg-mem-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+  .mg-crates-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Liggande mobil (Landscape): behåll den klassiska breda stadskartan i helskärm! */
+@media (max-height: 500px) and (orientation: landscape) {
+  .stage {
+    width: 100vw !important;
+    height: 100dvh !important;
+    aspect-ratio: auto !important;
+    border-radius: 0 !important;
+    border: none !important;
+  }
+  .hud {
+    transform: scale(0.8);
+    transform-origin: top right;
+  }
+  .city-plate {
+    transform: scale(0.85);
+    transform-origin: top left;
+  }
+  .spot .spot-photo,
+  .spot .spot-service-img,
+  .spot .spot-undiscovered-badge {
+    width: 46px !important;
+    height: 46px !important;
+  }
+  .spot .spot-label {
+    font-size: 9.5px !important;
+    max-width: 110px !important;
+  }
+}

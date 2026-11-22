@@ -71,6 +71,37 @@
     };
   }
 
+  function attachTouchPad(stage, keys, dirs = ['left', 'up', 'down', 'right']) {
+    const isTouch = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || window.innerWidth <= 860;
+    if (!isTouch) return;
+    const map = {
+      left:  { code: 'ArrowLeft',  label: '◀' },
+      up:    { code: 'ArrowUp',    label: '▲' },
+      down:  { code: 'ArrowDown',  label: '▼' },
+      right: { code: 'ArrowRight', label: '▶' }
+    };
+    const pad = document.createElement('div');
+    pad.className = 'mg-touch-pad';
+    dirs.forEach(d => {
+      const m = map[d];
+      if (!m) return;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'mg-touch-btn';
+      b.textContent = m.label;
+      const press = e => { e.preventDefault(); keys[m.code] = true; b.classList.add('pressed'); };
+      const rel = e => { e.preventDefault(); keys[m.code] = false; b.classList.remove('pressed'); };
+      b.addEventListener('touchstart', press, { passive: false });
+      b.addEventListener('touchend', rel, { passive: false });
+      b.addEventListener('touchcancel', rel, { passive: false });
+      b.addEventListener('mousedown', press);
+      b.addEventListener('mouseup', rel);
+      b.addEventListener('mouseleave', rel);
+      pad.appendChild(b);
+    });
+    stage.parentElement.insertBefore(pad, stage.nextSibling);
+  }
+
   // =========================================================================
   // 1. RAKETLANDAREN (lander)
   // =========================================================================
@@ -87,6 +118,7 @@
     const onUp = e => { keys[e.code] = false; };
     window.addEventListener('keydown', onDown);
     window.addEventListener('keyup', onUp);
+    attachTouchPad(ui.stage, keys, ['left', 'up', 'down', 'right']);
 
     let round = 1, wins = 0, fuel = 100, ended = false, raf = 0;
     let ship = {}, pad = {};
@@ -292,6 +324,7 @@
     const onUp = e => { keys[e.code] = false; };
     window.addEventListener('keydown', onDown);
     window.addEventListener('keyup', onUp);
+    attachTouchPad(ui.stage, keys, ['left', 'up', 'down', 'right']);
 
     let round = 1, wins = 0, ended = false, raf = 0;
     let boat = {}, goal = {}, reefs = [];
@@ -488,6 +521,7 @@
     const onUp = e => { keys[e.code] = false; };
     window.addEventListener('keydown', onDown);
     window.addEventListener('keyup', onUp);
+    attachTouchPad(ui.stage, keys, ['left', 'up', 'down', 'right']);
 
     let diver = { x: 320, y: 36 }, oxygen = 100, found = 0, ended = false, raf = 0;
     const chests = Array.from({ length: 5 }, (_, i) => ({ x: 70 + i * 122 + (Math.random() - 0.5) * 35, y: 224, taken: false }));
@@ -639,6 +673,7 @@
     const onUp = e => { keys[e.code] = false; };
     window.addEventListener('keydown', onDown);
     window.addEventListener('keyup', onUp);
+    attachTouchPad(ui.stage, keys, ['left', 'up', 'down', 'right']);
 
     let skierX = 320, passed = 0, totalGates = 10, gateIdx = 0, ended = false, raf = 0;
     const gates = Array.from({ length: totalGates }, (_, i) => ({
