@@ -381,9 +381,11 @@
     return 'miss';
   }
 
-  // Plocka obesvarade interaktiva BackPacker-frågor (peka på kartan, para ihop, ordna, bild/flagga)
-  function pickInteractiveQuestions(count, region = '') {
-    const pool = window.GT_INTERACTIVE_POOL || [];
+  let lastPickedWasGlobe = false;
+
+  // Plocka obesvarade svårare BackPacker-frågor (svårighetsgrad 3, trovärdiga svarsalternativ)
+  function pickHardQuestions(count, region = '') {
+    const pool = window.GT_HARD_QUESTIONS || [];
     if (pool.length === 0 || count <= 0) return [];
     const unused = pool.filter(q => !q.id || !state.usedQuestionIds.has(q.id));
     const src = unused.length >= count ? unused : pool;
@@ -393,21 +395,47 @@
       ...sameReg.slice().sort(() => Math.random() - 0.5),
       ...otherReg.slice().sort(() => Math.random() - 0.5)
     ];
-    // Sprid gärna frågetyperna (globe, match, order, image) så det blir maximal variation!
+    return combined.slice(0, count).map(q => ({ ...q }));
+  }
+
+  // Plocka obesvarade interaktiva BackPacker-frågor (para ihop, ordna, bild/flagga, samt mer sällsynt peka på kartan)
+  function pickInteractiveQuestions(count, region = '') {
+    const pool = window.GT_INTERACTIVE_POOL || [];
+    if (pool.length === 0 || count <= 0) return [];
+    const unused = pool.filter(q => !q.id || !state.usedQuestionIds.has(q.id));
+    const src = unused.length >= count ? unused : pool;
+
+    // Begränsa kartfrågor rejält: aldrig två gånger i rad och bara ca 25 % chans att en kartfråga ingår
+    const allowGlobe = !lastPickedWasGlobe && Math.random() < 0.25;
+    const filtered = allowGlobe ? src : src.filter(q => q.t !== 'globe');
+    const baseSrc = filtered.length >= count ? filtered : src;
+
+    const sameReg = baseSrc.filter(q => region && q.region === region);
+    const otherReg = baseSrc.filter(q => !region || q.region !== region);
+    const combined = [
+      ...sameReg.slice().sort(() => Math.random() - 0.5),
+      ...otherReg.slice().sort(() => Math.random() - 0.5)
+    ];
+    // Sprid frågetyperna och tillåt max 1 kartfråga per anrop
     const picked = [];
     const usedTypes = new Set();
+    let globePicked = false;
     for (const q of combined) {
       if (picked.length >= count) break;
+      if (q.t === 'globe' && globePicked) continue;
       if (!usedTypes.has(q.t) || combined.length - picked.length <= count - picked.length) {
         picked.push({ ...q });
         usedTypes.add(q.t);
+        if (q.t === 'globe') globePicked = true;
       }
     }
     while (picked.length < count && combined.length > picked.length) {
-      const next = combined.find(q => !picked.some(p => p.id === q.id));
+      const next = combined.find(q => !picked.some(p => p.id === q.id) && (q.t !== 'globe' || !globePicked));
       if (!next) break;
       picked.push({ ...next });
+      if (next.t === 'globe') globePicked = true;
     }
+    lastPickedWasGlobe = globePicked;
     return picked;
   }
 
@@ -423,13 +451,17 @@
     const maxCount = placeKey === 'job' ? 6 : 3;
     let picked = source.slice().sort(() => Math.random() - 0.5).slice(0, maxCount).map(q => ({ ...q, t: q.type || q.t }));
 
-    // Blanda in minst 1 interaktiv BackPacker-fråga (kartnål, para ihop, ordna eller bild/flagga) per sevärdhet!
+    // Blanda in svårare utmaningsfrågor & varierade interaktiva frågor i sevärdheter (utan att överdriva kartfrågor)
     const region = (cityKey && W.cities[cityKey] && W.cities[cityKey].region) || '';
     const interactiveTypes = new Set(['globe', 'match', 'order', 'image']);
-    if (placeKey !== 'job' && picked.length >= 2 && !picked.some(q => interactiveTypes.has(q.t))) {
-      const bonus = pickInteractiveQuestions(1, region);
-      if (bonus.length > 0) {
-        picked[picked.length - 1] = bonus[0];
+    if (placeKey !== 'job' && picked.length >= 2) {
+      const roll = Math.random();
+      if (roll < 0.60) {
+        const hard = pickHardQuestions(1, region);
+        if (hard.length > 0) picked[picked.length - 1] = hard[0];
+      } else if (roll < 0.90 && !picked.some(q => interactiveTypes.has(q.t))) {
+        const bonus = pickInteractiveQuestions(1, region);
+        if (bonus.length > 0) picked[picked.length - 1] = bonus[0];
       }
     }
     return picked;
@@ -1699,8 +1731,8 @@
       } else if (q.t === 'globe') {
         html += `
           <div class="globe-quiz-wrap">
-            <canvas id="quizGlobeCanvas" class="globe-quiz-canvas" width="320" height="196"></canvas>
-            <div>
+            <canvas id="quizGlobeCanvas" class="globe-quiz-canvas" width="320" height="210"></canvas>
+            <div id="globeQuizSide">
               <div style="font-size:12px; color:#d6c5a5; margin-bottom:6px;">
                 Snurra den blinda 3D-kartan (med landsgränser) och <b>klicka</b> för att sätta nålen!
               </div>
@@ -2000,6 +2032,7 @@
         };
       } else if (q.t === 'globe') {
         const qCanvas = document.getElementById('quizGlobeCanvas');
+        const sideEl = document.getElementById('globeQuizSide');
         const statusEl = document.getElementById('globeQuizStatus');
         const submitBtn = document.getElementById('globeQuizSubmit');
         const zoomInBtn = document.getElementById('qGlobeZoomIn');
@@ -2008,11 +2041,19 @@
         let qGlobeFrame = null;
 
         if (qCanvas && window.GlobeRenderer) {
+          // Starta alltid rejält bortvriden från målet (75–150° ifrån) så spelaren måste snurra & leta själv!
+          const offsetSign = Math.random() < 0.5 ? 1 : -1;
+          const offsetLon = offsetSign * (75 + Math.random() * 75);
+          let randStartLon = q.targetLon + offsetLon;
+          if (randStartLon > 180) randStartLon -= 360;
+          if (randStartLon < -180) randStartLon += 360;
+          const randStartLat = Math.max(-42, Math.min(50, (q.targetLat > 8 ? -14 : 26) + (Math.random() * 24 - 12)));
+
           const qGlobe = new window.GlobeRenderer(qCanvas, {
             quizMode: true,
-            radius: 132,
-            centerLat: q.startLat !== undefined ? q.startLat : 30,
-            centerLon: q.startLon !== undefined ? q.startLon : 15,
+            radius: 122,
+            centerLat: randStartLat,
+            centerLon: randStartLon,
             onGlobeClick: (lat, lon) => {
               if (submitBtn.dataset.locked === '1') return;
               chosen = { lat, lon };
@@ -2042,29 +2083,77 @@
             submitBtn.dataset.locked = '1';
             submitBtn.disabled = true;
             const distKm = Math.round(haversineKm(chosen.lat, chosen.lon, q.targetLat, q.targetLon));
+            qGlobe.pinMarker = { lat: chosen.lat, lon: chosen.lon, label: 'Din nål', color: '#ff4757' };
             qGlobe.targetMarker = { lat: q.targetLat, lon: q.targetLon, label: q.targetName, color: '#2ecc71' };
-            qGlobe.focusOn(q.targetLat, q.targetLon, null, 145, 600);
+
+            // Rotera globen mjukt till mittpunkten om punkterna är hyfsat nära varandra, annars till det rätta målet
+            if (distKm <= 5000) {
+              const midLat = (chosen.lat + q.targetLat) / 2;
+              let dLon = q.targetLon - chosen.lon;
+              if (dLon > 180) dLon -= 360;
+              if (dLon < -180) dLon += 360;
+              let midLon = chosen.lon + dLon / 2;
+              if (midLon > 180) midLon -= 360;
+              if (midLon < -180) midLon += 360;
+              const targetRad = distKm <= 1200 ? 175 : (distKm <= 2800 ? 140 : 112);
+              qGlobe.focusOn(midLat, midLon, null, targetRad, 650);
+            } else {
+              qGlobe.focusOn(q.targetLat, q.targetLon, null, 130, 650);
+            }
 
             let ok = false;
-            let verdict = '';
-            if (distKm <= 900) {
+            let headline = '';
+            if (distKm <= 650) {
               ok = true;
               state.questionsCorrect++;
               sessionCorrect++;
               AudioMgr.play('right1');
-              verdict = `Mitt i prick! Endast ${distKm.toLocaleString('sv-SE')} km från ${q.targetName}. ${q.explain || ''}`;
-            } else if (distKm <= 2200) {
+              headline = `✓ Mitt i prick! (${distKm.toLocaleString('sv-SE')} km ifrån)`;
+            } else if (distKm <= 1500) {
               ok = true;
               state.questionsCorrect += 0.5;
               sessionCorrect += 0.5;
               AudioMgr.play('right1');
-              verdict = `Bra riktning! Du hamnade ${distKm.toLocaleString('sv-SE')} km från ${q.targetName} (delpoäng). ${q.explain || ''}`;
+              headline = `✓ Nära! (${distKm.toLocaleString('sv-SE')} km ifrån · delpoäng)`;
             } else {
               AudioMgr.play('wrong1');
-              verdict = `Du hamnade ${distKm.toLocaleString('sv-SE')} km från ${q.targetName}. ${q.explain || ''}`;
+              headline = `✕ ${distKm.toLocaleString('sv-SE')} km ifrån rätt plats`;
             }
-            statusEl.innerHTML = `<b style="color:${ok ? '#78e08f' : '#ff7675'}">Avstånd: ${distKm.toLocaleString('sv-SE')} km</b>`;
-            showAnswerDeepDive(ok, q.targetName, verdict);
+
+            // Behåll 3D-jordgloben synlig med BÅDA nålarna + avståndsbågen och visa resultatet bredvid!
+            if (sideEl) {
+              sideEl.innerHTML = `
+                <div style="font-weight:bold; font-size:13px; color:${ok ? '#78e08f' : '#ff7675'}; margin-bottom:4px;">
+                  ${headline}
+                </div>
+                <div style="font-size:11px; color:#f2e6cf; margin-bottom:6px; display:flex; flex-wrap:wrap; gap:8px;">
+                  <span><span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#ff4757; vertical-align:middle; margin-right:3px;"></span>Din nål</span>
+                  <span><span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#2ecc71; vertical-align:middle; margin-right:3px;"></span>Rätt: <b>${q.targetName}</b></span>
+                </div>
+                <div style="font-size:11.5px; color:#d8cbb2; line-height:1.4; margin-bottom:8px;">
+                  ${q.explain || `Den exakta platsen är ${q.targetName}.`}
+                </div>
+                <div class="globe-quiz-tools" style="margin-bottom:8px;">
+                  <button type="button" class="globe-brass-btn" id="qGlobeShowTarget" style="padding:3px 8px; font-size:10.5px;">Visa rätt plats</button>
+                  <button type="button" class="globe-brass-btn" id="qGlobeShowPin" style="padding:3px 8px; font-size:10.5px;">Visa din nål</button>
+                </div>
+                <button class="stamp-action-btn" style="padding:8px 16px; font-size:12.5px;" id="quizNextBtn">
+                  ${qIndex + 1 < questions.length ? 'Nästa fråga »' : 'Avsluta besöket »'}
+                </button>
+              `;
+              const showTargetBtn = document.getElementById('qGlobeShowTarget');
+              const showPinBtn = document.getElementById('qGlobeShowPin');
+              if (showTargetBtn) showTargetBtn.onclick = () => qGlobe.focusOn(q.targetLat, q.targetLon, null, 155, 500);
+              if (showPinBtn) showPinBtn.onclick = () => qGlobe.focusOn(chosen.lat, chosen.lon, null, 155, 500);
+              const nextBtn = document.getElementById('quizNextBtn');
+              if (nextBtn) {
+                nextBtn.onclick = () => {
+                  AudioMgr.play('klick');
+                  qIndex++;
+                  renderQuestion();
+                };
+              }
+            }
           };
         }
       } else if (q.t === 'text') {
@@ -2304,19 +2393,23 @@
     state.jobsDoneToday[`${state.city}_${state.day}_${jobIdx}`] = true;
     addHours(job.hours);
 
-    // Klassiskt BackPacker 1 & 2-arbetsprov: 6 frågor per jobb (4 yrkes-/stadsfrågor + 2 interaktiva BackPacker-frågor)!
+    // Klassiskt BackPacker 1 & 2-arbetsprov: 6 frågor per jobb (3 yrkes-/stadsfrågor + 2 svårare utmaningsfrågor + 1 interaktiv fråga)!
     let baseQuestions;
     if (job.isSignature || jobIdx === 0) {
-      baseQuestions = getQuestionsFor(state.city, 'job', job.questions || []).slice(0, 4);
+      baseQuestions = getQuestionsFor(state.city, 'job', job.questions || []).slice(0, 3);
     } else {
       const pool = job.questions || [];
       const unused = pool.filter(q => !q.id || !state.usedQuestionIds.has(q.id));
-      const src = unused.length >= 4 ? unused : pool;
-      baseQuestions = src.slice().sort(() => Math.random() - 0.5).slice(0, 4).map(q => ({ ...q, t: q.type || q.t }));
+      const src = unused.length >= 3 ? unused : pool;
+      baseQuestions = src.slice().sort(() => Math.random() - 0.5).slice(0, 3).map(q => ({ ...q, t: q.type || q.t }));
     }
-    const needed = Math.max(2, 6 - baseQuestions.length);
-    const interactiveExtras = pickInteractiveQuestions(needed, city.region);
-    const questions = [...baseQuestions, ...interactiveExtras].slice(0, 6);
+    const hardExtras = pickHardQuestions(2, city.region);
+    const interactiveExtras = pickInteractiveQuestions(1, city.region);
+    const fillNeed = Math.max(0, 6 - baseQuestions.length - hardExtras.length - interactiveExtras.length);
+    const extraHard = fillNeed > 0 ? pickHardQuestions(fillNeed, '') : [];
+    const questions = [...baseQuestions, ...hardExtras, ...interactiveExtras, ...extraHard]
+      .slice(0, 6)
+      .sort(() => Math.random() - 0.5);
     const container = document.getElementById('quizContainer');
 
     runQuiz(questions, ({ correct, total }) => {

@@ -1161,6 +1161,14 @@
           if (!m) return;
           const pt = this.project(m.lat, m.lon);
           if (!pt.visible) return;
+          if (m === this.targetMarker) {
+            const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 240);
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, 10 + pulse * 5, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(46, 204, 113, 0.85)';
+            ctx.lineWidth = 2.2;
+            ctx.stroke();
+          }
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
           ctx.fillStyle = m.color || '#ff4757';
@@ -1171,13 +1179,16 @@
           if (m.label) {
             ctx.font = 'bold 11px Georgia, serif';
             const tw = ctx.measureText(m.label).width;
-            ctx.fillStyle = 'rgba(14, 11, 8, 0.9)';
-            ctx.fillRect(pt.x + 9, pt.y - 9, tw + 10, 18);
+            const bw = tw + 10;
+            const lx = (pt.x + 9 + bw > this.canvas.width - 4) ? Math.max(4, pt.x - bw - 9) : (pt.x + 9);
+            const ly = Math.max(4, Math.min(this.canvas.height - 22, pt.y - 9));
+            ctx.fillStyle = 'rgba(14, 11, 8, 0.92)';
+            ctx.fillRect(lx, ly, bw, 18);
             ctx.strokeStyle = m.color || '#ffd875';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(pt.x + 9, pt.y - 9, tw + 10, 18);
+            ctx.lineWidth = 1.2;
+            ctx.strokeRect(lx, ly, bw, 18);
             ctx.fillStyle = '#fff6e0';
-            ctx.fillText(m.label, pt.x + 14, pt.y + 4);
+            ctx.fillText(m.label, lx + 5, ly + 13);
           }
         });
         ctx.restore();
