@@ -526,7 +526,7 @@
       return true;
     }
 
-    render(travelHistory = [], currentCityKey = 'stockholm', activeEvents = []) {
+    render(travelHistory = [], currentCityKey = 'stockholm', activeEvents = [], opponent = null) {
       const ctx = this.ctx;
       const w = this.canvas.width;
       const h = this.canvas.height;
@@ -653,6 +653,37 @@
             if (pt.visible) {
               if (!drawing) { ctx.moveTo(pt.x, pt.y); drawing = true; }
               else { ctx.lineTo(pt.x, pt.y); }
+            } else {
+              drawing = false;
+            }
+          }
+          ctx.stroke();
+        });
+        ctx.restore();
+      }
+
+      // 4b. Online-motståndarens reslinje (Blå linje i 2-spelarduell!)
+      if (!this.mini && !this.quizMode && opponent && Array.isArray(opponent.travelHistory) && opponent.travelHistory.length > 0) {
+        ctx.save();
+        ctx.lineWidth = 2.8 * zoomScale;
+        ctx.strokeStyle = '#38b6ff';
+        ctx.shadowColor = 'rgba(56, 182, 255, 0.85)';
+        ctx.shadowBlur = 8;
+
+        opponent.travelHistory.forEach(leg => {
+          const c1 = window.GT_WORLD.cities[leg.from];
+          const c2 = window.GT_WORLD.cities[leg.to];
+          if (!c1 || !c2) return;
+          const v1 = latLonToVector(c1.lat, c1.lon);
+          const v2 = latLonToVector(c2.lat, c2.lon);
+          ctx.beginPath();
+          let drawing = false;
+          for (let s = 0; s <= 48; s++) {
+            const ll = vectorToLatLon(slerp(v1, v2, s / 48));
+            const pt = this.project(ll[0], ll[1]);
+            if (pt.visible) {
+              if (!drawing) { ctx.moveTo(pt.x, pt.y); drawing = true; }
+              else ctx.lineTo(pt.x, pt.y);
             } else {
               drawing = false;
             }
@@ -1038,6 +1069,46 @@
           ctx.fillStyle = '#e7dbc6';
           ctx.fillText(line2, bx + 8, by + 27);
           ctx.restore();
+        }
+      }
+
+      // 6c. Online-motståndarens nuvarande position (pulserande blå nål på jordgloben!)
+      if (!this.mini && !this.quizMode && opponent && opponent.city) {
+        const oppLoc = (opponent.activeWonder && window.GT_WORLD.wonders && window.GT_WORLD.wonders[opponent.activeWonder])
+          || window.GT_WORLD.cities[opponent.city];
+        if (oppLoc) {
+          const proj = this.project(oppLoc.lat, oppLoc.lon);
+          if (proj.visible) {
+            const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 260);
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(proj.x, proj.y, (10 + pulse * 5) * zoomScale, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(56, 182, 255, 0.9)';
+            ctx.lineWidth = 2.4;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(proj.x, proj.y, 5.2 * zoomScale, 0, Math.PI * 2);
+            ctx.fillStyle = '#38b6ff';
+            ctx.strokeStyle = '#091826';
+            ctx.lineWidth = 1.6;
+            ctx.fill();
+            ctx.stroke();
+
+            const tag = `VS: ${opponent.name || 'Spelare 2'} (Dag ${opponent.day || 1})`;
+            ctx.font = 'bold 11px Georgia, serif';
+            const tw = ctx.measureText(tag).width;
+            const bx = proj.x - tw / 2 - 6;
+            const by = proj.y - 26;
+            ctx.fillStyle = 'rgba(8, 24, 42, 0.92)';
+            ctx.fillRect(bx, by, tw + 12, 18);
+            ctx.strokeStyle = '#38b6ff';
+            ctx.lineWidth = 1.2;
+            ctx.strokeRect(bx, by, tw + 12, 18);
+            ctx.fillStyle = '#bfe8ff';
+            ctx.fillText(tag, bx + 6, by + 13);
+            ctx.restore();
+          }
         }
       }
 

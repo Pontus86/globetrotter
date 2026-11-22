@@ -705,8 +705,9 @@
       }
     }
 
-    // Automatisk sparning i webbläsaren
+    // Automatisk sparning i webbläsaren + realtidssynk i 2-spelarläge
     saveGame();
+    syncMultiplayerState();
   }
 
   function renderCity() {
@@ -1402,6 +1403,14 @@
         state.dayLog.activities.push(`Utforskat världsarvet ${wonder.name}`);
         addJournal(`Utforskat hela världsarvet ${wonder.name} (${wonder.country}) under expeditionen från ${W.cities[wonder.from]?.name || wonder.from}.`);
         AudioMgr.play('fanfar');
+
+        if (window.GT_MP && window.GT_MP.active) {
+          const firstClaim = window.GT_MP.claimWonder(wonder.id, wonder.name, state.playerFirstName);
+          if (firstClaim) {
+            changeCash(400, `Först på världsarvet ${wonder.name}`);
+            showToast(`FÖRST PÅ PLATS! +400 kr duellbonus för ${wonder.name}!`, 4000);
+          }
+        }
 
         if (wonder.souvenir && W.souvenirs[wonder.souvenir] && state.backpack.length < getMaxBackpackSlots()) {
           const itemDef = W.souvenirs[wonder.souvenir];
@@ -3519,7 +3528,8 @@
           activeGlobeRenderer.centerLon = baseLon + Math.sin(spinPhase) * 22;
           activeGlobeRenderer.centerLat = baseLat;
         }
-        activeGlobeRenderer.render(state.travelHistory, state.city, getActiveWorldEvents());
+        const opp = (window.GT_MP && window.GT_MP.active) ? window.GT_MP.opponent : null;
+        activeGlobeRenderer.render(state.travelHistory, state.city, getActiveWorldEvents(), opp);
         globeAnimFrameId = requestAnimationFrame(loop);
       };
       globeAnimFrameId = requestAnimationFrame(loop);
@@ -4571,8 +4581,12 @@
             <div class="bp90-menu-buttons">
               ${continueBtn}
               <button class="bp90-menu-btn primary" onclick="window.GT.startNewJourney()">
-                <span class="bp90-btn-title">STARTA NY RESA</span>
+                <span class="bp90-btn-title">STARTA NY RESA (1 SPELARE)</span>
                 <span class="bp90-btn-sub">STÄMPLA PASS &amp; AVRESA FRÅN ${(W.cities[W.startCity]?.name || 'MALMÖ').toUpperCase()} »</span>
+              </button>
+              <button class="bp90-menu-btn continue" style="border-color:#38b6ff;" onclick="window.GT.openMultiplayerLobby()">
+                <span class="bp90-btn-title" style="color:#8cd7ff;">ONLINE DUELL (2 SPELARE)</span>
+                <span class="bp90-btn-sub">SKAPA ELLER GÅ MED MED 4-SIFFRIG RUMSKOD · SAMMA PASSMÅL</span>
               </button>
             </div>
           </div>
@@ -4628,6 +4642,219 @@
     showToast(`Trevlig resa, ${fn}! Se dina slumpade resmål i passet.`, 3400);
   }
 
+  // --- 2-Spelare Online Duell (WebRTC / PeerJS med 4-siffrig rumskod!) ---
+  function buildMySnapshot(won = false) {
+    const acc = state.questionsTotal > 0 ? Math.round((state.questionsCorrect / state.questionsTotal) * 100) : 100;
+    return {
+      name: state.playerFirstName || 'Resenär',
+      city: state.city,
+      activeWonder: state.activeWonder,
+      day: state.day,
+      cash: state.cash,
+      stamps: state.stamps.length,
+      doneWonders: state.doneWonders.size,
+      competencies: state.competencies.length,
+      accuracy: acc,
+      travelHistory: state.travelHistory.slice(-25),
+      won
+    };
+  }
+
+  function syncMultiplayerState() {
+    if (!window.GT_MP || !window.GT_MP.active) return;
+    window.GT_MP.sendSnapshot(buildMySnapshot(false));
+    updateOpponentHUD();
+  }
+
+  function updateOpponentHUD() {
+    const bar = document.getElementById('mpOpponentBar');
+    if (!bar) return;
+    if (!window.GT_MP || !window.GT_MP.active || !window.GT_MP.opponent) {
+      bar.classList.add('hidden');
+      return;
+    }
+    const opp = window.GT_MP.opponent;
+    const locName = (opp.activeWonder && W.wonders[opp.activeWonder]?.name)
+      || (W.cities[opp.city]?.name)
+      || opp.city;
+    bar.innerHTML = `
+      <span class="mp-dot"></span>
+      <b>VS ${opp.name}</b> · Dag ${opp.day || 1} i <b>${locName}</b> · ${opp.stamps || 0} stämplar · ★ ${opp.doneWonders || 0}
+    `;
+    bar.classList.remove('hidden');
+  }
+
+  function openMultiplayerLobby() {
+    const fn = (document.getElementById('inpFirstName')?.value || state.playerFirstName || 'ALEX').trim() || 'ALEX';
+    const ln = (document.getElementById('inpLastName')?.value || state.playerLastName || 'GLOBETROTTER').trim() || 'GLOBETROTTER';
+    state.playerFirstName = fn;
+    state.playerLastName = ln;
+
+    const html = `
+      <div class="scene-fullscreen bp90-start-scene">
+        <div class="mp-lobby-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #b88b43; padding-bottom:8px; margin-bottom:12px;">
+            <div>
+              <div style="font-size:10px; letter-spacing:1.6px; color:#8cd7ff; font-weight:bold;">GLOBETROTTER · WEBRTC ONLINE DUELL</div>
+              <h2 style="margin:2px 0 0; font-family:Georgia,serif; color:#ffd875; font-size:20px;">2 SPELARE ÖVER NÄTET</h2>
+            </div>
+            <button class="globe-brass-btn" onclick="window.GT_MP && window.GT_MP.disconnect(); window.GT.openStartScreen()">« Tillbaka</button>
+          </div>
+
+          <p style="font-size:12.5px; color:#e6d7bd; margin:0 0 12px; line-height:1.4;">
+            Ni får <b>exakt samma slumpade passmål</b> och tävlar i realtid runt jorden! Ni ser varandras positioner och reslinjer (Röd vs. Blå) live på 3D-jordgloben. Först hem till <b>Malmö</b> med alla mål klara vinner!
+          </p>
+
+          <div class="mp-lobby-grid">
+            <div class="mp-lobby-col">
+              <h4>1. Skapa nytt rum (Spelare 1)</h4>
+              <p style="font-size:11.5px; color:#c9b48f; margin:0 0 10px;">Skapa en 4-siffrig rumskod och skicka till din kompis.</p>
+              <button class="stamp-action-btn" style="width:100%;" onclick="window.GT.mpCreateRoom()">Skapa online-rum »</button>
+              <div id="mpHostBox" style="margin-top:10px;"></div>
+            </div>
+
+            <div class="mp-lobby-col">
+              <h4>2. Gå med i rum (Spelare 2)</h4>
+              <p style="font-size:11.5px; color:#c9b48f; margin:0 0 8px;">Skriv in den 4-siffriga rumskoden du fått:</p>
+              <div style="display:flex; gap:8px;">
+                <input id="mpJoinCode" class="bp-text-input" type="text" maxlength="4" placeholder="t.ex. 4821" style="text-align:center; letter-spacing:4px; font-size:18px; width:120px;">
+                <button class="stamp-action-btn" style="flex:1;" onclick="window.GT.mpJoinRoom()">Anslut »</button>
+              </div>
+              <div id="mpGuestStatus" style="margin-top:8px; font-size:11.5px; color:#ffd875;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    showModal(html);
+  }
+
+  function startOnlineMatch(sharedGoals) {
+    state.city = W.startCity;
+    state.activeWonder = null;
+    state.day = 1;
+    state.hour = 8;
+    state.cash = W.startCash;
+    state.backpack = [];
+    state.backpackLevel = 1;
+    state.mailedHome = [];
+    state.callsHomeUsed = 0;
+    state.donePlaces = new Set();
+    state.doneWonders = new Set();
+    state.doneWonderSpots = new Set();
+    state.discoveredPlaces = new Set();
+    state.visitedCities = new Set([W.startCity]);
+    state.stamps = [];
+    state.travelHistory = [];
+    state.competencies = [];
+    state.questionsTotal = 0;
+    state.questionsCorrect = 0;
+    state.goals = sharedGoals;
+    const goalNames = sharedGoals.souvenirCities.map(ck => W.cities[ck]?.name || ck).join(', ');
+    state.journal = [{ day: 1, text: `Online-duell startad från ${W.cities[W.startCity]?.name || 'Malmö'}! Gemensamma mål: ${sharedGoals.requiredCompetencies} yrken + souvenirer från ${goalNames}.` }];
+    gameSessionStarted = true;
+    AudioMgr.play('fanfar');
+    closeModal();
+    renderCity();
+    syncMultiplayerState();
+    showToast('Online-duellen har börjat! Se era gemensamma mål i passet!', 4000);
+  }
+
+  function getMpCallbacks() {
+    return {
+      onMatchStart: (sharedGoals) => startOnlineMatch(sharedGoals),
+      onOpponentUpdate: (opp) => {
+        updateOpponentHUD();
+      },
+      onEvent: (msg) => {
+        if (msg.type === 'WONDER_CLAIMED') {
+          showToast(`${msg.playerName} hann först till världsarvet ${msg.wonderName}!`, 3800);
+        } else if (msg.text) {
+          showToast(msg.text, 3200);
+        }
+      },
+      onOpponentVictory: (opp) => {
+        AudioMgr.play('bell');
+        triggerDuelResult(false, opp);
+      },
+      onDisconnect: () => {
+        showToast('Motståndaren kopplade ifrån online-duellen.', 3600);
+        updateOpponentHUD();
+      }
+    };
+  }
+
+  function mpCreateRoom() {
+    const box = document.getElementById('mpHostBox');
+    if (box) box.innerHTML = `<div style="font-size:12px; color:#ffd875;">Öppnar online-rum...</div>`;
+    const sharedGoals = generateJourneyGoals();
+    window.GT_MP.createRoom(state.playerFirstName, sharedGoals, {
+      ...getMpCallbacks(),
+      onRoomOpen: (code) => {
+        if (box) {
+          box.innerHTML = `
+            <div class="mp-code-box">
+              <div style="font-size:10px; color:#c9b48f; letter-spacing:1px;">DIN RUMSKOD:</div>
+              <div class="mp-code-digits">${code}</div>
+              <button class="globe-brass-btn" style="padding:4px 10px; font-size:11px;" onclick="window.GT.mpCopyCode('${code}')">Kopiera kod</button>
+              <div style="font-size:11px; color:#8cd7ff; margin-top:6px;">Väntar på att Spelare 2 ansluter...</div>
+            </div>
+          `;
+        }
+      },
+      onError: (err) => {
+        if (box) box.innerHTML = `<div style="font-size:11.5px; color:#ff7675;">${err}</div>`;
+      }
+    });
+  }
+
+  function mpJoinRoom() {
+    const code = document.getElementById('mpJoinCode')?.value || '';
+    const st = document.getElementById('mpGuestStatus');
+    if (st) st.textContent = `Ansluter till rum ${code}...`;
+    window.GT_MP.joinRoom(code, state.playerFirstName, {
+      ...getMpCallbacks(),
+      onError: (err) => {
+        if (st) st.innerHTML = `<span style="color:#ff7675;">${err}</span>`;
+      }
+    });
+  }
+
+  function mpCopyCode(code) {
+    try { navigator.clipboard.writeText(code); showToast(`Rumskod ${code} kopierad!`, 2000); } catch (e) {}
+  }
+
+  function triggerDuelResult(iWon, opp) {
+    const me = buildMySnapshot(iWon);
+    const o = opp || { name: 'Motståndare', day: '-', stamps: 0, doneWonders: 0, competencies: 0, cash: 0, accuracy: 0 };
+    const html = `
+      <div class="card-modal" style="max-width:680px;">
+        <div class="diploma">
+          <div class="diploma-title">${iWon ? '★ DUELLSEGER! ★' : 'DUELLEN AVGJORD'}</div>
+          <div class="diploma-rank">${iWon ? `Grattis ${me.name}! Du slog ${o.name} i racet jorden runt!` : `${o.name} hann först hem till Malmö med alla mål klara!`}</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
+          <div class="stat-box" style="border:2px solid #c8322b; text-align:left; padding:10px;">
+            <b style="color:#c8322b;">DU (${me.name})</b><br>
+            Dag: <b>${me.day}</b> · Stämplar: <b>${me.stamps}</b><br>
+            Världsarv: <b>${me.doneWonders}</b> · Yrken: <b>${me.competencies}</b><br>
+            Kunskap: <b>${me.accuracy} %</b> · Kassa: <b>${me.cash.toLocaleString('sv-SE')} kr</b>
+          </div>
+          <div class="stat-box" style="border:2px solid #2b7bb9; text-align:left; padding:10px;">
+            <b style="color:#2b7bb9;">MOTSTÅNDARE (${o.name})</b><br>
+            Dag: <b>${o.day}</b> · Stämplar: <b>${o.stamps}</b><br>
+            Världsarv: <b>${o.doneWonders}</b> · Yrken: <b>${o.competencies}</b><br>
+            Kunskap: <b>${o.accuracy} %</b> · Kassa: <b>${(o.cash || 0).toLocaleString('sv-SE')} kr</b>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content:center; margin-top:14px;">
+          <button class="stamp-action-btn" onclick="window.GT_MP && window.GT_MP.disconnect(); location.reload()">Tillbaka till startmenyn</button>
+        </div>
+      </div>
+    `;
+    showModal(html);
+  }
+
   function continueSavedGame() {
     if (loadSavedGame()) {
       gameSessionStarted = true;
@@ -4664,6 +4891,13 @@
     }
 
     if (missing.length === 0) {
+      if (window.GT_MP && window.GT_MP.active) {
+        const mySnap = buildMySnapshot(true);
+        window.GT_MP.sendVictory(mySnap);
+        AudioMgr.play('fanfar');
+        triggerDuelResult(true, window.GT_MP.opponent);
+        return true;
+      }
       triggerGameOver(true);
       return true;
     }
@@ -4775,6 +5009,11 @@
     exportTravelPostcard,
     startNewJourney,
     continueSavedGame,
+    openStartScreen,
+    openMultiplayerLobby,
+    mpCreateRoom,
+    mpJoinRoom,
+    mpCopyCode,
     toggleSound() {
       const active = AudioMgr.toggle();
       if (window.AmbientMgr) window.AmbientMgr.setEnabled(active);
