@@ -379,18 +379,58 @@
     return 'miss';
   }
 
+  // Plocka obesvarade interaktiva BackPacker-frågor (peka på kartan, para ihop, ordna, bild/flagga)
+  function pickInteractiveQuestions(count, region = '') {
+    const pool = window.GT_INTERACTIVE_POOL || [];
+    if (pool.length === 0 || count <= 0) return [];
+    const unused = pool.filter(q => !q.id || !state.usedQuestionIds.has(q.id));
+    const src = unused.length >= count ? unused : pool;
+    const sameReg = src.filter(q => region && q.region === region);
+    const otherReg = src.filter(q => !region || q.region !== region);
+    const combined = [
+      ...sameReg.slice().sort(() => Math.random() - 0.5),
+      ...otherReg.slice().sort(() => Math.random() - 0.5)
+    ];
+    // Sprid gärna frågetyperna (globe, match, order, image) så det blir maximal variation!
+    const picked = [];
+    const usedTypes = new Set();
+    for (const q of combined) {
+      if (picked.length >= count) break;
+      if (!usedTypes.has(q.t) || combined.length - picked.length <= count - picked.length) {
+        picked.push({ ...q });
+        usedTypes.add(q.t);
+      }
+    }
+    while (picked.length < count && combined.length > picked.length) {
+      const next = combined.find(q => !picked.some(p => p.id === q.id));
+      if (!next) break;
+      picked.push({ ...next });
+    }
+    return picked;
+  }
+
   // Hämta frågor från den centrala frågebanken (window.GT_QUESTIONS) med fall-back till inline
   function getQuestionsFor(cityKey, placeKey, fallbackList = []) {
     const bank = window.GT_QUESTIONS || [];
     const matching = bank.filter(q => q.place === placeKey && (!cityKey || q.city === cityKey));
     const pool = matching.length > 0 ? matching : fallbackList;
 
-    // Prioritera obesvarade frågor och välj ett varierat set (max 3 per sevärdhet, 4 per jobb)
+    // Prioritera obesvarade frågor och välj ett varierat set (3 per sevärdhet, 6 per jobb som i BackPacker 1 & 2!)
     const unused = pool.filter(q => !q.id || !state.usedQuestionIds.has(q.id));
     const source = unused.length > 0 ? unused : pool;
-    const maxCount = placeKey === 'job' ? 4 : 3;
-    const picked = source.slice().sort(() => Math.random() - 0.5).slice(0, maxCount);
-    return picked.map(q => ({ ...q, t: q.type || q.t }));
+    const maxCount = placeKey === 'job' ? 6 : 3;
+    let picked = source.slice().sort(() => Math.random() - 0.5).slice(0, maxCount).map(q => ({ ...q, t: q.type || q.t }));
+
+    // Blanda in minst 1 interaktiv BackPacker-fråga (kartnål, para ihop, ordna eller bild/flagga) per sevärdhet!
+    const region = (cityKey && W.cities[cityKey] && W.cities[cityKey].region) || '';
+    const interactiveTypes = new Set(['globe', 'match', 'order', 'image']);
+    if (placeKey !== 'job' && picked.length >= 2 && !picked.some(q => interactiveTypes.has(q.t))) {
+      const bonus = pickInteractiveQuestions(1, region);
+      if (bonus.length > 0) {
+        picked[picked.length - 1] = bonus[0];
+      }
+    }
+    return picked;
   }
 
   const SAVE_KEY = 'gt_save_v1';
@@ -1413,28 +1453,35 @@
     }, false, 2400);
   }
 
-  // --- Quiz-motor (med djupgående förklaring & bild efter varje svar!) ---
-  function runQuiz(questions, onComplete, contextPhoto = null) {
+  // --- Quiz-motor (stöder flerval, mässingsmätare, fritext, 3D-kartnål, para ihop, ordna & bild/flagga!) ---
+  function runQuiz(questions, onComplete, contextPhoto = null, opts = {}) {
     let qIndex = 0;
+    let sessionCorrect = 0;
     const container = document.getElementById('quizContainer');
+    const counterPrefix = opts.counterPrefix || 'FRÅGA';
+    const headerLabel = opts.headerLabel || 'Allmänbildningsprov';
 
     const currentCity = W.cities[state.city];
     const region = currentCity?.region || '';
-    const guidebook = state.backpack.find(i => {
+    const guidebook = !opts.disableGuidebook && state.backpack.find(i => {
       const def = W.souvenirs[i.id];
       return def && def.kind === 'kunskap' && def.region === region && (i.uses || def.uses) > 0;
     });
 
     function renderQuestion() {
       if (qIndex >= questions.length) {
+        if (opts.skipDoneCard) {
+          onComplete({ correct: sessionCorrect, total: questions.length });
+          return;
+        }
         container.innerHTML = `
           <div style="text-align:center; padding:16px;">
             <h4 style="color:#2f7d43; font-size:20px;">Väl genomfört!</h4>
-            <p>Du har svarat på alla frågorna.</p>
+            <p>Du har svarat på alla frågorna (${Math.round(sessionCorrect * 10) / 10} av ${questions.length} rätt).</p>
             <button class="btn-primary" style="margin-top:12px;" id="quizDoneBtn">Avsluta besöket</button>
           </div>
         `;
-        document.getElementById('quizDoneBtn').onclick = onComplete;
+        document.getElementById('quizDoneBtn').onclick = () => onComplete({ correct: sessionCorrect, total: questions.length });
         return;
       }
 
@@ -1442,16 +1489,20 @@
       if (q.id) state.usedQuestionIds.add(q.id);
       state.questionsTotal++;
 
+      const canUseGuide = guidebook && (q.t === 'mc' || q.t === 'image');
       let html = `
         <div class="quiz-box">
           <div class="bp-quiz-header">
-            <span class="bp-quiz-counter">FRÅGA ${qIndex + 1} / ${questions.length}</span>
-            ${guidebook ? `<button class="globe-brass-btn" style="padding:3px 9px; font-size:11px;" id="useGuideBtn">Använd guidebok (${guidebook.uses ?? 3} kvar)</button>` : '<span style="font-size:11px; color:#c9b48f; font-style:italic;">Allmänbildningsprov</span>'}
+            <span class="bp-quiz-counter">${counterPrefix} ${qIndex + 1} / ${questions.length}</span>
+            ${canUseGuide ? `<button class="globe-brass-btn" style="padding:3px 9px; font-size:11px;" id="useGuideBtn">Använd guidebok (${guidebook.uses ?? 3} kvar)</button>` : `<span style="font-size:11px; color:#c9b48f; font-style:italic;">${headerLabel}</span>`}
           </div>
           <div class="quiz-q">${q.q}</div>
       `;
 
       let activeGauge = null;
+      let matchRightList = null;
+      let orderState = null;
+
       if (q.t === 'mc') {
         const shuffled = [...q.a].sort(() => Math.random() - 0.5);
         const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -1462,6 +1513,56 @@
           html += `<button class="quiz-btn" data-right="${isRight ? '1' : '0'}"><span class="quiz-letter-seal">${letters[i] || (i + 1)}</span><span>${opt}</span></button>`;
         });
         html += `</div>`;
+      } else if (q.t === 'image') {
+        const shuffled = [...q.a].sort(() => Math.random() - 0.5);
+        const letters = ['A', 'B', 'C', 'D'];
+        html += `
+          <div class="bp-image-quiz-wrap">
+            <div class="bp-image-quiz-frame">
+              <img src="${q.img}" alt="Bildfråga">
+            </div>
+            <div class="quiz-options" style="flex:1;">
+              ${shuffled.map((opt, i) => {
+                const isRight = (opt === q.a[0]);
+                return `<button class="quiz-btn" data-right="${isRight ? '1' : '0'}"><span class="quiz-letter-seal">${letters[i] || (i + 1)}</span><span>${opt}</span></button>`;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      } else if (q.t === 'match') {
+        matchRightList = q.pairs.map((p, idx) => ({ text: p[1], idx })).sort(() => Math.random() - 0.5);
+        html += `
+          <div class="bp-match-wrap">
+            <div class="bp-match-grid">
+              <div class="bp-match-col" id="matchLeftCol">
+                ${q.pairs.map((p, idx) => `<button class="bp-match-btn left" data-left="${idx}"><span class="bp-match-badge" id="mlBadge${idx}">${idx + 1}</span><span>${p[0]}</span></button>`).join('')}
+              </div>
+              <div class="bp-match-col" id="matchRightCol">
+                ${matchRightList.map((r, rPos) => `<button class="bp-match-btn right" data-right="${r.idx}" data-rpos="${rPos}"><span class="bp-match-badge empty" id="mrBadge${rPos}">?</span><span>${r.text}</span></button>`).join('')}
+              </div>
+            </div>
+            <div class="bp-match-footer">
+              <span id="matchHint" style="font-size:11.5px; color:#d6c5a5;">Klicka först till vänster och sedan på rätt par till höger.</span>
+              <button class="stamp-action-btn" id="matchSubmit" disabled style="opacity:0.45; padding:6px 14px; font-size:12px;">Lås paren</button>
+            </div>
+          </div>
+        `;
+      } else if (q.t === 'order') {
+        orderState = q.items.map((text, idx) => ({ text, idx }));
+        // Blanda så det inte råkar starta i exakt rätt ordning
+        for (let tries = 0; tries < 5; tries++) {
+          orderState.sort(() => Math.random() - 0.5);
+          if (orderState.some((it, pos) => it.idx !== pos)) break;
+        }
+        html += `
+          <div class="bp-order-wrap">
+            <div class="bp-order-list" id="orderList"></div>
+            <div class="bp-match-footer">
+              <span style="font-size:11.5px; color:#d6c5a5;">Flytta raderna med ▲ / ▼ tills ordningen från 1 till ${q.items.length} stämmer.</span>
+              <button class="stamp-action-btn" id="orderSubmit" style="padding:6px 14px; font-size:12px;">Lås ordningen</button>
+            </div>
+          </div>
+        `;
       } else if (q.t === 'text') {
         html += `
           <div class="bp-text-quiz">
@@ -1488,15 +1589,19 @@
       } else if (q.t === 'globe') {
         html += `
           <div class="globe-quiz-wrap">
-            <canvas id="quizGlobeCanvas" class="globe-quiz-canvas" width="300" height="190"></canvas>
+            <canvas id="quizGlobeCanvas" class="globe-quiz-canvas" width="320" height="196"></canvas>
             <div>
-              <div style="font-size:12px; color:#d6c5a5; margin-bottom:8px;">
-                Snurra 3D-jordgloben med musen och <b>klicka</b> där du tror platsen ligger!
+              <div style="font-size:12px; color:#d6c5a5; margin-bottom:6px;">
+                Snurra den blinda 3D-kartan (med landsgränser) och <b>klicka</b> för att sätta nålen!
               </div>
-              <div id="globeQuizStatus" style="font-family:'Courier New',monospace; font-size:12px; color:#ffd875; margin-bottom:10px;">
+              <div class="globe-quiz-tools">
+                <button type="button" class="globe-brass-btn" id="qGlobeZoomIn" style="padding:3px 9px; font-size:11px;">+ Zooma in</button>
+                <button type="button" class="globe-brass-btn" id="qGlobeZoomOut" style="padding:3px 9px; font-size:11px;">− Zooma ut</button>
+              </div>
+              <div id="globeQuizStatus" style="font-family:'Courier New',monospace; font-size:11.5px; color:#ffd875; margin:6px 0 8px;">
                 Ingen nål satt ännu...
               </div>
-              <button class="stamp-action-btn" id="globeQuizSubmit" disabled style="opacity:0.45;">Lås nålen & svara</button>
+              <button class="stamp-action-btn" id="globeQuizSubmit" disabled style="opacity:0.45;">Lås nålen &amp; svara</button>
             </div>
           </div>
         `;
@@ -1561,7 +1666,7 @@
         };
       }
 
-      if (q.t === 'mc') {
+      if (q.t === 'mc' || q.t === 'image') {
         const btns = container.querySelectorAll('.quiz-btn');
         btns.forEach(btn => {
           btn.onclick = () => {
@@ -1571,6 +1676,7 @@
               btn.classList.add('correct');
               AudioMgr.play('right1');
               state.questionsCorrect++;
+              sessionCorrect++;
             } else {
               btn.classList.add('wrong');
               AudioMgr.play('wrong1');
@@ -1579,6 +1685,145 @@
             showAnswerDeepDive(isRight, q.a[0]);
           };
         });
+      } else if (q.t === 'match') {
+        let selectedLeft = null;
+        const pairsChosen = {}; // leftIdx -> rPos
+        const leftBtns = Array.from(container.querySelectorAll('.bp-match-btn.left'));
+        const rightBtns = Array.from(container.querySelectorAll('.bp-match-btn.right'));
+        const submitBtn = document.getElementById('matchSubmit');
+        const hintEl = document.getElementById('matchHint');
+
+        const refreshMatchUI = () => {
+          leftBtns.forEach(b => {
+            const li = Number(b.dataset.left);
+            b.classList.toggle('selected', selectedLeft === li);
+            b.classList.toggle('paired', pairsChosen[li] !== undefined);
+          });
+          rightBtns.forEach(b => {
+            const rp = Number(b.dataset.rpos);
+            const badge = document.getElementById(`mrBadge${rp}`);
+            const ownerLeft = Object.keys(pairsChosen).find(k => pairsChosen[k] === rp);
+            if (ownerLeft !== undefined) {
+              b.classList.add('paired');
+              if (badge) { badge.textContent = String(Number(ownerLeft) + 1); badge.classList.remove('empty'); }
+            } else {
+              b.classList.remove('paired');
+              if (badge) { badge.textContent = '?'; badge.classList.add('empty'); }
+            }
+          });
+          const ready = Object.keys(pairsChosen).length === q.pairs.length;
+          if (submitBtn) {
+            submitBtn.disabled = !ready;
+            submitBtn.style.opacity = ready ? '1' : '0.45';
+          }
+        };
+
+        leftBtns.forEach(b => {
+          b.onclick = () => {
+            selectedLeft = Number(b.dataset.left);
+            AudioMgr.play('klick');
+            if (hintEl) hintEl.textContent = `Vald: ${q.pairs[selectedLeft][0]} — klicka nu på dess par till höger!`;
+            refreshMatchUI();
+          };
+        });
+        rightBtns.forEach(b => {
+          b.onclick = () => {
+            if (selectedLeft === null) {
+              if (hintEl) hintEl.textContent = 'Välj först ett alternativ i vänstra spalten!';
+              return;
+            }
+            const rp = Number(b.dataset.rpos);
+            // Frigör om höger-knappen redan var parad med en annan vänster-rad
+            Object.keys(pairsChosen).forEach(k => { if (pairsChosen[k] === rp) delete pairsChosen[k]; });
+            pairsChosen[selectedLeft] = rp;
+            AudioMgr.play('klick');
+            // Hoppa automatiskt till nästa oparade vänster-rad
+            const nextLeft = q.pairs.findIndex((_, i) => pairsChosen[i] === undefined);
+            selectedLeft = nextLeft >= 0 ? nextLeft : null;
+            if (hintEl) hintEl.textContent = selectedLeft === null ? 'Alla par ihopkopplade! Klicka "Lås paren".' : `Vald: ${q.pairs[selectedLeft][0]} — klicka på dess par till höger.`;
+            refreshMatchUI();
+          };
+        });
+
+        // Förvälj rad 1 direkt för snabbare flyt!
+        selectedLeft = 0;
+        refreshMatchUI();
+
+        submitBtn.onclick = () => {
+          submitBtn.disabled = true;
+          let rightCount = 0;
+          q.pairs.forEach((p, li) => {
+            const rp = pairsChosen[li];
+            if (rp !== undefined && matchRightList[rp] && matchRightList[rp].idx === li) {
+              rightCount++;
+            }
+          });
+          const allRight = rightCount === q.pairs.length;
+          const partial = rightCount >= q.pairs.length - 1;
+          if (allRight) {
+            AudioMgr.play('right1');
+            state.questionsCorrect++;
+            sessionCorrect++;
+          } else if (partial) {
+            AudioMgr.play('right1');
+            state.questionsCorrect += 0.5;
+            sessionCorrect += 0.5;
+          } else {
+            AudioMgr.play('wrong1');
+          }
+          const summary = q.pairs.map(p => `${p[0]} = ${p[1]}`).join(' · ');
+          const note = `Du fick ${rightCount} av ${q.pairs.length} par rätt. ${q.explain || ''}`;
+          showAnswerDeepDive(partial, summary, note);
+        };
+      } else if (q.t === 'order') {
+        const listEl = document.getElementById('orderList');
+        const submitBtn = document.getElementById('orderSubmit');
+        const renderOrder = () => {
+          if (!listEl) return;
+          listEl.innerHTML = orderState.map((it, pos) => `
+            <div class="bp-order-row">
+              <span class="bp-order-num">${pos + 1}</span>
+              <span class="bp-order-text">${it.text}</span>
+              <div class="bp-order-arrows">
+                <button type="button" class="bp-order-move" data-dir="-1" data-pos="${pos}" ${pos === 0 ? 'disabled' : ''}>▲</button>
+                <button type="button" class="bp-order-move" data-dir="1" data-pos="${pos}" ${pos === orderState.length - 1 ? 'disabled' : ''}>▼</button>
+              </div>
+            </div>
+          `).join('');
+          listEl.querySelectorAll('.bp-order-move').forEach(btn => {
+            btn.onclick = () => {
+              const p = Number(btn.dataset.pos);
+              const d = Number(btn.dataset.dir);
+              const target = p + d;
+              if (target < 0 || target >= orderState.length) return;
+              [orderState[p], orderState[target]] = [orderState[target], orderState[p]];
+              AudioMgr.play('klick');
+              renderOrder();
+            };
+          });
+        };
+        renderOrder();
+        submitBtn.onclick = () => {
+          submitBtn.disabled = true;
+          let exactPositions = 0;
+          orderState.forEach((it, pos) => { if (it.idx === pos) exactPositions++; });
+          const allRight = exactPositions === q.items.length;
+          const partial = exactPositions >= 2;
+          if (allRight) {
+            AudioMgr.play('right1');
+            state.questionsCorrect++;
+            sessionCorrect++;
+          } else if (partial) {
+            AudioMgr.play('right1');
+            state.questionsCorrect += 0.5;
+            sessionCorrect += 0.5;
+          } else {
+            AudioMgr.play('wrong1');
+          }
+          const rightSeq = q.items.join(' → ');
+          const note = `${allRight ? 'Helt rätt ordning!' : `Du fick ${exactPositions} av ${q.items.length} på exakt rätt plats.`} ${q.explain || ''}`;
+          showAnswerDeepDive(allRight || partial, rightSeq, note);
+        };
       } else if (q.t === 'num') {
         const slider = document.getElementById('gaugeInput');
         const display = document.getElementById('gaugeVal');
@@ -1598,6 +1843,7 @@
             display.innerHTML = `<span style="color:#78e08f">Mitt i prick! Rätt svar: ${q.ans.toLocaleString('sv-SE')} ${q.unit}</span>`;
             AudioMgr.play('right1');
             state.questionsCorrect++;
+            sessionCorrect++;
             ok = true;
             note = `Du gissade ${userVal.toLocaleString('sv-SE')} ${q.unit} — imponerande nära det exakta värdet ${q.ans.toLocaleString('sv-SE')} ${q.unit}!`;
             addJournal(`Satte en knivskarp uppskattning (${userVal.toLocaleString('sv-SE')} ${q.unit}) i ${W.cities[state.city].name}!`);
@@ -1605,6 +1851,7 @@
             display.innerHTML = `<span style="color:#ffd875">Nära! Rätt svar var ${q.ans.toLocaleString('sv-SE')} ${q.unit} (godkänt!)</span>`;
             AudioMgr.play('right1');
             state.questionsCorrect += 0.5;
+            sessionCorrect += 0.5;
             ok = true;
             note = `Din gissning (${userVal.toLocaleString('sv-SE')} ${q.unit}) var tillräckligt nära det exakta svaret ${q.ans.toLocaleString('sv-SE')} ${q.unit} för delpoäng.`;
           } else {
@@ -1618,12 +1865,15 @@
         const qCanvas = document.getElementById('quizGlobeCanvas');
         const statusEl = document.getElementById('globeQuizStatus');
         const submitBtn = document.getElementById('globeQuizSubmit');
+        const zoomInBtn = document.getElementById('qGlobeZoomIn');
+        const zoomOutBtn = document.getElementById('qGlobeZoomOut');
         let chosen = null;
         let qGlobeFrame = null;
 
         if (qCanvas && window.GlobeRenderer) {
           const qGlobe = new window.GlobeRenderer(qCanvas, {
-            radius: 115,
+            quizMode: true,
+            radius: 132,
             centerLat: q.startLat !== undefined ? q.startLat : 30,
             centerLon: q.startLon !== undefined ? q.startLon : 15,
             onGlobeClick: (lat, lon) => {
@@ -1636,6 +1886,9 @@
               AudioMgr.play('klick');
             }
           });
+
+          if (zoomInBtn) zoomInBtn.onclick = () => { qGlobe.radius = Math.min(340, qGlobe.radius + 40); };
+          if (zoomOutBtn) zoomOutBtn.onclick = () => { qGlobe.radius = Math.max(92, qGlobe.radius - 40); };
 
           const qLoop = () => {
             if (!document.getElementById('quizGlobeCanvas')) {
@@ -1653,18 +1906,20 @@
             submitBtn.disabled = true;
             const distKm = Math.round(haversineKm(chosen.lat, chosen.lon, q.targetLat, q.targetLon));
             qGlobe.targetMarker = { lat: q.targetLat, lon: q.targetLon, label: q.targetName, color: '#2ecc71' };
-            qGlobe.focusOn(q.targetLat, q.targetLon, null, 130, 600);
+            qGlobe.focusOn(q.targetLat, q.targetLon, null, 145, 600);
 
             let ok = false;
             let verdict = '';
             if (distKm <= 900) {
               ok = true;
               state.questionsCorrect++;
+              sessionCorrect++;
               AudioMgr.play('right1');
               verdict = `Mitt i prick! Endast ${distKm.toLocaleString('sv-SE')} km från ${q.targetName}. ${q.explain || ''}`;
             } else if (distKm <= 2200) {
               ok = true;
               state.questionsCorrect += 0.5;
+              sessionCorrect += 0.5;
               AudioMgr.play('right1');
               verdict = `Bra riktning! Du hamnade ${distKm.toLocaleString('sv-SE')} km från ${q.targetName} (delpoäng). ${q.explain || ''}`;
             } else {
@@ -1691,6 +1946,7 @@
             inp.style.background = '#e6f5ea';
             AudioMgr.play('right1');
             state.questionsCorrect++;
+            sessionCorrect++;
           } else {
             inp.style.borderColor = '#a82828';
             inp.style.background = '#fae6e6';
@@ -1828,200 +2084,72 @@
     state.jobsDoneToday[`${state.city}_${state.day}_${jobIdx}`] = true;
     addHours(job.hours);
 
-    let questions;
+    // Klassiskt BackPacker 1 & 2-arbetsprov: 6 frågor per jobb (4 yrkes-/stadsfrågor + 2 interaktiva BackPacker-frågor)!
+    let baseQuestions;
     if (job.isSignature || jobIdx === 0) {
-      questions = getQuestionsFor(state.city, 'job', job.questions || []);
+      baseQuestions = getQuestionsFor(state.city, 'job', job.questions || []).slice(0, 4);
     } else {
       const pool = job.questions || [];
       const unused = pool.filter(q => !q.id || !state.usedQuestionIds.has(q.id));
       const src = unused.length >= 4 ? unused : pool;
-      questions = src.slice().sort(() => Math.random() - 0.5).slice(0, 4).map(q => ({ ...q, t: q.type || q.t }));
+      baseQuestions = src.slice().sort(() => Math.random() - 0.5).slice(0, 4).map(q => ({ ...q, t: q.type || q.t }));
     }
-    let correctInJob = 0;
-    let qIdx = 0;
+    const needed = Math.max(2, 6 - baseQuestions.length);
+    const interactiveExtras = pickInteractiveQuestions(needed, city.region);
+    const questions = [...baseQuestions, ...interactiveExtras].slice(0, 6);
     const container = document.getElementById('quizContainer');
 
-    function nextJobQ() {
-      if (qIdx >= questions.length) {
-        const hasCamera = hasItem('kamera');
-        const cityEv = getCityEvent(state.city);
-        const evMult = (cityEv && cityEv.jobBonus) ? (1 + cityEv.jobBonus) : 1;
-        const maxPay = Math.round(job.pay * (hasCamera ? 1.5 : 1) * evMult);
-        const earned = Math.round((correctInJob / questions.length) * maxPay);
+    runQuiz(questions, ({ correct, total }) => {
+      const correctInJob = Math.round(correct * 10) / 10;
+      const hasCamera = hasItem('kamera');
+      const cityEv = getCityEvent(state.city);
+      const evMult = (cityEv && cityEv.jobBonus) ? (1 + cityEv.jobBonus) : 1;
+      const maxPay = Math.round(job.pay * (hasCamera ? 1.5 : 1) * evMult);
+      const earned = Math.round((correctInJob / total) * maxPay);
 
-        changeCash(earned, `Lön från ${job.employer}`);
-        addJournal(`Arbetade som ${job.title} hos ${job.employer} i ${city.name} och fick ${earned} kr i handen.`);
+      changeCash(earned, `Lön från ${job.employer}`);
+      addJournal(`Arbetade som ${job.title} hos ${job.employer} i ${city.name} och fick ${earned} kr i handen.`);
 
-        // BackPacker 1-yrkeskompetens: minst 3 av 4 rätt ger yrkesintyg i passet!
-        const goals = ensureJourneyGoals();
-        const passThreshold = Math.ceil(questions.length * 0.75);
-        const compKey = job.isSignature ? `${state.city}_sig` : (job.role || job.title);
-        let compBanner = '';
-        if (correctInJob >= passThreshold) {
-          const alreadyHas = state.competencies.some(c => c.key === compKey);
-          if (!alreadyHas) {
-            state.competencies.push({ key: compKey, title: job.title, city: city.name });
-            saveGame();
-            AudioMgr.play('fanfar');
-            addJournal(`Erhöll yrkeskompetens som ${job.title} i ${city.name} (${state.competencies.length}/${goals.requiredCompetencies})!`);
-            compBanner = `
-              <div style="margin:10px 0; padding:8px 12px; background:#edf7ee; border:2px solid #2f7d43; border-radius:4px; color:#1c542b; font-size:13px;">
-                <b>YRKESKOMPETENS INFÖRD I PASSET!</b><br>
-                Intyg: <b>${job.title}</b> · Nu <b>${state.competencies.length} / ${goals.requiredCompetencies}</b> yrken klara!
-              </div>
-            `;
-          } else {
-            compBanner = `<div style="margin:8px 0; font-size:12px; color:#5b4a36;"><i>Du har redan yrkeskompetens inom detta yrke (${state.competencies.length}/${goals.requiredCompetencies} klara).</i></div>`;
-          }
+      // BackPacker 1 & 2-yrkeskompetens: minst 4 av 6 rätt ger yrkesintyg i passet!
+      const goals = ensureJourneyGoals();
+      const passThreshold = Math.ceil(total * 0.66);
+      const compKey = job.isSignature ? `${state.city}_sig` : (job.role || job.title);
+      let compBanner = '';
+      if (correctInJob >= passThreshold) {
+        const alreadyHas = state.competencies.some(c => c.key === compKey);
+        if (!alreadyHas) {
+          state.competencies.push({ key: compKey, title: job.title, city: city.name });
+          saveGame();
+          AudioMgr.play('fanfar');
+          addJournal(`Erhöll yrkeskompetens som ${job.title} i ${city.name} (${state.competencies.length}/${goals.requiredCompetencies})!`);
+          compBanner = `
+            <div style="margin:10px 0; padding:8px 12px; background:#edf7ee; border:2px solid #2f7d43; border-radius:4px; color:#1c542b; font-size:13px;">
+              <b>YRKESKOMPETENS INFÖRD I PASSET!</b><br>
+              Intyg: <b>${job.title}</b> · Nu <b>${state.competencies.length} / ${goals.requiredCompetencies}</b> yrken klara!
+            </div>
+          `;
         } else {
-          compBanner = `<div style="margin:8px 0; font-size:12px; color:#8c4a00;">Minst ${passThreshold} av ${questions.length} rätt krävs för yrkeskompetens i passet.</div>`;
+          compBanner = `<div style="margin:8px 0; font-size:12px; color:#5b4a36;"><i>Du har redan yrkeskompetens inom detta yrke (${state.competencies.length}/${goals.requiredCompetencies} klara).</i></div>`;
         }
-
-        container.innerHTML = `
-          <div style="text-align:center; padding:16px; border:2px dashed #6b4e2e; background:#fffaf0;">
-            <h4 style="color:#2f7d43; font-size:20px; font-family:Georgia,serif;">Passet avslutat!</h4>
-            <p>Du klarade <b>${correctInJob} av ${questions.length}</b> arbetsuppgifter.</p>
-            <p style="font-size:19px; margin:10px 0; font-weight:bold; color:#7a4f12;">Utbetald lön: +${earned} kr</p>
-            ${compBanner}
-            <button class="stamp-action-btn" onclick="window.GT.closeModal()">Stoppa sedlarna i fickan</button>
-          </div>
-        `;
-        return;
+      } else {
+        compBanner = `<div style="margin:8px 0; font-size:12px; color:#8c4a00;">Minst ${passThreshold} av ${total} rätt krävs för yrkeskompetens i passet.</div>`;
       }
 
-      const q = questions[qIdx];
-      if (q.id) state.usedQuestionIds.add(q.id);
-      state.questionsTotal++;
-      let html = `
-        <div class="quiz-box">
-          <div class="bp-quiz-header">
-            <span class="bp-quiz-counter">UPPGIFT ${qIdx + 1} / ${questions.length}</span>
-            <span style="font-size:11px; color:#c9b48f; font-style:italic;">${job.employer}</span>
-          </div>
-          <div class="quiz-q">${q.q}</div>
+      container.innerHTML = `
+        <div style="text-align:center; padding:16px; border:2px dashed #6b4e2e; background:#fffaf0;">
+          <h4 style="color:#2f7d43; font-size:20px; font-family:Georgia,serif;">Passet avslutat!</h4>
+          <p>Du klarade <b>${correctInJob} av ${total}</b> arbetsuppgifter.</p>
+          <p style="font-size:19px; margin:10px 0; font-weight:bold; color:#7a4f12;">Utbetald lön: +${earned} kr</p>
+          ${compBanner}
+          <button class="stamp-action-btn" onclick="window.GT.closeModal()">Stoppa sedlarna i fickan</button>
+        </div>
       `;
-
-      let activeGauge = null;
-      if (q.t === 'mc') {
-        const shuffled = [...q.a].sort(() => Math.random() - 0.5);
-        const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
-        const colsClass = shuffled.length === 2 ? 'cols-2' : (shuffled.length === 3 ? 'cols-3' : (shuffled.length >= 5 ? 'cols-many' : ''));
-        html += `<div class="quiz-options ${colsClass}">`;
-        shuffled.forEach((opt, i) => {
-          const isRight = (opt === q.a[0]);
-          html += `<button class="quiz-btn" data-right="${isRight ? '1' : '0'}"><span class="quiz-letter-seal">${letters[i] || (i + 1)}</span><span>${opt}</span></button>`;
-        });
-        html += `</div>`;
-      } else if (q.t === 'text') {
-        html += `
-          <div class="bp-text-quiz">
-            <input type="text" id="textQuizInput" class="bp-text-input" placeholder="Skriv ditt svar här..." autocomplete="off">
-            <button class="stamp-action-btn" id="textQuizSubmit">Svara</button>
-          </div>
-        `;
-      } else if (q.t === 'num') {
-        activeGauge = prepareNumericGauge(q);
-        html += `
-          <div class="brass-caliper">
-            <div class="caliper-scale-labels">
-              <span>${activeGauge.min.toLocaleString('sv-SE')} ${q.unit}</span>
-              <span>MÄSSINGSMÄTARE</span>
-              <span>${activeGauge.max.toLocaleString('sv-SE')} ${q.unit}</span>
-            </div>
-            <input type="range" id="jobGaugeInput" min="${activeGauge.min}" max="${activeGauge.max}" step="${activeGauge.step}" value="${activeGauge.start}">
-            <div class="caliper-readout">
-              <span>Svar: <b id="jobGaugeVal">${activeGauge.start.toLocaleString('sv-SE')}</b> ${q.unit}</span>
-              <button class="stamp-action-btn" id="jobGaugeSubmit">Lås svar</button>
-            </div>
-          </div>
-        `;
-      }
-
-      html += `</div>`;
-      container.innerHTML = html;
-
-      if (q.t === 'mc') {
-        const btns = container.querySelectorAll('.quiz-btn');
-        btns.forEach(btn => {
-          btn.onclick = () => {
-            btns.forEach(b => b.disabled = true);
-            const isRight = btn.dataset.right === '1';
-            if (isRight) {
-              btn.classList.add('correct');
-              AudioMgr.play('right2');
-              correctInJob++;
-              state.questionsCorrect++;
-            } else {
-              btn.classList.add('wrong');
-              AudioMgr.play('wrong2');
-              btns.forEach(b => { if (b.dataset.right === '1') b.classList.add('correct'); });
-            }
-            setTimeout(() => {
-              qIdx++;
-              nextJobQ();
-            }, 1000);
-          };
-        });
-      } else if (q.t === 'text') {
-        const inp = document.getElementById('textQuizInput');
-        const sub = document.getElementById('textQuizSubmit');
-        const checkText = () => {
-          if (!inp || sub.disabled) return;
-          sub.disabled = true;
-          inp.disabled = true;
-          const userAns = inp.value.trim().toLowerCase();
-          const expected = String(q.ans || '').trim().toLowerCase();
-          const ok = userAns.length > 0 && (userAns === expected || (userAns.length >= 3 && expected.includes(userAns)) || (expected.length >= 3 && userAns.includes(expected)));
-          if (ok) {
-            inp.style.borderColor = '#2f7d43';
-            AudioMgr.play('right2');
-            correctInJob++;
-            state.questionsCorrect++;
-          } else {
-            inp.style.borderColor = '#a33';
-            AudioMgr.play('wrong2');
-            showToast(`Rätt svar var: ${q.ans}`, 2000);
-          }
-          setTimeout(() => {
-            qIdx++;
-            nextJobQ();
-          }, 1100);
-        };
-        if (sub) sub.onclick = checkText;
-        if (inp) {
-          inp.focus();
-          inp.onkeydown = (e) => { if (e.key === 'Enter') checkText(); };
-        }
-      } else if (q.t === 'num') {
-        const slider = document.getElementById('jobGaugeInput');
-        const display = document.getElementById('jobGaugeVal');
-        const submit = document.getElementById('jobGaugeSubmit');
-        slider.oninput = () => { display.textContent = Number(slider.value).toLocaleString('sv-SE'); };
-        submit.onclick = () => {
-          submit.disabled = true;
-          slider.disabled = true;
-          const userVal = Number(slider.value);
-          const gMin = activeGauge ? activeGauge.min : q.min;
-          const gMax = activeGauge ? activeGauge.max : q.max;
-          const grade = gradeNumericGauge(userVal, q, gMin, gMax);
-          if (grade === 'exact' || grade === 'close') {
-            display.innerHTML = `<span style="color:#2f7d43">${grade === 'exact' ? 'Mitt i prick!' : 'Nära nog!'} Rätt var ${q.ans.toLocaleString('sv-SE')} ${q.unit}</span>`;
-            AudioMgr.play('right2');
-            correctInJob++;
-            state.questionsCorrect++;
-          } else {
-            display.innerHTML = `<span style="color:#a33">För långt ifrån — rätt svar var ${q.ans.toLocaleString('sv-SE')} ${q.unit}</span>`;
-            AudioMgr.play('wrong2');
-          }
-          setTimeout(() => {
-            qIdx++;
-            nextJobQ();
-          }, 1200);
-        };
-      }
-    }
-
-    nextJobQ();
+    }, city.skyline, {
+      counterPrefix: 'UPPGIFT',
+      headerLabel: job.employer,
+      skipDoneCard: true,
+      disableGuidebook: true
+    });
   }
 
   // --- Stadens Bibliotek & Uppslagsverk om Landet (Fakta & Karta + Interaktiv Historietidslinje!) ---
@@ -3695,7 +3823,7 @@
       const regDone = regionsVisited >= goals.requiredRegions;
       const compNames = compCount > 0
         ? state.competencies.map(c => c.title).join(', ')
-        : 'Inga ännu — ta jobb i dagstidningen (minst 3/4 rätt)';
+        : 'Inga ännu — ta jobb i dagstidningen (minst 4/6 rätt)';
 
       const souvenirChecklistHtml = goals.souvenirCities.map(ck => {
         const cName = W.cities[ck]?.name || ck;

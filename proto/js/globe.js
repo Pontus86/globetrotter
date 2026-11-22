@@ -225,6 +225,7 @@
       this.canvas = canvas;
       this.ctx = canvas.getContext('2d');
       this.mini = Boolean(options.mini);
+      this.quizMode = Boolean(options.quizMode);
       this.interactive = options.interactive !== undefined ? options.interactive : !this.mini;
       this.baseRadius = options.radius || Math.round(Math.min(canvas.width, canvas.height) * 0.43);
       this.radius = this.baseRadius;
@@ -725,8 +726,8 @@
         ctx.restore();
       }
 
-      // 5b. Alla världens huvudstäder & BackPacker-städer (gråa prickar så man ser vad som är utbyggt!)
-      if (!this.mini && window.GT_WORLD_CITIES && window.GT_WORLD_CITIES.length > 0) {
+      // 5b. Alla världens huvudstäder & BackPacker-städer (döljs i blind kartquiz-läge!)
+      if (!this.mini && !this.quizMode && window.GT_WORLD_CITIES && window.GT_WORLD_CITIES.length > 0) {
         const builtCities = (window.GT_WORLD && window.GT_WORLD.cities)
           ? Object.values(window.GT_WORLD.cities)
           : [];
@@ -818,8 +819,8 @@
         ctx.restore();
       }
 
-      // 6. Städer och aktiva världshändelser som markörer på jordgloben
-      if (window.GT_WORLD && window.GT_WORLD.cities) {
+      // 6. Städer och aktiva världshändelser som markörer på jordgloben (döljs i blind kartquiz!)
+      if (!this.quizMode && window.GT_WORLD && window.GT_WORLD.cities) {
         Object.entries(window.GT_WORLD.cities).forEach(([key, city]) => {
           const proj = this.project(city.lat, city.lon);
           if (!proj.visible) return;
@@ -901,8 +902,8 @@
         });
       }
 
-      // 6b. 20 Världsarv & Naturunder på jordgloben (gyllene stjärnmarkörer + expeditionslinje till närmaste stad)
-      if (!this.mini && window.GT_WORLD && window.GT_WORLD.wonders) {
+      // 6b. 20 Världsarv & Naturunder på jordgloben (döljs i blind kartquiz!)
+      if (!this.mini && !this.quizMode && window.GT_WORLD && window.GT_WORLD.wonders) {
         const wonders = Object.entries(window.GT_WORLD.wonders);
         let hoveredWonder = null;
         let hoveredDist = 18;
