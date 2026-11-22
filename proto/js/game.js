@@ -392,8 +392,10 @@
   }
 
   const SAVE_KEY = 'gt_save_v1';
+  let gameSessionStarted = false;
 
   function saveGame() {
+    if (!gameSessionStarted) return;
     try {
       const payload = {
         city: state.city,
@@ -3901,6 +3903,7 @@
     state.city = W.startCity;
     state.visitedCities = new Set([W.startCity]);
     state.journal = [{ day: 1, text: `${fn} ${ln} påbörjade jorden-runt-resan från ${startName}! Mål i passet: ${state.goals.requiredCompetencies} yrkeskompetenser samt souvenirer från ${goalNames}.` }];
+    gameSessionStarted = true;
     saveGame();
     AudioMgr.play('fanfar');
     closeModal();
@@ -3910,6 +3913,7 @@
 
   function continueSavedGame() {
     if (loadSavedGame()) {
+      gameSessionStarted = true;
       AudioMgr.play('klick');
       closeModal();
       renderCity();
