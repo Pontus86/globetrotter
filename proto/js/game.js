@@ -771,13 +771,12 @@
       return ((seed >>> 0) % 10000) / 10000;
     };
 
-    // 14 luftiga, förskjutna ankarceller (minst ~18-21 % avstånd mellan grannar så etiketter aldrig överlappar!)
-    // Fredar alltid stadsskylten (uppe vänster: x<34, y<32), HUD (uppe höger: x>64, y<22) och dockan (nere höger: x>62, y>74).
+    // 11 matematiskt krockfria ankarceller i 3 tydliga rader (dx >= 19 %, dy >= 22 %)
+    // Fredar alltid stadsskylten (x<35, y<32), HUD (x>63, y<22) och dockan (x>61, y>72).
     const anchors = [
-      [44, 23], [66, 26], [87, 27],
-      [13, 40], [35, 42], [56, 41], [78, 43],
-      [22, 59], [44, 59], [67, 60], [88, 60],
-      [14, 78], [35, 78], [54, 78]
+      [44, 23], [65, 26], [86, 26],
+      [11, 47], [30, 48], [49, 48], [68, 50], [88, 50],
+      [12, 75], [31, 75], [50, 75]
     ];
     // Blanda ankarna unikt för just denna stad
     const shuffled = anchors.slice();
@@ -787,21 +786,11 @@
     }
 
     const coords = {};
-    const placed = [];
     spotKeys.forEach((key, idx) => {
       const base = shuffled[idx % shuffled.length];
-      // Diskret organisk förskjutning (±1.8 % i X, ±1.5 % i Y) utan att krocka med grannar eller UI
-      let x = Math.max(10, Math.min(90, Math.round(base[0] + (rand() - 0.5) * 3.6)));
-      let y = Math.max(21, Math.min(80, Math.round(base[1] + (rand() - 0.5) * 3.0)));
-      if (x < 35 && y < 34) y = 38;
-      if (x > 61 && y > 72) y = 64;
-      // Extra krockkontroll mot redan placerade ikoner
-      const collides = placed.some(p => Math.abs(p[0] - x) < 16 && Math.abs(p[1] - y) < 14);
-      if (collides) {
-        x = base[0];
-        y = base[1];
-      }
-      placed.push([x, y]);
+      // Lätt organisk förskjutning (±1.2 % i X, ±1.0 % i Y) som behåller full frizon runt både ikon och etikett
+      const x = Math.max(9, Math.min(91, Math.round(base[0] + (rand() - 0.5) * 2.4)));
+      const y = Math.max(22, Math.min(78, Math.round(base[1] + (rand() - 0.5) * 2.0)));
       coords[key] = [x, y];
     });
     return coords;
