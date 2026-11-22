@@ -3028,18 +3028,20 @@ html, body {
 
 .passport-spread {
   position: absolute !important;
-  top: 11.2% !important;
-  bottom: 10.8% !important;
-  left: 20.8% !important;
-  right: 20.2% !important;
+  top: 12% !important;
+  bottom: 11.5% !important;
+  left: 21.6% !important;
+  right: 20.8% !important;
   padding: 0 !important;
-  gap: 3.6% !important;
+  gap: 4.2% !important;
   height: auto !important;
 }
 
 .passport-page {
-  padding: 10px 12px !important;
+  padding: 8px 10px !important;
   overflow: hidden !important;
+  box-sizing: border-box !important;
+  min-width: 0 !important;
 }
 
 .passport-page.cover-inside {
@@ -3048,37 +3050,80 @@ html, body {
 }
 
 .passport-page.polycarbonate-id {
-  background: rgba(246, 244, 238, 0.36) !important;
+  background: transparent !important;
   border: none !important;
 }
 
+.passport-id-header span {
+  font-size: 8.5px !important;
+  letter-spacing: 0.6px !important;
+}
+
 .passport-id-grid {
-  grid-template-columns: 72px 1fr !important;
+  grid-template-columns: 64px minmax(0, 1fr) !important;
   gap: 8px !important;
 }
 
 .passport-photo-frame {
-  width: 72px !important;
-  height: 90px !important;
+  width: 64px !important;
+  height: 82px !important;
+  padding: 3px !important;
+}
+
+.passport-photo-frame img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.passport-fields {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 5px 8px !important;
+  min-width: 0 !important;
+}
+
+.passport-fields > div {
+  min-width: 0 !important;
 }
 
 .pp-field-lbl {
-  font-size: 7.5px !important;
+  font-size: 7px !important;
+  line-height: 1.2 !important;
+  overflow-wrap: break-word !important;
 }
 
 .pp-field-val {
-  font-size: 10.5px !important;
+  font-size: 9.5px !important;
+  line-height: 1.2 !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
 }
 
 .passport-mrz {
-  font-size: 8px !important;
-  letter-spacing: 0.7px !important;
+  font-size: 7.5px !important;
+  letter-spacing: 0.4px !important;
   margin-top: 6px !important;
   padding-top: 4px !important;
+  line-height: 1.35 !important;
 }
 
-.visa-slot {
-  padding: 5px 8px !important;
+.visa-slot,
+.visa-slot.stamped {
+  padding: 5px 4px !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px dotted rgba(120, 96, 68, 0.3) !important;
+  border-radius: 0 !important;
+}
+
+.visa-slot:last-child {
+  border-bottom: none !important;
+}
+
+.passport-page .scrapbook-box {
+  background: transparent !important;
+  border: none !important;
+  padding: 2px 4px !important;
 }
 
 .visa-stamp-img {
@@ -3146,18 +3191,20 @@ html, body {
 
 .passport-spread {
   position: absolute !important;
-  top: 11.2% !important;
-  bottom: 10.8% !important;
-  left: 20.8% !important;
-  right: 20.2% !important;
+  top: 12% !important;
+  bottom: 11.5% !important;
+  left: 21.6% !important;
+  right: 20.8% !important;
   padding: 0 !important;
-  gap: 3.6% !important;
+  gap: 4.2% !important;
   height: auto !important;
 }
 
 .passport-page {
-  padding: 10px 12px !important;
+  padding: 8px 10px !important;
   overflow: hidden !important;
+  box-sizing: border-box !important;
+  min-width: 0 !important;
 }
 
 .passport-page.cover-inside {
@@ -3166,37 +3213,80 @@ html, body {
 }
 
 .passport-page.polycarbonate-id {
-  background: rgba(246, 244, 238, 0.36) !important;
+  background: transparent !important;
   border: none !important;
 }
 
+.passport-id-header span {
+  font-size: 8.5px !important;
+  letter-spacing: 0.6px !important;
+}
+
 .passport-id-grid {
-  grid-template-columns: 72px 1fr !important;
+  grid-template-columns: 64px minmax(0, 1fr) !important;
   gap: 8px !important;
 }
 
 .passport-photo-frame {
-  width: 72px !important;
-  height: 90px !important;
+  width: 64px !important;
+  height: 82px !important;
+  padding: 3px !important;
+}
+
+.passport-photo-frame img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.passport-fields {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 5px 8px !important;
+  min-width: 0 !important;
+}
+
+.passport-fields > div {
+  min-width: 0 !important;
 }
 
 .pp-field-lbl {
-  font-size: 7.5px !important;
+  font-size: 7px !important;
+  line-height: 1.2 !important;
+  overflow-wrap: break-word !important;
 }
 
 .pp-field-val {
-  font-size: 10.5px !important;
+  font-size: 9.5px !important;
+  line-height: 1.2 !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
 }
 
 .passport-mrz {
-  font-size: 8px !important;
-  letter-spacing: 0.7px !important;
+  font-size: 7.5px !important;
+  letter-spacing: 0.4px !important;
   margin-top: 6px !important;
   padding-top: 4px !important;
+  line-height: 1.35 !important;
 }
 
-.visa-slot {
-  padding: 5px 8px !important;
+.visa-slot,
+.visa-slot.stamped {
+  padding: 5px 4px !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px dotted rgba(120, 96, 68, 0.3) !important;
+  border-radius: 0 !important;
+}
+
+.visa-slot:last-child {
+  border-bottom: none !important;
+}
+
+.passport-page .scrapbook-box {
+  background: transparent !important;
+  border: none !important;
+  padding: 2px 4px !important;
 }
 
 .visa-stamp-img {

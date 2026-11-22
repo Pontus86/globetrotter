@@ -3375,7 +3375,7 @@
                 </div>
                 <div>
                   <div class="pp-field-lbl">4. Hemort / Place of birth</div>
-                  <div class="pp-field-val">STOCKHOLM</div>
+                  <div class="pp-field-val">${(W.cities[W.startCity]?.name || 'Malmö').toUpperCase()}</div>
                 </div>
                 <div>
                   <div class="pp-field-lbl">5. Myndighet / Authority</div>
@@ -3422,7 +3422,7 @@
         <div class="passport-page right">
           <div>
             <div class="visa-page-title">OFFICIELLA MÅL / RESEUPPDRAG</div>
-            <div style="background:rgba(255,253,247,0.65); border:1px dashed rgba(130,108,78,0.55); padding:7px 9px; border-radius:4px; margin-bottom:7px;">
+            <div style="background:transparent; border-bottom:1px dotted rgba(130,108,78,0.45); padding:4px 2px 7px; margin-bottom:7px;">
               <div style="font-size:10px; font-weight:bold; letter-spacing:0.6px; color:#6b461e; text-transform:uppercase; margin-bottom:4px;">
                 Krav för att klara resan hem till ${W.cities[W.startCity]?.name || 'Malmö'}:
               </div>
@@ -3442,7 +3442,7 @@
                 ${souvenirChecklistHtml}
               </div>
             </div>
-            <div class="passport-fields" style="background:rgba(255,253,247,0.45); border:1px solid rgba(130,108,78,0.3); padding:6px 8px; border-radius:4px; gap:4px 10px;">
+            <div class="passport-fields" style="background:transparent; padding:4px 2px; gap:4px 10px;">
               <div>
                 <div class="pp-field-lbl">Stämplar</div>
                 <div class="pp-field-val">${state.stamps.length} / ${allCityKeys.length}</div>
