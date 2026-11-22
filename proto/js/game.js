@@ -1096,43 +1096,59 @@
     }, place.photo);
   }
 
-  // --- Underverksutflykt (Fullskärmsfoto i 90-tals expeditionsstil!) ---
+  // --- Världsarv & Expeditioner (Egna resmål nåbara från närmaste stad!) ---
   function openWonderModal(wonderKey, wonder) {
+    wonder = wonder || W.wonders[wonderKey];
+    if (!wonder) return;
     const isDone = state.doneWonders.has(wonderKey);
     const hasGear = wonder.gear ? hasItem(wonder.gear) : false;
     const actualHours = (wonder.hoursEach * 2) + (hasGear ? wonder.gearVisitHours : wonder.visitHours);
     const totalCost = wonder.transport + wonder.fee;
+    const gwCity = W.cities[wonder.from];
+    const gwName = gwCity ? gwCity.name : wonder.from;
+    const isAtGateway = (state.city === wonder.from);
 
     const html = `
       <div class="scene-fullscreen scene-sight-full" style="background-image:url(${wonder.photo})">
         <div class="sight-header-bar">
-          <div class="sight-plaque" style="border-color:#ff9f43;">
-            <h3>${wonder.name} · UNDERVERK</h3>
+          <div class="sight-plaque" style="border-color:#ffbe3d;">
+            <h3>★ ${wonder.name.toUpperCase()} · ${wonder.country ? wonder.country.toUpperCase() : 'VÄRLDSARV'}</h3>
             <div class="sight-meta">
-              Resväg: ${wonder.hoursEach * 2} tim t/r · Resa & inträde: ${totalCost} kr
-              ${isDone ? ' · <span style="color:#78e08f; font-weight:bold;">EXPEDITION KLAR</span>' : ''}
+              Utgår från: <b>${gwName}</b> · ${wonder.transportMode || 'Expedition'} · ${actualHours} tim t/r · ${totalCost} kr
+              ${isDone ? ' · <span style="color:#78e08f; font-weight:bold;">BESÖKT VÄRLDSARV</span>' : ''}
             </div>
           </div>
-          ${exitIconBtn('Tillbaka till staden')}
+          ${exitIconBtn('Stäng')}
         </div>
 
         <div class="sight-bottom-panel">
-          <div class="sight-fact-card" style="border-left-color:#ff9f43;">${wonder.fact}</div>
+          <div class="sight-fact-card" style="border-left-color:#ffbe3d;">${wonder.fact}</div>
           ${wonder.gear ? `
-            <div style="background:rgba(20,14,9,0.88); border:1px solid #b88b43; padding:8px 12px; font-size:12.5px; margin-bottom:10px; color:#f4ead6;">
+            <div style="background:rgba(20,14,9,0.88); border:1px solid #b88b43; padding:7px 12px; font-size:12px; margin-bottom:8px; color:#f4ead6;">
               <span class="gear-inline-badge">PACKNING</span> <b>Utrustning:</b> ${hasGear ? 
-                '<span style="color:#78e08f">Du har rätt utrustning! Expeditionen tar ' + actualHours + ' timmar istället för ' + (wonder.hoursEach*2 + wonder.visitHours) + ' timmar.</span>' : 
-                '<span style="color:#ff7675">Du saknar ' + (W.souvenirs[wonder.gear]?.name || wonder.gear) + '. Expeditionen tar ' + actualHours + ' timmar!</span>'}
+                '<span style="color:#78e08f">Du har rätt utrustning! Expeditionen tar ' + actualHours + ' timmar istället för ' + (wonder.hoursEach * 2 + wonder.visitHours) + ' timmar.</span>' : 
+                '<span style="color:#ff7675">Du saknar ' + (W.souvenirs[wonder.gear]?.name || wonder.gear) + '. Expeditionen tar ' + actualHours + ' timmar.</span>'}
             </div>
           ` : ''}
           <div id="quizContainer" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <span style="font-size:13px; color:#e6d7bd; font-style:italic;">Ger unik underverkssouvenir och hög antagningspoäng!</span>
-            <div style="display:flex; gap:10px;">
-              <button class="globe-brass-btn" onclick="window.GT.closeModal()">Kanske senare</button>
-              <button class="stamp-action-btn" onclick="window.GT.startWonderTrip('${wonderKey}')">
-                Genomför expeditionen (${totalCost} kr, ${actualHours} tim)
-              </button>
-            </div>
+            ${isAtGateway ? `
+              <span style="font-size:12.5px; color:#e6d7bd; font-style:italic;">
+                ${isDone ? 'Du har redan besökt detta världsarv, men kan resa tillbaka när som helst.' : 'Klarar du expeditionen registreras världsarvet i ditt pass!'}
+              </span>
+              <div style="display:flex; gap:10px;">
+                <button class="globe-brass-btn" onclick="window.GT.openGlobeModal()">Till världskartan</button>
+                <button class="stamp-action-btn" onclick="window.GT.startWonderTrip('${wonderKey}')">
+                  Starta expedition (${totalCost} kr, ${actualHours} tim)
+                </button>
+              </div>
+            ` : `
+              <span style="font-size:12.5px; color:#ffd875;">
+                Du befinner dig i <b>${W.cities[state.city]?.name || state.city}</b>. Res till <b>${gwName}</b> först för att påbörja expeditionen hit!
+              </span>
+              <div style="display:flex; gap:10px;">
+                <button class="globe-brass-btn" onclick="window.GT.openGlobeModal()">Tillbaka till världskartan</button>
+              </div>
+            `}
           </div>
         </div>
       </div>
@@ -1142,6 +1158,12 @@
 
   function startWonderTrip(wonderKey) {
     const wonder = W.wonders[wonderKey];
+    if (!wonder) return;
+    if (state.city !== wonder.from) {
+      const gwName = W.cities[wonder.from]?.name || wonder.from;
+      showToast(`Res till ${gwName} först för att åka till ${wonder.name}.`, 3000);
+      return;
+    }
     const hasGear = wonder.gear ? hasItem(wonder.gear) : false;
     const actualHours = (wonder.hoursEach * 2) + (hasGear ? wonder.gearVisitHours : wonder.visitHours);
     const totalCost = wonder.transport + wonder.fee;
@@ -1153,13 +1175,20 @@
 
     changeCash(-totalCost, `Expedition till ${wonder.name}`);
     addHours(actualHours);
-    AudioMgr.play('bell');
+    AudioMgr.play('takeoff');
 
-    runQuiz(getQuestionsFor(wonder.from, wonderKey, wonder.questions), () => {
+    const questions = (wonder.questions && wonder.questions.length > 0)
+      ? wonder.questions
+      : getQuestionsFor(wonder.from, wonderKey, []);
+
+    runQuiz(questions, () => {
+      const firstTime = !state.doneWonders.has(wonderKey);
       state.doneWonders.add(wonderKey);
       state.dayLog.activities.push(`Expedition till ${wonder.name}`);
-      
-      // Belöna med souvenir
+      if (firstTime) {
+        addJournal(`Genomförde expeditionen till världsarvet ${wonder.name} (${wonder.country}) från ${W.cities[wonder.from]?.name || wonder.from}.`);
+      }
+
       if (wonder.souvenir && W.souvenirs[wonder.souvenir]) {
         if (state.backpack.length < getMaxBackpackSlots()) {
           const itemDef = W.souvenirs[wonder.souvenir];
@@ -1170,13 +1199,16 @@
             buyPrice: 0,
             buyDay: state.day
           });
-          updateHUD();
-          showToast(`Du fann en unik souvenir: ${itemDef.name}!`, 3500);
+          showToast(`Världsarv avklarat! Du fann en unik souvenir: ${itemDef.name}!`, 3600);
         } else {
-          showToast(`Ryggsäcken var full! Kunde inte packa ner ${wonder.name}-souveniren.`, 3000);
+          showToast(`Världsarv avklarat! Ryggsäcken var dock full för ${wonder.name}-souveniren.`, 3200);
         }
+      } else if (firstTime) {
+        showToast(`Världsarvet ${wonder.name} registrerades i ditt pass (${state.doneWonders.size}/${Object.keys(W.wonders).length})!`, 3600);
       }
 
+      updateHUD();
+      saveGame();
       renderCitySpots(W.cities[state.city]);
       closeModal();
     }, wonder.photo);
@@ -2685,6 +2717,37 @@
       `;
     });
 
+    const localWonders = Object.entries(W.wonders || {}).filter(([, w]) => w.from === state.city);
+    let wondersHtml = '';
+    if (localWonders.length > 0) {
+      wondersHtml = `
+        <div style="margin-top:8px; padding-top:8px; border-top:1px dashed rgba(255, 190, 61, 0.45);">
+          <div style="font-size:10px; letter-spacing:1.4px; color:#ffd875; text-transform:uppercase; font-weight:bold; margin-bottom:5px;">
+            ★ Världsarv &amp; Expeditioner från ${currentCity.name}
+          </div>
+          ${localWonders.map(([wKey, w]) => {
+            const isDone = state.doneWonders.has(wKey);
+            const totalCost = w.transport + w.fee;
+            const totalHours = (w.hoursEach * 2) + w.visitHours;
+            return `
+              <div class="flap-row" style="border-color:rgba(255,190,61,0.35); background:rgba(46,32,12,0.55);">
+                <div>
+                  <div class="flap-dest" style="color:#ffd875;">
+                    ★ ${w.name.toUpperCase()} (${w.country.toUpperCase()})
+                    ${isDone ? '<span style="margin-left:6px; font-size:10px; color:#78e08f;">✓ BESÖKT</span>' : ''}
+                  </div>
+                  <div class="flap-meta">${(w.transportMode || 'EXPEDITION').toUpperCase()} · TID: ${totalHours} TIM T/R · PRIS: ${totalCost} KR</div>
+                </div>
+                <div>
+                  <button class="ticket-btn" style="background:linear-gradient(180deg,#d89b2b 0%,#9e6a12 100%); color:#1a1004;" onclick="window.GT.openWonderModal('${wKey}')">Expedition<br>${totalCost} kr</button>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
     const totalRoutes = getCityRoutePool(state.city).length;
     const html = `
       <div class="scene-fullscreen scene-room-bg" style="background-image:url(assets/photos/airport_hall.jpg)">
@@ -2706,9 +2769,10 @@
             </div>
             <div>
               ${flightsHtml}
+              ${wondersHtml}
             </div>
             <div class="board-footnote">
-              Dagens flygavgångar från ${currentCity.name} (Dag ${state.day}) · Saknar du ett resmål? Sov en natt för ny avgångstavla, eller byt plan i en större knutpunkt.
+              Dagens flygavgångar från ${currentCity.name} (Dag ${state.day}) · Världsarv syns även som guldstjärnor på 3D-jordgloben.
             </div>
           </div>
         </div>
@@ -2753,7 +2817,7 @@
           <div class="globe-title-plate">
             <div class="globe-plate-kicker">GLOBETROTTER · NAVIGATION</div>
             <h3>VÄRLDSKARTA</h3>
-            <div class="globe-sub">AVVERKAD STRÄCKA: <b style="color:#8cf0a4;">${totalDist.toLocaleString('sv-SE')} KM</b></div>
+            <div class="globe-sub">AVVERKAD STRÄCKA: <b style="color:#8cf0a4;">${totalDist.toLocaleString('sv-SE')} KM</b> · <b style="color:#ffd875;">★ ${state.doneWonders.size}/${Object.keys(W.wonders).length} VÄRLDSARV</b> (KLICKA PÅ ★)</div>
           </div>
           <div class="globe-top-actions">
             <button class="bp-icon-close-btn zoom-btn" id="globeZoomInBtn" title="Zooma in" aria-label="Zooma in">
@@ -2783,7 +2847,11 @@
 
     const canvas = document.getElementById('globeCanvas');
     if (canvas && window.GlobeRenderer) {
-      activeGlobeRenderer = new window.GlobeRenderer(canvas, { radius: 278 });
+      activeGlobeRenderer = new window.GlobeRenderer(canvas, {
+        radius: 278,
+        doneWonders: state.doneWonders,
+        onWonderClick: (wKey, w) => openWonderModal(wKey, w)
+      });
       const curCity = W.cities[state.city];
       if (curCity) {
         activeGlobeRenderer.centerLon = curCity.lon;
@@ -3954,6 +4022,7 @@
     closeModal,
     openGlobeModal,
     startPlaceQuiz,
+    openWonderModal,
     startWonderTrip,
     openSignatureModal,
     doSignatureActivity,

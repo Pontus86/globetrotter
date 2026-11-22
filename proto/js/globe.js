@@ -238,6 +238,8 @@
       this.autoRotate = Boolean(options.autoRotate);
       this.flightAnimation = null;
       this.onGlobeClick = options.onGlobeClick || null;
+      this.onWonderClick = options.onWonderClick || null;
+      this.doneWonders = options.doneWonders || null;
       this.pinMarker = null;   // { lat, lon, label, color }
       this.targetMarker = null; // { lat, lon, label, color }
 
@@ -382,13 +384,35 @@
       };
 
       const onEnd = (e) => {
-        if (this.isDragging && !this.dragMoved && this.onGlobeClick && e && e.clientX !== undefined) {
+        if (this.isDragging && !this.dragMoved && e && e.clientX !== undefined) {
           const rect = c.getBoundingClientRect();
           if (rect.width > 0 && rect.height > 0) {
             const sx = (e.clientX - rect.left) * (c.width / rect.width);
             const sy = (e.clientY - rect.top) * (c.height / rect.height);
-            const ll = this.unproject(sx, sy);
-            if (ll) this.onGlobeClick(ll.lat, ll.lon);
+            // Kolla först om spelaren klickade på ett världsarv på jordgloben
+            if (this.onWonderClick && window.GT_WORLD && window.GT_WORLD.wonders) {
+              let bestKey = null;
+              let bestDist = 18;
+              Object.entries(window.GT_WORLD.wonders).forEach(([wKey, w]) => {
+                if (w.lat === undefined || w.lon === undefined) return;
+                const p = this.project(w.lat, w.lon);
+                if (!p.visible) return;
+                const d = Math.hypot(sx - p.x, sy - p.y);
+                if (d < bestDist) {
+                  bestDist = d;
+                  bestKey = wKey;
+                }
+              });
+              if (bestKey) {
+                this.isDragging = false;
+                this.onWonderClick(bestKey, window.GT_WORLD.wonders[bestKey]);
+                return;
+              }
+            }
+            if (this.onGlobeClick) {
+              const ll = this.unproject(sx, sy);
+              if (ll) this.onGlobeClick(ll.lat, ll.lon);
+            }
           }
         }
         this.isDragging = false;
@@ -875,6 +899,145 @@
           }
           ctx.restore();
         });
+      }
+
+      // 6b. 20 Världsarv & Naturunder på jordgloben (gyllene stjärnmarkörer + expeditionslinje till närmaste stad)
+      if (!this.mini && window.GT_WORLD && window.GT_WORLD.wonders) {
+        const wonders = Object.entries(window.GT_WORLD.wonders);
+        let hoveredWonder = null;
+        let hoveredDist = 18;
+
+        // Hitta närmaste hovrade världsarv
+        if (this.hoverPos && !this.isDragging && !this.flightAnimation) {
+          wonders.forEach(([wKey, w]) => {
+            if (w.lat === undefined || w.lon === undefined) return;
+            const p = this.project(w.lat, w.lon);
+            if (!p.visible) return;
+            const d = Math.hypot(this.hoverPos.x - p.x, this.hoverPos.y - p.y);
+            if (d < hoveredDist) {
+              hoveredDist = d;
+              hoveredWonder = { key: wKey, w, x: p.x, y: p.y };
+            }
+          });
+        }
+        if (this.interactive && this.onWonderClick) {
+          this.canvas.style.cursor = hoveredWonder ? 'pointer' : (this.isDragging ? 'grabbing' : 'grab');
+        }
+
+        const showLabels = this.radius >= 370 && !this.flightAnimation;
+
+        wonders.forEach(([wKey, w]) => {
+          if (w.lat === undefined || w.lon === undefined) return;
+          const proj = this.project(w.lat, w.lon);
+          if (!proj.visible) return;
+
+          const isDone = Boolean(this.doneWonders && this.doneWonders.has(wKey));
+          const isFromHere = (w.from === currentCityKey);
+          const isHov = Boolean(hoveredWonder && hoveredWonder.key === wKey);
+
+          // Diskret streckad expeditionslinje från närmaste stad (visas vid hovring, inzoomning eller från nuvarande stad)
+          if ((isFromHere || isHov || showLabels) && w.from && window.GT_WORLD.cities[w.from]) {
+            const gw = window.GT_WORLD.cities[w.from];
+            const v1 = latLonToVector(gw.lat, gw.lon);
+            const v2 = latLonToVector(w.lat, w.lon);
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([3, 3]);
+            ctx.lineWidth = isHov ? 2.0 : 1.15;
+            ctx.strokeStyle = isDone
+              ? 'rgba(110, 230, 145, 0.65)'
+              : (isHov || isFromHere ? 'rgba(255, 206, 86, 0.85)' : 'rgba(255, 206, 86, 0.38)');
+            let drawing = false;
+            for (let s = 0; s <= 24; s++) {
+              const v = slerp(v1, v2, s / 24);
+              const ll = vectorToLatLon(v);
+              const pt = this.project(ll[0], ll[1]);
+              if (pt.visible) {
+                if (!drawing) { ctx.moveTo(pt.x, pt.y); drawing = true; }
+                else { ctx.lineTo(pt.x, pt.y); }
+              } else {
+                drawing = false;
+              }
+            }
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          // Rita gyllene 4-uddig stjärna / kompassdiamant för världsarvet
+          const sz = (isHov ? 7.5 : (isFromHere ? 6.2 : 5.0)) * Math.min(1.25, Math.sqrt(zoomScale));
+          ctx.save();
+          ctx.translate(proj.x, proj.y);
+          if (isFromHere || isHov) {
+            ctx.shadowColor = isDone ? 'rgba(94, 224, 135, 0.9)' : 'rgba(255, 198, 70, 0.95)';
+            ctx.shadowBlur = isHov ? 12 : 7;
+          }
+          ctx.beginPath();
+          ctx.moveTo(0, -sz);
+          ctx.lineTo(sz * 0.42, -sz * 0.42);
+          ctx.lineTo(sz, 0);
+          ctx.lineTo(sz * 0.42, sz * 0.42);
+          ctx.lineTo(0, sz);
+          ctx.lineTo(-sz * 0.42, sz * 0.42);
+          ctx.lineTo(-sz, 0);
+          ctx.lineTo(-sz * 0.42, -sz * 0.42);
+          ctx.closePath();
+          ctx.fillStyle = isDone ? '#66e38c' : '#ffbe3d';
+          ctx.strokeStyle = '#1b1106';
+          ctx.lineWidth = 1.3;
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+
+          // Diskret namnskylt för världsarv nära nuvarande stad eller vid inzoomning (ej hovrade, de ritas överst)
+          if (!isHov && (isFromHere || (showLabels && proj.cosC > 0.38))) {
+            ctx.save();
+            ctx.font = 'bold 10px Georgia, serif';
+            const lbl = `★ ${w.name}`;
+            const tw = ctx.measureText(lbl).width;
+            const bx = proj.x + 8;
+            const by = proj.y - 7;
+            ctx.fillStyle = 'rgba(22, 15, 7, 0.82)';
+            ctx.fillRect(bx, by, tw + 8, 15);
+            ctx.strokeStyle = isDone ? 'rgba(102, 227, 140, 0.7)' : 'rgba(255, 190, 61, 0.72)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(bx, by, tw + 8, 15);
+            ctx.fillStyle = isDone ? '#8cf0a4' : '#ffd875';
+            ctx.fillText(lbl, bx + 4, by + 11);
+            ctx.restore();
+          }
+        });
+
+        // Rita hovrat världsarvs-kort allra överst
+        if (hoveredWonder) {
+          const { key, w, x, y } = hoveredWonder;
+          const isDone = Boolean(this.doneWonders && this.doneWonders.has(key));
+          const gwName = (window.GT_WORLD.cities[w.from] && window.GT_WORLD.cities[w.from].name) || w.from;
+          const line1 = `★ ${w.name} (${w.country})`;
+          const line2 = w.from === currentCityKey
+            ? `${isDone ? 'Besökt · ' : ''}Klicka för expedition från ${gwName}!`
+            : `Närmaste stad: ${gwName} · Klicka för info`;
+          ctx.save();
+          ctx.font = 'bold 11.5px Georgia, serif';
+          const w1 = ctx.measureText(line1).width;
+          ctx.font = '10px Georgia, serif';
+          const w2 = ctx.measureText(line2).width;
+          const bw = Math.max(w1, w2) + 16;
+          const bh = 34;
+          const bx = (x + 12 + bw > this.canvas.width - 10) ? (x - bw - 12) : (x + 12);
+          const by = Math.max(10, Math.min(this.canvas.height - bh - 10, y - 17));
+          ctx.fillStyle = 'rgba(18, 13, 7, 0.95)';
+          ctx.fillRect(bx, by, bw, bh);
+          ctx.strokeStyle = isDone ? '#66e38c' : '#ffbe3d';
+          ctx.lineWidth = 1.4;
+          ctx.strokeRect(bx, by, bw, bh);
+          ctx.font = 'bold 11.5px Georgia, serif';
+          ctx.fillStyle = isDone ? '#8cf0a4' : '#ffd875';
+          ctx.fillText(line1, bx + 8, by + 14);
+          ctx.font = '10px Georgia, serif';
+          ctx.fillStyle = '#e7dbc6';
+          ctx.fillText(line2, bx + 8, by + 27);
+          ctx.restore();
+        }
       }
 
       // 7. Quiz-nålar (spelarens gissning + rätt mål med avståndsbåge!)

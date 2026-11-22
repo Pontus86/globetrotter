@@ -14,7 +14,7 @@ Varje ny resa slumpar fram personliga mål som skrivs in på sida 2 i ditt pass:
 ### Innehåll i korthet
 
 - **17 spelbara städer över 6 kontinenter:** Malmö, Stockholm, Paris, Rom, London, Istanbul, Kairo, Kapstaden, Delhi, Bangkok, Peking, Tokyo, Sydney, San Francisco, New York, Mexico City och Rio de Janeiro.
-- **68 sevärdheter och 4 underverk:** Sevärdheterna börjar som outforskade landmärken på stadskartan tills du besöker dem, frågar runt i hotellbaren eller har en guidebok i packningen.
+- **68 sevärdheter och 20 världsarv:** Sevärdheterna börjar som outforskade landmärken på stadskartan tills du besöker dem, frågar runt i hotellbaren eller har en guidebok i packningen. De 20 världsarven (bl.a. Machu Picchu, Mount Everest, Ilulissat isfjord och Pyramiderna i Giza) syns som guldstjärnor på 3D-jordgloben och nås som egna expeditioner från sin närmaste stad.
 - **51 jobb i dagstidningen:** Varje stad har tre olika jobbpass (4, 6 eller 8 timmar) med olika lön och egna yrkesfrågor.
 - **Dagliga avgångstavlor och oceanhamnar:** Du kan inte flyga vart som helst när som helst. Varje stad har ett realistiskt ruttnätverk där dagens avgångar, flightnummer och eventuella Stand by-biljetter lottas fram varje morgon.
 - **Marknader, basarer och postkontor:** Pruta på lokala varor, sälj dem längre bort på jordgloben för vinst, uppgradera ryggsäcken (5, 7 och 9 platser), köp reseutrustning eller posta hem dina målsouvenirer till Malmö.
