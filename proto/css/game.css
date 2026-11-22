@@ -6077,87 +6077,6 @@ h1, h2, h3, h4,
     border: none !important;
   }
 
-  /* Kompakt stadsskylt & HUD längst upp */
-  .city-plate {
-    top: 8px !important;
-    left: 8px !important;
-    max-width: 52vw !important;
-    padding: 4px 10px 5px !important;
-  }
-  .city-plate .city-name {
-    font-size: 16px !important;
-  }
-  .city-plate .city-region {
-    font-size: 9px !important;
-  }
-  .hud {
-    top: 8px !important;
-    right: 8px !important;
-    gap: 5px !important;
-    transform: scale(0.86);
-    transform-origin: top right;
-  }
-  .mp-opponent-pill {
-    top: 66px !important;
-    max-width: 94vw;
-    font-size: 10.5px;
-    padding: 4px 10px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* Stående mobil: omvandla stadens ikoner till ett rent, tumvänligt 3-kolumns rutnät! */
-  @media (orientation: portrait) {
-    .spots-container {
-      position: absolute !important;
-      top: 102px !important;
-      bottom: 84px !important;
-      left: 8px !important;
-      right: 8px !important;
-      display: grid !important;
-      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-      gap: 10px 8px !important;
-      align-content: start !important;
-      overflow-y: auto !important;
-      padding: 6px 4px 12px !important;
-      -webkit-overflow-scrolling: touch;
-    }
-    .spots-container .spot {
-      position: relative !important;
-      left: auto !important;
-      top: auto !important;
-      transform: none !important;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: flex-start !important;
-    }
-    .spot .spot-photo,
-    .spot .spot-service-img,
-    .spot .spot-undiscovered-badge,
-    .spot.signature .spot-badge {
-      width: 58px !important;
-      height: 58px !important;
-    }
-    .spot .spot-label {
-      max-width: 100% !important;
-      font-size: 10.5px !important;
-      padding: 2px 5px !important;
-    }
-  }
-
-  /* Fast centrerad bottendocka på mobil */
-  .travel-dock {
-    bottom: 8px !important;
-    right: 50% !important;
-    transform: translateX(50%) !important;
-    gap: 10px !important;
-    padding: 5px 12px !important;
-    background: rgba(16, 11, 7, 0.86);
-    border: 1.5px solid #9e7537;
-    border-radius: 12px;
-  }
-
   /* Modaler: fyll skärmen snyggt och tillåt vertikal scroll på liten mobilskärm */
   .scene-fullscreen {
     overflow-y: auto !important;
@@ -6216,7 +6135,55 @@ h1, h2, h3, h4,
     overflow: visible !important;
   }
 
-  /* Quiz & Fotografiska Minispel på mobil */
+  /* Quiz & Fotografiska Minispel på mobil — noll sidled-överflöd på svarsalternativ! */
+  .sight-bottom-panel,
+  .quiz-box,
+  .card-modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+  .quiz-options,
+  .sight-bottom-panel .quiz-options,
+  .broadsheet-paper .quiz-options,
+  .sight-bottom-panel .quiz-options.cols-2,
+  .broadsheet-paper .quiz-options.cols-2,
+  .sight-bottom-panel .quiz-options.cols-3,
+  .broadsheet-paper .quiz-options.cols-3,
+  .sight-bottom-panel .quiz-options.cols-many,
+  .broadsheet-paper .quiz-options.cols-many {
+    grid-template-columns: 1fr !important;
+    gap: 7px !important;
+    width: 100% !important;
+  }
+  .quiz-btn,
+  .sight-bottom-panel .quiz-btn,
+  .broadsheet-paper .quiz-btn {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    font-size: 13px !important;
+    padding: 9px 10px !important;
+    text-align: left !important;
+  }
+  .quiz-btn span:last-child {
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+  .bp-text-quiz {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .globe-quiz-canvas {
+    width: 100% !important;
+    max-width: 300px !important;
+    margin: 0 auto !important;
+  }
   .bp-image-quiz-wrap,
   .quiz-explain-card {
     flex-direction: column !important;
@@ -6237,6 +6204,179 @@ h1, h2, h3, h4,
   }
   .mg-crates-row {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* =====================================================================
+   STÅENDE MOBIL (PORTRAIT): REN FLEX-KOLUMN — NOLL ÖVERLAPP!
+   ===================================================================== */
+@media (max-width: 820px) and (orientation: portrait) {
+  .stage {
+    display: flex !important;
+    flex-direction: column !important;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Rad 1: Stadsskylt i normalt flöde (krockar aldrig med HUD!) */
+  .city-plate {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    max-width: none !important;
+    width: calc(100% - 16px) !important;
+    margin: 8px 8px 5px !important;
+    padding: 6px 12px !important;
+    z-index: 12 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: baseline !important;
+    justify-content: space-between !important;
+    gap: 2px 10px !important;
+  }
+  .city-plate .city-name {
+    font-size: 18px !important;
+    line-height: 1.1 !important;
+  }
+  .city-plate .city-region {
+    font-size: 9.5px !important;
+    letter-spacing: 0.8px !important;
+  }
+  .city-plate .city-event-ribbon {
+    width: 100% !important;
+    margin-top: 4px !important;
+  }
+
+  /* Rad 2: Kompakt HUD-list direkt under stadsskylten (1 ren rad, noll krock!) */
+  .hud {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    left: auto !important;
+    transform: none !important;
+    width: calc(100% - 16px) !important;
+    margin: 0 8px 6px !important;
+    padding: 5px 8px !important;
+    background: rgba(16, 11, 7, 0.82) !important;
+    border: 1px solid rgba(184, 139, 67, 0.55) !important;
+    border-radius: 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    z-index: 12 !important;
+  }
+  .hud-calendar,
+  .hud-watch,
+  .hud-wallet {
+    padding: 2px 6px !important;
+    min-width: 0 !important;
+    transform: none !important;
+  }
+  .hud-calendar .cal-top,
+  .hud-watch .watch-label {
+    font-size: 7.5px !important;
+  }
+  .hud-calendar .cal-num,
+  .hud-watch .watch-digits,
+  .hud-wallet .wallet-amount {
+    font-size: 11px !important;
+  }
+  .wallet-card-css { display: none !important; }
+  .hud-radio-btn {
+    padding: 4px 7px !important;
+    font-size: 9.5px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Rad 3: Online-duell-bricka (i flöde om aktiv — noll krock!) */
+  .mp-opponent-pill {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    margin: 0 8px 6px !important;
+    width: calc(100% - 16px) !important;
+    box-sizing: border-box !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+  }
+
+  /* Mittzon: Luftiga, klickvänliga 2-kolumnskort över stadens foto (noll överlapp!) */
+  .spots-container {
+    position: relative !important;
+    inset: auto !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    align-content: start !important;
+    overflow-y: auto !important;
+    padding: 4px 10px 88px !important;
+    -webkit-overflow-scrolling: touch;
+    z-index: 8 !important;
+  }
+  .spots-container .spot {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    padding: 6px 8px !important;
+    background: rgba(18, 13, 8, 0.80) !important;
+    border: 1.5px solid rgba(184, 139, 67, 0.55) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55) !important;
+    text-align: left !important;
+  }
+  .spots-container .spot:hover {
+    transform: none !important;
+    border-color: #ffd875 !important;
+  }
+  .spot .spot-photo,
+  .spot .spot-service-img,
+  .spot .spot-undiscovered-badge,
+  .spot.signature .spot-badge {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+  }
+  .spot .spot-label {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    max-width: none !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+    text-align: left !important;
+    color: #f7ebd2 !important;
+  }
+
+  /* Dockan nere i högra hörnet (precis som på datorn — inte i mitten!) */
+  .travel-dock {
+    position: absolute !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    right: 10px !important;
+    left: auto !important;
+    transform: none !important;
+    gap: 8px !important;
+    padding: 5px 10px !important;
+    background: rgba(16, 11, 7, 0.90) !important;
+    border: 1.5px solid #b88b43 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8) !important;
+    z-index: 20 !important;
   }
 }
 
