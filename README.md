@@ -47,5 +47,6 @@ python -m http.server 8080 --directory proto
 Spelet är byggt helt utan upphovsrättsskyddat material från äldre kommersiella spel och använder fria källor:
 - **Foton, historiska kartor och flaggor:** Wikimedia Commons / Wikipedia (Public Domain, CC0, CC BY, CC BY-SA)
 - **Jordglobens texturer och höjddata:** NASA Visible Earth / Blue Marble & SRTM (Public Domain)
+- **Landsgränser på jordgloben:** Natural Earth 110m (Public Domain)
 - **3D-modell (Backpack):** DailyArt / Sketchfab (CC BY-NC)
 - **Typsnitt:** Google Fonts (Playfair Display, Lora, Special Elite)

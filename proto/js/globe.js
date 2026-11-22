@@ -548,6 +548,60 @@
 
       const zoomScale = Math.max(0.85, Math.min(1.6, Math.sqrt(this.radius / Math.max(1, this.baseRadius))));
 
+      // 3b. Diskreta landsgränser (Natural Earth 110m Public Domain) på stora jordgloben
+      if (!this.mini && window.GT_COUNTRY_BORDERS && window.GT_COUNTRY_BORDERS.length > 0) {
+        const borders = window.GT_COUNTRY_BORDERS;
+        const DEG = Math.PI / 180;
+        const phi0 = this.centerLat * DEG;
+        const lam0 = this.centerLon * DEG;
+        const sinP0 = Math.sin(phi0);
+        const cosP0 = Math.cos(phi0);
+        const maxJump2 = (r * 0.35) * (r * 0.35);
+
+        ctx.save();
+        ctx.beginPath();
+        for (let i = 0; i < borders.length; i++) {
+          const line = borders[i];
+          let drawing = false;
+          let prevX = 0;
+          let prevY = 0;
+          for (let j = 0; j < line.length; j += 2) {
+            const phi = line[j] * DEG;
+            const dLam = line[j + 1] * DEG - lam0;
+            const sinP = Math.sin(phi);
+            const cosP = Math.cos(phi);
+            const cosD = Math.cos(dLam);
+            const cosC = sinP0 * sinP + cosP0 * cosP * cosD;
+            if (cosC > 0.02) {
+              const x = cx + r * cosP * Math.sin(dLam);
+              const y = cy - r * (cosP0 * sinP - sinP0 * cosP * cosD);
+              if (!drawing) {
+                ctx.moveTo(x, y);
+                drawing = true;
+              } else {
+                const dx = x - prevX;
+                const dy = y - prevY;
+                if (dx * dx + dy * dy < maxJump2) {
+                  ctx.lineTo(x, y);
+                } else {
+                  ctx.moveTo(x, y);
+                }
+              }
+              prevX = x;
+              prevY = y;
+            } else {
+              drawing = false;
+            }
+          }
+        }
+        ctx.lineWidth = Math.min(1.2, 0.78 * Math.sqrt(zoomScale));
+        ctx.strokeStyle = 'rgba(255, 245, 215, 0.32)';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+        ctx.restore();
+      }
+
       // 4. Tidigare avklarade resrutter (Röda linjen precis som i BackPacker!)
       if (!this.mini && travelHistory && travelHistory.length > 0) {
         ctx.save();
