@@ -367,11 +367,15 @@ body {
   margin-top: 5px;
   background: var(--dark-bg);
   color: var(--ink);
-  padding: 3px 8px;
+  padding: 3px 7px;
   border-radius: 4px;
-  font-size: clamp(10px, 1.2vw, 12px);
+  font-size: clamp(10px, 1.1vw, 11.5px);
   font-weight: 600;
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 136px;
+  line-height: 1.18;
+  text-align: center;
+  word-break: break-word;
   box-shadow: 0 3px 10px rgba(0,0,0,0.6);
   border: 1px solid rgba(244, 234, 214, 0.25);
 }

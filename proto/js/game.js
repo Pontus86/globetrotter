@@ -771,13 +771,13 @@
       return ((seed >>> 0) % 10000) / 10000;
     };
 
-    // 14 väl fördelade ankarceller i helt fria zoner:
-    // Fredar alltid stadsskylten (uppe vänster: x<34, y<32), HUD (uppe höger: x>64, y<22) och dockan (nere höger: x>62, y>74)!
+    // 14 luftiga, förskjutna ankarceller (minst ~18-21 % avstånd mellan grannar så etiketter aldrig överlappar!)
+    // Fredar alltid stadsskylten (uppe vänster: x<34, y<32), HUD (uppe höger: x>64, y<22) och dockan (nere höger: x>62, y>74).
     const anchors = [
-      [41, 22], [56, 22], [72, 26], [86, 28],
-      [13, 39], [28, 39], [45, 39], [62, 39], [80, 42],
-      [13, 58], [30, 56], [48, 56], [68, 57], [85, 59],
-      [18, 76], [37, 76], [53, 76]
+      [44, 23], [66, 26], [87, 27],
+      [13, 40], [35, 42], [56, 41], [78, 43],
+      [22, 59], [44, 59], [67, 60], [88, 60],
+      [14, 78], [35, 78], [54, 78]
     ];
     // Blanda ankarna unikt för just denna stad
     const shuffled = anchors.slice();
@@ -787,13 +787,21 @@
     }
 
     const coords = {};
+    const placed = [];
     spotKeys.forEach((key, idx) => {
       const base = shuffled[idx % shuffled.length];
-      // Lätt organisk förskjutning inom cellen (±3 % i X, ±2.5 % i Y) utan att glida in i fredade UI-zoner
-      let x = Math.max(11, Math.min(89, Math.round(base[0] + (rand() - 0.5) * 6)));
-      let y = Math.max(20, Math.min(78, Math.round(base[1] + (rand() - 0.5) * 5)));
-      if (x < 35 && y < 34) y = 37;
-      if (x > 62 && y > 72) y = 66;
+      // Diskret organisk förskjutning (±1.8 % i X, ±1.5 % i Y) utan att krocka med grannar eller UI
+      let x = Math.max(10, Math.min(90, Math.round(base[0] + (rand() - 0.5) * 3.6)));
+      let y = Math.max(21, Math.min(80, Math.round(base[1] + (rand() - 0.5) * 3.0)));
+      if (x < 35 && y < 34) y = 38;
+      if (x > 61 && y > 72) y = 64;
+      // Extra krockkontroll mot redan placerade ikoner
+      const collides = placed.some(p => Math.abs(p[0] - x) < 16 && Math.abs(p[1] - y) < 14);
+      if (collides) {
+        x = base[0];
+        y = base[1];
+      }
+      placed.push([x, y]);
       coords[key] = [x, y];
     });
     return coords;
