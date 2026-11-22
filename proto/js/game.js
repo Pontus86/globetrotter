@@ -270,8 +270,9 @@
     competencies: [], // Array av { key, title, city } — yrkeskompetenser intjänade med godkänt jobbprov (BP1-krav)
     goals: null, // { requiredRegions: 3, requiredCompetencies: 3, souvenirCities: [cityKey1, cityKey2, cityKey3] }
     discoveredPlaces: new Set(), // Avslöjade sevärdheter på stadskartan (BP2-utforskningskänsla!)
-    backpackLevel: 1, // 1 = 5 platser, 2 = 7 platser, 3 = 9 platser
-    mailedHome: [] // Array av { id, name, origin, mailedDay } — souvenirer postade hem till Stockholm!
+    backpackLevel: 1, // 1 = Liten gul ryggsäck (5), 2 = Duffelbag (7), 3 = Stor vandringsryggsäck (9)
+    mailedHome: [], // Array av { id, name, origin, mailedDay } — souvenirer postade hem!
+    callsHomeUsed: 0 // Nödlån via hotelltelefonen (max 2 per resa)
   };
 
   const BACKPACK_TIERS = [
@@ -469,7 +470,8 @@
         goals: state.goals,
         discoveredPlaces: Array.from(state.discoveredPlaces),
         backpackLevel: state.backpackLevel,
-        mailedHome: state.mailedHome
+        mailedHome: state.mailedHome,
+        callsHomeUsed: state.callsHomeUsed
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
     } catch (e) {}
@@ -518,6 +520,7 @@
     state.discoveredPlaces = new Set(d.discoveredPlaces || []);
     state.backpackLevel = d.backpackLevel || 1;
     state.mailedHome = Array.isArray(d.mailedHome) ? d.mailedHome : [];
+    state.callsHomeUsed = d.callsHomeUsed || 0;
     ensureJourneyGoals();
     return true;
   }
@@ -674,6 +677,9 @@
 
     // Dock-brickor nere i hörnet
     el.dockBackpackCount.textContent = `${state.backpack.length}/${getMaxBackpackSlots()}`;
+    if (dockMiniBackpackRenderer) {
+      dockMiniBackpackRenderer.setTier(state.backpackLevel);
+    }
     el.dockStampCount.textContent = `${state.stamps.length} st`;
 
     const totalDist = state.travelHistory.reduce((sum, leg) => sum + (leg.dist || 0), 0);
@@ -736,6 +742,9 @@
     // Bygg BackPacker-kartikoner på scenen
     renderCitySpots(city);
     updateHUD();
+    if (window.AmbientMgr) {
+      window.AmbientMgr.setScene('city', city.region || 'Europa');
+    }
   }
 
   // Skapa interaktiv kartspot på scenen
@@ -1088,6 +1097,10 @@
     AudioMgr.play('klick');
     el.modalOverlay.classList.add('hidden');
     el.modalContent.innerHTML = '';
+    if (window.AmbientMgr) {
+      const curRegion = (W.cities[state.city] && W.cities[state.city].region) || 'Europa';
+      window.AmbientMgr.setScene(state.activeWonder ? 'wonder' : 'city', curRegion);
+    }
   }
 
   // --- Höjdpunktsbesök (Fullskärmsfoto i äkta 90-tals BackPacker-stil!) ---
@@ -1261,6 +1274,9 @@
     el.spotsContainer.appendChild(returnSpot);
 
     updateHUD();
+    if (window.AmbientMgr) {
+      window.AmbientMgr.setScene('wonder', wonder.region || 'Europa');
+    }
   }
 
   function openWonderSpotQuiz(wonderId, spotIdx) {
@@ -2419,6 +2435,7 @@
   }
 
   function openBazaarModal(customSpeech = null, activeTab = 'market') {
+    if (window.AmbientMgr) window.AmbientMgr.setScene('bazaar');
     const city = W.cities[state.city];
     const mInfo = getMarketInfo(state.city);
     const localSouvenirKeys = city.souvenirs || [];
@@ -2957,10 +2974,115 @@
     return state.departureBoard;
   }
 
-  // --- Resor och Avgångar: Separat Avgångshall (Flyg) & Oceanhamn (Rederikontor)! ---
+  // --- Överlandståg mellan närliggande städer (BackPacker-tågstation!) ---
+  const CITY_TRAINS = {
+    malmo: [
+      { to: 'stockholm', name: 'X2000 Snabbtåg till Stockholm C', hours: 4, price: 360 }
+    ],
+    stockholm: [
+      { to: 'malmo', name: 'X2000 Snabbtåg till Malmö C', hours: 4, price: 360 }
+    ],
+    london: [
+      { to: 'paris', name: 'Eurostar genom Kanaltunneln', hours: 3, price: 480 }
+    ],
+    paris: [
+      { to: 'london', name: 'Eurostar genom Kanaltunneln', hours: 3, price: 480 },
+      { to: 'rom', name: 'Alpexressen (Nattåg genom Alperna)', hours: 10, price: 590 }
+    ],
+    rom: [
+      { to: 'paris', name: 'Alpexressen mot Paris Gare de Lyon', hours: 10, price: 590 },
+      { to: 'istanbul', name: 'Balkan- & Orientexpressen', hours: 15, price: 690 }
+    ],
+    istanbul: [
+      { to: 'rom', name: 'Orientexpressen västerut mot Rom', hours: 15, price: 690 }
+    ],
+    sanfrancisco: [
+      { to: 'newyork', name: 'California Zephyr (Amtrak kust-till-kust)', hours: 18, price: 880 }
+    ],
+    newyork: [
+      { to: 'sanfrancisco', name: 'California Zephyr (Amtrak västerut)', hours: 18, price: 880 },
+      { to: 'mexicocity', name: 'Pan-American Express söderut', hours: 16, price: 840 }
+    ],
+    mexicocity: [
+      { to: 'newyork', name: 'Pan-American Express norrut', hours: 16, price: 840 }
+    ],
+    delhi: [
+      { to: 'bangkok', name: 'Trans-Asiatiska landvägståget', hours: 16, price: 760 }
+    ],
+    bangkok: [
+      { to: 'delhi', name: 'Trans-Asiatiska landvägståget västerut', hours: 16, price: 760 },
+      { to: 'peking', name: 'Sydostasiatiska Expressen norrut', hours: 16, price: 790 }
+    ],
+    peking: [
+      { to: 'bangkok', name: 'Sydostasiatiska Expressen söderut', hours: 16, price: 790 }
+    ]
+  };
+
+  // --- Resor och Avgångar: Avgångshall (Flyg), Tågstation (Tåg) & Oceanhamn (Båt)! ---
   function openTravelModal(mode = 'air') {
     const currentCity = W.cities[state.city];
     const hasBoats = currentCity.boats && currentCity.boats.length > 0;
+    const trains = CITY_TRAINS[state.city] || [];
+    const hasTrains = trains.length > 0;
+
+    if (window.AmbientMgr) {
+      window.AmbientMgr.setScene(mode === 'sea' ? 'harbor' : (mode === 'train' ? 'train' : 'airport'));
+    }
+
+    if (mode === 'train') {
+      AudioMgr.play('flap');
+      let trainsHtml = '';
+      if (hasTrains) {
+        trains.forEach(tr => {
+          const dest = W.cities[tr.to];
+          if (!dest) return;
+          const dist = getDistanceBetweenCities(state.city, tr.to);
+          trainsHtml += `
+            <div class="flap-row" style="border-color:rgba(110, 210, 145, 0.35); background:rgba(14, 38, 24, 0.65);">
+              <div>
+                <div class="flap-dest" style="color:#a7f3c0;">🚂 ${tr.name.toUpperCase()}</div>
+                <div class="flap-meta">TÅGLINJE TILL ${dest.name.toUpperCase()} (${dist.toLocaleString('sv-SE')} KM) · RESTID: ${tr.hours} TIM · PRIS: ${tr.price} KR</div>
+              </div>
+              <div>
+                <button class="ticket-btn" style="background:linear-gradient(180deg,#3b8d56 0%,#235c36 100%); color:#f7fff9;" onclick="window.GT.startTravel('${tr.to}', ${tr.price}, ${tr.hours}, false, true)">Köp tågbiljett<br>${tr.price} kr</button>
+              </div>
+            </div>
+          `;
+        });
+      } else {
+        trainsHtml = `<div style="padding:16px; color:#c8e5d0; font-style:italic; text-align:center;">Inga internationella långdistanståg avgår från ${currentCity.name}.</div>`;
+      }
+
+      const html = `
+        <div class="scene-fullscreen scene-room-bg" style="background-image:url(assets/photos/airport_hall.jpg)">
+          <div class="room-top-bar">
+            <div class="sight-plaque" style="border-color:#56c278;">
+              <h3>CENTRALSTATION &amp; TÅGTABELL · ${currentCity.name.toUpperCase()}</h3>
+              <div class="sight-meta">Dag ${state.day} · Kassa: ${state.cash.toLocaleString('sv-SE')} kr · Prisvärda tågförbindelser över land</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="globe-brass-btn" onclick="window.GT.openTravelModal('air')">Till flygplatsen »</button>
+              ${hasBoats ? `<button class="globe-brass-btn" onclick="window.GT.openTravelModal('sea')">Till oceanhamnen »</button>` : ''}
+              ${exitIconBtn(`Stanna kvar i ${currentCity.name}`)}
+            </div>
+          </div>
+          <div class="room-counter-dock" style="display:flex; justify-content:center;">
+            <div class="modal-departure-board" style="max-width:780px; width:100%; max-height:none; border-color:#56c278;">
+              <div class="board-header">
+                <div class="board-title" style="color:#9ff0b8;">AVGÅNGAR SPÅR 1–4 · ${currentCity.name.toUpperCase()} C</div>
+                <div class="board-ticket-css">INTERRAIL / TÅGBILJETT</div>
+              </div>
+              <div>${trainsHtml}</div>
+              <div class="board-footnote">
+                Tåg är oftast betydligt billigare än flyg och tar dig smidigt mellan grannstäderna utan väntan på flygplatsen.
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      showModal(html);
+      return;
+    }
 
     if (mode === 'sea') {
       AudioMgr.play('ferry');
@@ -3108,6 +3230,7 @@
             <div class="sight-meta">Dag ${state.day} · Kassa: ${state.cash.toLocaleString('sv-SE')} kr · Direktlinjer idag: ${board.flights.length} av ${totalRoutes}</div>
           </div>
           <div style="display:flex; gap:8px;">
+            ${hasTrains ? `<button class="globe-brass-btn" onclick="window.GT.openTravelModal('train')">Till tågstationen »</button>` : ''}
             ${hasBoats ? `<button class="globe-brass-btn" onclick="window.GT.openTravelModal('sea')">Till oceanhamnen »</button>` : ''}
             ${exitIconBtn(`Stanna kvar i ${currentCity.name}`)}
           </div>
@@ -3251,8 +3374,8 @@
     }
   }
 
-  // Reseanimation: 3D Jordglob med röd flyglinje (BackPacker-stil)
-  function startTravel(destKey, price, timeValue, isBoat) {
+  // Reseanimation: 3D Jordglob med röd reslinje (Flyg, Tåg eller Oceanångare!)
+  function startTravel(destKey, price, timeValue, isBoat, isTrain = false) {
     if (state.cash < price) {
       alert("Du har inte råd med biljetten!");
       return;
@@ -3263,13 +3386,17 @@
     state.departureBoard = null; // Glöm avgångstavlan vid avresa (BP1-regel)
     closeModal();
 
-    el.travelTitle.textContent = isBoat ? 
-      `RESA TILL HAVS: ${origin.name.toUpperCase()} ➔ ${dest.name.toUpperCase()}` : 
-      `FLYGNING: ${origin.name.toUpperCase()} ➔ ${dest.name.toUpperCase()}`;
+    el.travelTitle.textContent = isBoat
+      ? `RESA TILL HAVS: ${origin.name.toUpperCase()} ➔ ${dest.name.toUpperCase()}`
+      : (isTrain
+        ? `TÅGRESA: ${origin.name.toUpperCase()} ➔ ${dest.name.toUpperCase()}`
+        : `FLYGNING: ${origin.name.toUpperCase()} ➔ ${dest.name.toUpperCase()}`);
     
-    el.travelSub.textContent = isBoat ? 
-      `Distans: ${dist.toLocaleString('sv-SE')} km · ${timeValue} dagar till sjöss` : 
-      `Distans: ${dist.toLocaleString('sv-SE')} km · Flygtid: ${timeValue} timmar`;
+    el.travelSub.textContent = isBoat
+      ? `Distans: ${dist.toLocaleString('sv-SE')} km · ${timeValue} dagar till sjöss`
+      : (isTrain
+        ? `Distans: ${dist.toLocaleString('sv-SE')} km · Tågtid: ${timeValue} timmar`
+        : `Distans: ${dist.toLocaleString('sv-SE')} km · Flygtid: ${timeValue} timmar`);
 
     const canvas = document.getElementById('flightGlobeCanvas');
     const flightGlobe = new window.GlobeRenderer(canvas, { interactive: false, radius: 210 });
@@ -3389,6 +3516,7 @@
 
   // --- Hotell (90-tals diegetisk receptionsdisk & separat Pub/Kafé-scen — ingen gästbok!) ---
   function openHotelModal(tab = 'reception', tavernHtml = null) {
+    if (window.AmbientMgr) window.AmbientMgr.setScene('hotel');
     const city = W.cities[state.city];
     const hotel = city.hotel || { name: 'Vandrarhem', price: 400 };
     const tavern = (W.taverns && W.taverns[state.city]) || { name: 'Hotellbaren', drink: 'en runda', drinkCost: 120, vibe: 'Sorl av resenärer.' };
@@ -3448,7 +3576,65 @@
       return;
     }
 
-    // Receptionsscenen (stadsanpassat hotellfoto + fysisk mahognydisk med mässingsklocka & pubskylt!)
+    // Telefonkiosk / Ringa hem till Sverige i hotellet (klassisk BackPacker-funktion!)
+    if (tab === 'phone') {
+      const goals = ensureJourneyGoals();
+      const regionsVisited = getVisitedRegions().size;
+      const canAskLoan = state.cash < 1800 && (state.callsHomeUsed || 0) < 2;
+      const callsLeft = Math.max(0, 2 - (state.callsHomeUsed || 0));
+      const parentGreeting = state.cash < 1800
+        ? `"Hallå ${state.playerFirstName}! Vad roligt att du ringer från ${city.name}! Låter det lite tunt i reskassan? Du vet att vi alltid kan föra över en nöds slant om det kniper!"`
+        : `"Hej älskling! Är du ända borta i ${city.name} på dag ${state.day}? Glöm inte att äta ordentligt, spara på reskassan och samla dina stämplar i passet!"`;
+
+      const html = `
+        <div class="scene-fullscreen scene-hotel-desk" style="background-image:url(${getHotelPhoto(state.city)})">
+          <div class="room-top-bar">
+            <div class="sight-plaque">
+              <h3>HOTELLTELEFON · RINGA HEM TILL SVERIGE</h3>
+              <div class="sight-meta">Utlandssamtal från ${city.name} · Dag ${state.day} · Kassa: ${state.cash.toLocaleString('sv-SE')} kr</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="globe-brass-btn" onclick="window.GT.openHotelModal('reception')">« Till receptionen</button>
+              ${exitIconBtn('Ut på stan')}
+            </div>
+          </div>
+          <div class="room-counter-dock" style="display:flex; justify-content:center;">
+            <div class="modal-departure-board" style="max-width:640px; width:100%; border-color:#d4a64a;">
+              <div class="board-header">
+                <div class="board-title">TELEFONKOPPLING · ${city.name.toUpperCase()} ➔ SVERIGE</div>
+                <div class="board-ticket-css">RIKS / UTLAND</div>
+              </div>
+              <div style="padding:12px 6px; color:#f4ead6; font-family:Georgia,serif;">
+                <div style="background:rgba(255,248,230,0.1); border-left:3px solid #ffd875; padding:10px 12px; font-style:italic; font-size:13.5px; line-height:1.45; margin-bottom:10px;">
+                  ${tavernHtml || parentGreeting}
+                </div>
+                <div style="font-size:12px; color:#d8c4a0; margin-bottom:12px;">
+                  <b>Status hemifrån:</b> ${regionsVisited}/${goals.requiredRegions} världsdelar · ${state.competencies.length}/${goals.requiredCompetencies} yrkeskompetenser · ${state.stamps.length} stämplar · ${state.doneWonders.size} världsarv.
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                  ${canAskLoan ? `
+                    <button class="stamp-action-btn" onclick="window.GT.callHomeForMoney()">
+                      Be om nödpengar (+1 500 kr · ${callsLeft} kvar)
+                    </button>
+                  ` : `
+                    <span style="font-size:11.5px; color:#c4b08e;">
+                      ${(state.callsHomeUsed || 0) >= 2
+                        ? 'Du har redan utnyttjat båda dina nödlån hemifrån under den här resan.'
+                        : 'Nödlån hemifrån (+1 500 kr) kan begäras när din reskassa sjunker under 1 800 kr.'}
+                    </span>
+                  `}
+                  <button class="globe-brass-btn" onclick="window.GT.openHotelModal('reception')">Lägg på luren</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      showModal(html);
+      return;
+    }
+
+    // Receptionsscenen (stadsanpassat hotellfoto + fysisk mahognydisk med mässingsklocka, telefon & pubskylt!)
     const html = `
       <div class="scene-fullscreen scene-hotel-desk" style="background-image:url(${getHotelPhoto(state.city)})">
         <div class="room-top-bar">
@@ -3473,6 +3659,11 @@
 
           ${deliverCard}
 
+          <button class="tavern-door-sign" onclick="window.GT.openHotelModal('phone')">
+            <div class="sign-main">Ring hem till Sverige</div>
+            <div class="sign-sub">Hotelltelefon · Kolla resmål eller be om nödpengar</div>
+          </button>
+
           <button class="tavern-door-sign" onclick="window.GT.openHotelModal('tavern')">
             <div class="sign-main">Stig in i ${tavern.name} »</div>
             <div class="sign-sub">Prata med resenärer · Bjud på en runda · Stafettuppdrag</div>
@@ -3481,6 +3672,26 @@
       </div>
     `;
     showModal(html);
+  }
+
+  function callHomeForMoney() {
+    if ((state.callsHomeUsed || 0) >= 2) {
+      showToast('Du har redan fått två nödlån hemifrån under denna resa.', 2600);
+      return;
+    }
+    if (state.cash >= 1800) {
+      showToast('Du har gott om reskassa kvar! Nödlån behövs först under 1 800 kr.', 2600);
+      return;
+    }
+    state.callsHomeUsed = (state.callsHomeUsed || 0) + 1;
+    changeCash(1500, 'Nödpengar hemifrån (telefonsamtal)');
+    addJournal(`Ringde hem till Sverige från ${W.cities[state.city]?.name || state.city} och fick 1 500 kr i nödpengar insatt på reskassan.`);
+    AudioMgr.play('cash');
+    saveGame();
+    const reply = state.callsHomeUsed === 1
+      ? `"Självklart hjälper vi till, ${state.playerFirstName}! Vi förde just över 1 500 kr till ditt konto. Ta gärna ett jobbpass i lokaltidningen också så pengarna räcker hela vägen hem!"`
+      : `"Okej då, sista nöds lanten på 1 500 kr är på väg! Nu får du lova att pruta smart på basaren och jobba ihop resten själv. Vi håller tummarna!"`;
+    openHotelModal('phone', reply);
   }
 
   function tavernListen() {
@@ -3712,15 +3923,17 @@
       });
     }
 
+    const tierNames = { 1: 'Liten gul dagstursryggsäck', 2: 'Reseduffelbag', 3: 'Stor vandringsryggsäck' };
+    const bagTitle = tierNames[state.backpackLevel] || tierNames[1];
     const html = `
       <div class="scene-fullscreen scene-passport-full">
         <div style="width:100%; height:100%; display:flex; flex-direction:column; padding:14px 20px; gap:10px;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div class="sight-plaque">
-              <h3>DIN VANDRINGSRYGGSÄCK (${state.backpack.length} / ${getMaxBackpackSlots()} PLATSER)</h3>
-              <div class="sight-meta">Dra på ryggsäcken för att snurra 3D-modellen · Packning & kurirpaket</div>
+              <h3>${bagTitle.toUpperCase()} (${state.backpack.length} / ${getMaxBackpackSlots()} PLATSER)</h3>
+              <div class="sight-meta">Nivå ${state.backpackLevel}/3 · Dra på väskan för att snurra 3D-modellen · Packning &amp; kurirpaket</div>
             </div>
-            ${exitIconBtn('Stäng ryggsäcken')}
+            ${exitIconBtn('Stäng packningen')}
           </div>
 
           <div style="flex:1; min-height:0; display:grid; grid-template-columns: 320px 1fr; gap:16px; align-items:center;">
@@ -3739,7 +3952,7 @@
 
     const bpCanvas = document.getElementById('backpackModalCanvas');
     if (bpCanvas && window.Backpack3DRenderer) {
-      const bp3d = new window.Backpack3DRenderer(bpCanvas, { interactive: true, zoom: 4.2, speed: 0.012 });
+      const bp3d = new window.Backpack3DRenderer(bpCanvas, { interactive: true, tier: state.backpackLevel, zoom: 4.2, speed: 0.012 });
       const loop = () => {
         if (el.modalOverlay.classList.contains('hidden') || !document.getElementById('backpackModalCanvas')) {
           cancelAnimationFrame(backpackAnimFrameId);
@@ -4246,6 +4459,7 @@
     state.discoveredPlaces = new Set();
     state.backpackLevel = 1;
     state.mailedHome = [];
+    state.callsHomeUsed = 0;
     state.goals = generateJourneyGoals();
     const goalNames = state.goals.souvenirCities.map(ck => W.cities[ck]?.name || ck).join(', ');
     const startName = W.cities[W.startCity]?.name || 'Malmö';
@@ -4396,6 +4610,7 @@
     startTravel,
     resolveTravelEvent,
     openHotelModal,
+    callHomeForMoney,
     tavernListen,
     tavernBuyRound,
     acceptRelayQuest,
@@ -4409,8 +4624,9 @@
     continueSavedGame,
     toggleSound() {
       const active = AudioMgr.toggle();
+      if (window.AmbientMgr) window.AmbientMgr.setEnabled(active);
       el.btnSound.textContent = active ? 'LJUD: PÅ' : 'LJUD: AV';
-      showToast(active ? "Ljud påslaget" : "Ljud avstängt", 1200);
+      showToast(active ? "Ljud & musik påslaget" : "Ljud & musik avstängt", 1200);
     }
   };
 
@@ -4435,18 +4651,20 @@
     requestAnimationFrame(spinLoop);
   }
 
-  // Starta en ständigt snurrande 3D-vandringsryggsäck i dockan (BackPacker 1-koffertkänsla!)
+  // Starta en ständigt snurrande 3D-väska i dockan (byts automatiskt mellan Tier 1, 2 och 3!)
+  let dockMiniBackpackRenderer = null;
   function initDockMiniBackpack() {
     const bpCanvas = document.getElementById('dockMiniBackpack');
     if (!bpCanvas || !window.Backpack3DRenderer) return;
-    const miniPack = new window.Backpack3DRenderer(bpCanvas, {
+    dockMiniBackpackRenderer = new window.Backpack3DRenderer(bpCanvas, {
       interactive: false,
-      zoom: 2.85,
+      tier: state.backpackLevel,
+      zoom: 2.95,
       pitch: 0.14,
       speed: 0.018
     });
     const spinLoop = () => {
-      miniPack.render();
+      dockMiniBackpackRenderer.render();
       requestAnimationFrame(spinLoop);
     };
     requestAnimationFrame(spinLoop);

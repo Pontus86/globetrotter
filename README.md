@@ -48,5 +48,5 @@ Spelet är byggt helt utan upphovsrättsskyddat material från äldre kommersiel
 - **Foton, historiska kartor och flaggor:** Wikimedia Commons / Wikipedia (Public Domain, CC0, CC BY, CC BY-SA)
 - **Jordglobens texturer och höjddata:** NASA Visible Earth / Blue Marble & SRTM (Public Domain)
 - **Landsgränser på jordgloben:** Natural Earth 110m (Public Domain)
-- **3D-modell (Backpack):** DailyArt / Sketchfab (CC BY-NC)
+- **3D-modeller (Ryggsäckar & Duffelbag):** Yellow Backpack av Jungle Jim / Sketchfab (CC BY), Duffle Bag av MadeByYeshe / Sketchfab (CC BY) och Hiking Backpack av DailyArt / Sketchfab (CC BY-NC)
 - **Typsnitt:** Google Fonts (Playfair Display, Lora, Special Elite)
