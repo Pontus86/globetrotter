@@ -244,7 +244,9 @@
       this.doneWonders = options.doneWonders || null;
       this.goalCities = options.goalCities || null; // [{ key, done }]
       this.showRoutes = options.showRoutes !== false;
-      this.selectedCityKey = null; // Visar namnskylt vid tap/klick (särskilt för mobil!)
+      this.labelMode = options.labelMode || 'off'; // 'off' | 'routes'
+      this.onCitySelect = options.onCitySelect || null;
+      this.selectedCityKey = null; // Visar namnskylt & tapp-kort vid tap/klick (särskilt för mobil!)
       this.pinMarker = null;   // { lat, lon, label, color }
       this.targetMarker = null; // { lat, lon, label, color }
 
@@ -414,10 +416,10 @@
                 return;
               }
             }
-            // Kolla om spelaren tryckte/klickade på en stadsprick (tänder etiketten bara för den staden)
+            // Kolla om spelaren tryckte/klickade på en stadsprick (tänder etiketten & öppnar tapp-kortet!)
             if (!this.quizMode && window.GT_WORLD && window.GT_WORLD.cities) {
               let bestCity = null;
-              let bestDist = 20;
+              let bestDist = 24;
               Object.entries(window.GT_WORLD.cities).forEach(([cKey, cObj]) => {
                 const p = this.project(cObj.lat, cObj.lon);
                 if (!p.visible) return;
@@ -428,6 +430,7 @@
                 }
               });
               this.selectedCityKey = bestCity;
+              if (this.onCitySelect) this.onCitySelect(bestCity);
             }
             if (this.onGlobeClick) {
               const ll = this.unproject(sx, sy);
@@ -1010,55 +1013,72 @@
           ctx.restore();
         });
 
-        // Rita namnskylt ENBART för den stad användaren hovrar över eller trycker på!
-        if (!this.mini && activeLabelKey && window.GT_WORLD.cities[activeLabelKey]) {
-          const city = window.GT_WORLD.cities[activeLabelKey];
+        // Hjälpare för att rita en kompakt namnskylt
+        const drawCityLabel = (cKey, highlight = false) => {
+          const city = window.GT_WORLD.cities[cKey];
+          if (!city) return;
           const proj = this.project(city.lat, city.lon);
-          if (proj.visible) {
-            const isCurrent = (activeLabelKey === currentCityKey);
-            const cityEvent = activeEvents && activeEvents.find(ev => ev.city === activeLabelKey);
-            const goalEntry = Array.isArray(this.goalCities) ? this.goalCities.find(g => g.key === activeLabelKey) : null;
-            const label = `${city.name}${city.country ? `, ${city.country}` : ''}`;
+          if (!proj.visible) return;
+          const isCurrent = (cKey === currentCityKey);
+          const cityEvent = activeEvents && activeEvents.find(ev => ev.city === cKey);
+          const goalEntry = Array.isArray(this.goalCities) ? this.goalCities.find(g => g.key === cKey) : null;
+          const label = highlight && city.country ? `${city.name}, ${city.country}` : city.name;
 
-            ctx.save();
-            const fontSize = 12.5;
-            ctx.font = `bold ${fontSize}px Georgia, serif`;
-            const textW = ctx.measureText(label).width;
-            const boxH = fontSize + 8;
-            const boxX = Math.min(this.canvas.width - textW - 18, Math.max(8, proj.x + 12));
-            const boxY = Math.max(8, proj.y - boxH / 2);
+          ctx.save();
+          const fontSize = highlight ? 12.5 : 10.5;
+          ctx.font = `${(highlight || isCurrent || goalEntry) ? 'bold ' : ''}${fontSize}px Georgia, serif`;
+          const textW = ctx.measureText(label).width;
+          const boxH = fontSize + 7;
+          const boxX = Math.min(this.canvas.width - textW - 18, Math.max(8, proj.x + 11));
+          const boxY = Math.max(8, proj.y - boxH / 2);
 
-            ctx.fillStyle = 'rgba(14, 11, 8, 0.94)';
-            ctx.fillRect(boxX, boxY, textW + 12, boxH);
-            ctx.strokeStyle = isCurrent ? '#e9b949' : (goalEntry ? '#ff9f43' : (cityEvent ? cityEvent.color : 'rgba(244, 234, 214, 0.7)'));
-            ctx.lineWidth = 1.3;
-            ctx.strokeRect(boxX, boxY, textW + 12, boxH);
-            ctx.fillStyle = isCurrent ? '#ffd875' : '#f7f0e2';
-            ctx.fillText(label, boxX + 6, boxY + fontSize + 1);
+          ctx.fillStyle = highlight ? 'rgba(14, 11, 8, 0.95)' : 'rgba(14, 11, 8, 0.84)';
+          ctx.fillRect(boxX, boxY, textW + 10, boxH);
+          ctx.strokeStyle = isCurrent ? '#e9b949' : (goalEntry ? '#ff9f43' : (highlight ? '#8cd7ff' : 'rgba(244, 234, 214, 0.5)'));
+          ctx.lineWidth = highlight ? 1.4 : 0.9;
+          ctx.strokeRect(boxX, boxY, textW + 10, boxH);
+          ctx.fillStyle = isCurrent ? '#ffd875' : (goalEntry ? '#ffcf87' : '#f7f0e2');
+          ctx.fillText(label, boxX + 5, boxY + fontSize + 0.5);
 
-            if (goalEntry && !this.flightAnimation) {
-              ctx.font = 'bold 9.5px sans-serif';
-              const gText = goalEntry.done ? '✓ MÅL KLART' : '★ PASSMÅL';
-              const gW = ctx.measureText(gText).width;
-              ctx.fillStyle = goalEntry.done ? 'rgba(18, 52, 28, 0.95)' : 'rgba(66, 32, 10, 0.95)';
-              ctx.fillRect(boxX, boxY + boxH + 2, gW + 10, 15);
-              ctx.strokeStyle = goalEntry.done ? '#66e38c' : '#ff9f43';
-              ctx.strokeRect(boxX, boxY + boxH + 2, gW + 10, 15);
-              ctx.fillStyle = goalEntry.done ? '#8cf0a4' : '#ffd875';
-              ctx.fillText(gText, boxX + 5, boxY + boxH + 12.5);
-            } else if (cityEvent && !this.flightAnimation) {
-              ctx.font = 'bold 10px sans-serif';
-              const evText = `* ${cityEvent.title}`;
-              const evW = ctx.measureText(evText).width;
-              ctx.fillStyle = 'rgba(18, 12, 8, 0.94)';
-              ctx.fillRect(boxX, boxY + boxH + 2, evW + 10, 15);
-              ctx.strokeStyle = cityEvent.color || '#e9b949';
-              ctx.strokeRect(boxX, boxY + boxH + 2, evW + 10, 15);
-              ctx.fillStyle = cityEvent.color || '#ffd27a';
-              ctx.fillText(evText, boxX + 5, boxY + boxH + 13);
-            }
-            ctx.restore();
+          if (highlight && goalEntry && !this.flightAnimation) {
+            ctx.font = 'bold 9.5px sans-serif';
+            const gText = goalEntry.done ? '✓ MÅL KLART' : '★ PASSMÅL';
+            const gW = ctx.measureText(gText).width;
+            ctx.fillStyle = goalEntry.done ? 'rgba(18, 52, 28, 0.95)' : 'rgba(66, 32, 10, 0.95)';
+            ctx.fillRect(boxX, boxY + boxH + 2, gW + 10, 15);
+            ctx.strokeStyle = goalEntry.done ? '#66e38c' : '#ff9f43';
+            ctx.strokeRect(boxX, boxY + boxH + 2, gW + 10, 15);
+            ctx.fillStyle = goalEntry.done ? '#8cf0a4' : '#ffd875';
+            ctx.fillText(gText, boxX + 5, boxY + boxH + 12.5);
+          } else if (highlight && cityEvent && !this.flightAnimation) {
+            ctx.font = 'bold 10px sans-serif';
+            const evText = `* ${cityEvent.title}`;
+            const evW = ctx.measureText(evText).width;
+            ctx.fillStyle = 'rgba(18, 12, 8, 0.94)';
+            ctx.fillRect(boxX, boxY + boxH + 2, evW + 10, 15);
+            ctx.strokeStyle = cityEvent.color || '#e9b949';
+            ctx.strokeRect(boxX, boxY + boxH + 2, evW + 10, 15);
+            ctx.fillStyle = cityEvent.color || '#ffd27a';
+            ctx.fillText(evText, boxX + 5, boxY + boxH + 13);
           }
+          ctx.restore();
+        };
+
+        // Läge 'routes': visa bara nuvarande stad + dina 3 passmål + direktförbindelser härifrån (aldrig alla 67!)
+        if (!this.mini && this.labelMode === 'routes' && !this.flightAnimation) {
+          const shownKeys = new Set([currentCityKey]);
+          if (Array.isArray(this.goalCities)) this.goalCities.forEach(g => shownKeys.add(g.key));
+          if (window.GT_ROUTES && currentCityKey) {
+            window.GT_ROUTES.getAllOutgoingEdges(window.GT_WORLD, currentCityKey).forEach(k => shownKeys.add(k));
+          }
+          shownKeys.forEach(k => {
+            if (k && k !== activeLabelKey) drawCityLabel(k, false);
+          });
+        }
+
+        // Rita alltid tydlig namnskylt för den stad användaren hovrar över eller trycker på!
+        if (!this.mini && activeLabelKey && window.GT_WORLD.cities[activeLabelKey]) {
+          drawCityLabel(activeLabelKey, true);
         }
       }
 

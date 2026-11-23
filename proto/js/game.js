@@ -2848,6 +2848,7 @@
             <div class="globe-sub">AVVERKAD STRÄCKA: <b style="color:#8cf0a4;">${totalDist.toLocaleString('sv-SE')} KM</b> · <b style="color:#ffd875;">★ ${state.doneWonders.size}/${Object.keys(W.wonders).length} VÄRLDSARV</b> (KLICKA PÅ ★)</div>
           </div>
           <div class="globe-top-actions">
+            <button class="globe-brass-btn" id="globeToggleLabelsBtn" style="padding:6px 10px; font-size:11px; white-space:nowrap;" title="Visa eller dölj namn för mål och direktrutter">🏷️ Namn: AV</button>
             ${(state.bots && state.bots.length > 0) ? `<button class="globe-brass-btn" id="globeToggleBotsBtn" style="padding:6px 10px; font-size:11px; white-space:nowrap;">🤖 Bottar: PÅ</button>` : ''}
             <button class="bp-icon-close-btn zoom-btn" id="globeZoomInBtn" title="Zooma in" aria-label="Zooma in">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">
@@ -2865,6 +2866,7 @@
         </div>
 
         <div class="globe-overlay-bottom">
+          <div id="globeCityCard" class="hidden" style="margin-bottom:6px; padding:8px 12px; background:rgba(16,11,7,0.95); border:1.5px solid #c99a45; border-radius:6px; color:#f4ead6; font-size:12px; box-shadow:0 6px 20px rgba(0,0,0,0.75);"></div>
           <div class="globe-info-strip">
             <div><b style="color:#ffd875;">Avverkade etapper:</b> ${routesSummary}</div>
             ${goalQuickHtml}
@@ -2885,12 +2887,83 @@
       const isPortrait = ch > cw;
       const autoRadius = Math.round(Math.min(cw, ch) * (isPortrait ? 0.43 : 0.42));
 
+      const renderGlobeCityCard = (cityKey) => {
+        const cardEl = document.getElementById('globeCityCard');
+        if (!cardEl) return;
+        if (!cityKey || !W.cities[cityKey]) {
+          cardEl.classList.add('hidden');
+          cardEl.innerHTML = '';
+          return;
+        }
+        const c = W.cities[cityKey];
+        const isHere = cityKey === state.city;
+        const dist = isHere ? 0 : getDistanceBetweenCities(state.city, cityKey);
+        const directFromHere = !isHere && ROUTES.getAllOutgoingEdges(W, state.city).includes(cityKey);
+        const goalItem = goalCitiesList.find(g => g.key === cityKey);
+        const isStamped = state.stamps.includes(cityKey);
+        const outEdges = ROUTES.getAllOutgoingEdges(W, cityKey).slice(0, 8);
+        const outPills = outEdges.map(ok => {
+          const oc = W.cities[ok];
+          if (!oc) return '';
+          return `<button type="button" class="globe-brass-btn" data-card-jump="${ok}" style="padding:2px 7px; font-size:10px;">${oc.name}</button>`;
+        }).join('');
+
+        cardEl.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+            <div>
+              <div style="font-family:Georgia,serif; font-size:14px; font-weight:bold; color:#ffd875;">
+                ${c.name} <span style="font-weight:normal; font-size:11.5px; color:#d8c4a0;">· ${c.country} (${c.region})</span>
+                ${goalItem ? `<span style="margin-left:5px; font-size:10px; padding:1px 6px; border-radius:3px; background:${goalItem.done ? '#1c542b' : '#7a3e0e'}; color:${goalItem.done ? '#8cf0a4' : '#ffd875'};">${goalItem.done ? '✓ MÅL KLART' : '★ PASSMÅL'}</span>` : ''}
+                ${isStamped ? `<span style="margin-left:4px; font-size:10px; color:#8cf0a4;">✓ Stämplad</span>` : ''}
+              </div>
+              <div style="font-size:11px; color:#cbb997; margin-top:2px;">
+                ${isHere
+                  ? 'Du befinner dig här just nu.'
+                  : `${dist.toLocaleString('sv-SE')} km från ${W.cities[state.city]?.name || state.city}${directFromHere ? ' · <b style="color:#8cf0a4;">✓ Direktförbindelse härifrån!</b>' : ''}`}
+              </div>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+              ${directFromHere ? `<button type="button" class="stamp-action-btn" style="padding:4px 10px; font-size:11px;" onclick="window.GT.openTravelModal('air')">Till avgångar »</button>` : ''}
+              <button type="button" class="globe-brass-btn" id="globeCityCardClose" style="padding:2px 8px; font-size:11px;" title="Stäng">✕</button>
+            </div>
+          </div>
+          ${outPills ? `<div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:4px; align-items:center;"><span style="font-size:10.5px; color:#9ec7a6;">Förbindelser från ${c.name}:</span>${outPills}</div>` : ''}
+        `;
+        cardEl.classList.remove('hidden');
+
+        const closeBtn = document.getElementById('globeCityCardClose');
+        if (closeBtn) {
+          closeBtn.onclick = () => {
+            activeGlobeRenderer.selectedCityKey = null;
+            renderGlobeCityCard(null);
+          };
+        }
+        cardEl.querySelectorAll('[data-card-jump]').forEach(btn => {
+          btn.onclick = () => {
+            const jk = btn.dataset.cardJump;
+            const jc = jk && W.cities[jk];
+            if (jc) {
+              stopSpin();
+              activeGlobeRenderer.selectedCityKey = jk;
+              activeGlobeRenderer.focusOn(jc.lat, jc.lon, null, Math.max(250, activeGlobeRenderer.radius), 550);
+              renderGlobeCityCard(jk);
+              AudioMgr.play('klick');
+            }
+          };
+        });
+      };
+
       activeGlobeRenderer = new window.GlobeRenderer(canvas, {
         radius: autoRadius,
         doneWonders: state.doneWonders,
         goalCities: goalCitiesList,
         showRoutes: true,
-        onWonderClick: (wKey, w) => openWonderModal(wKey, w)
+        labelMode: 'off',
+        onWonderClick: (wKey, w) => openWonderModal(wKey, w),
+        onCitySelect: (cKey) => {
+          renderGlobeCityCard(cKey);
+          if (cKey) AudioMgr.play('klick');
+        }
       });
       activeGlobeRenderer.focusBotId = focusBotId || null;
       const focusBot = focusBotId ? (state.bots || []).find(b => b.id === focusBotId) : null;
@@ -2918,11 +2991,22 @@
           const gc = gKey && W.cities[gKey];
           if (gc) {
             stopSpin();
+            activeGlobeRenderer.selectedCityKey = gKey;
             activeGlobeRenderer.focusOn(gc.lat, gc.lon, null, Math.max(260, activeGlobeRenderer.radius), 600);
+            renderGlobeCityCard(gKey);
             AudioMgr.play('klick');
           }
         };
       });
+
+      const toggleLabelsBtn = document.getElementById('globeToggleLabelsBtn');
+      if (toggleLabelsBtn) {
+        toggleLabelsBtn.onclick = () => {
+          activeGlobeRenderer.labelMode = activeGlobeRenderer.labelMode === 'routes' ? 'off' : 'routes';
+          toggleLabelsBtn.textContent = activeGlobeRenderer.labelMode === 'routes' ? '🏷️ Namn: RUTTER & MÅL' : '🏷️ Namn: AV';
+          AudioMgr.play('klick');
+        };
+      }
 
       document.querySelectorAll('[data-bot-focus]').forEach(btn => {
         btn.onclick = () => {
