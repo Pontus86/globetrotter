@@ -59,8 +59,8 @@ fickorna fulla av historier.*
 > mindre om hur snabbt du reser än om **vad du har gjort och lärt dig** på
 > vägen. Du får ett pass, en liten startkassa och en tom ryggsäck.
 
-- **Tidsgräns:** 80 dagar är ett startvärde och ska testas. Minimalspelet
-  använder en kortare gräns.
+- **Tidsgräns:** 80 dagar var det ursprungliga startvärdet. I spelet idag är
+  standard 30 dagar (20 och 45 kan väljas vid ny resa).
 - **Antagningsgrad:** hur bra resan blev räknas fram när du kommer hem, inte
   bara om du klarade det. Förslag på grader: *Turist → Resenär → Upptäckare →
   Globetrotter*.

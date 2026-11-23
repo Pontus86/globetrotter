@@ -9,136 +9,12 @@
     return;
   }
 
-  // --- 100 % egen Web Audio-ljudmotor (mysiga 90-tals-ljud & foley — noll upphovsrättsskyddade ljudfiler!) ---
-  const AudioMgr = {
-    enabled: true,
-    ctx: null,
-    getCtx() {
-      if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
-        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
-      return this.ctx;
-    },
-    tone(freq, startOffset, dur, type = 'sine', vol = 0.12, endFreq = null) {
-      const ctx = this.getCtx();
-      if (!ctx) return;
-      const t = ctx.currentTime + startOffset;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, t);
-      if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, t + dur);
-      gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.linearRampToValueAtTime(vol, t + Math.min(0.015, dur * 0.2));
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(t);
-      osc.stop(t + dur + 0.02);
-    },
-    noise(dur, filterFreq, vol = 0.14, filterType = 'bandpass', startOffset = 0) {
-      const ctx = this.getCtx();
-      if (!ctx) return;
-      const t = ctx.currentTime + startOffset;
-      const bufLen = Math.max(1, Math.floor(ctx.sampleRate * dur));
-      const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
-      const data = buf.getChannelData(0);
-      for (let i = 0; i < bufLen; i++) {
-        const env = Math.sin((i / bufLen) * Math.PI);
-        data[i] = (Math.random() * 2 - 1) * env * vol;
-      }
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-      const filter = ctx.createBiquadFilter();
-      filter.type = filterType;
-      filter.frequency.value = filterFreq;
-      src.connect(filter);
-      filter.connect(ctx.destination);
-      src.start(t);
-    },
-    play(soundName) {
-      if (!this.enabled) return;
-      try {
-        switch (soundName) {
-          case 'klick':
-            this.tone(620, 0, 0.035, 'triangle', 0.11, 240);
-            break;
-          case 'paper':
-            this.noise(0.14, 1850, 0.18, 'bandpass');
-            break;
-          case 'flap':
-            [0, 0.055, 0.115].forEach(o => this.tone(520, o, 0.04, 'triangle', 0.13, 140));
-            break;
-          case 'clink':
-            this.tone(1680, 0, 0.34, 'sine', 0.11);
-            this.tone(2520, 0.03, 0.36, 'sine', 0.09);
-            break;
-          case 'stamp':
-            this.tone(155, 0, 0.15, 'sine', 0.30, 44);
-            this.noise(0.06, 600, 0.12, 'lowpass', 0.02);
-            break;
-          case 'bell':
-            // Klar mässings-receptionsklocka med harmoniska övertoner
-            this.tone(1318, 0, 0.75, 'sine', 0.14);
-            this.tone(2637, 0, 0.55, 'sine', 0.07);
-            this.tone(3951, 0, 0.30, 'sine', 0.04);
-            break;
-          case 'cash_in':
-            this.tone(1046, 0, 0.12, 'triangle', 0.11);
-            this.tone(1568, 0.07, 0.22, 'sine', 0.12);
-            break;
-          case 'cash_out':
-            this.tone(784, 0, 0.09, 'triangle', 0.09);
-            this.tone(587, 0.06, 0.14, 'triangle', 0.09);
-            break;
-          case 'right1':
-          case 'right2':
-            this.tone(523, 0, 0.14, 'triangle', 0.12);
-            this.tone(659, 0.07, 0.16, 'triangle', 0.12);
-            this.tone(784, 0.14, 0.26, 'sine', 0.13);
-            break;
-          case 'wrong1':
-          case 'wrong2':
-            this.tone(290, 0, 0.16, 'triangle', 0.11, 240);
-            this.tone(220, 0.12, 0.24, 'triangle', 0.11, 185);
-            break;
-          case 'fanfar':
-            this.tone(523, 0, 0.14, 'triangle', 0.13);
-            this.tone(659, 0.11, 0.14, 'triangle', 0.13);
-            this.tone(784, 0.22, 0.16, 'triangle', 0.14);
-            this.tone(1046, 0.34, 0.48, 'triangle', 0.16);
-            break;
-          case 'hotel':
-            this.tone(523, 0, 0.25, 'sine', 0.10);
-            this.tone(659, 0.18, 0.25, 'sine', 0.10);
-            this.tone(587, 0.36, 0.42, 'sine', 0.09);
-            break;
-          case 'sight':
-            this.tone(440, 0, 0.10, 'sine', 0.09);
-            this.tone(660, 0.08, 0.18, 'sine', 0.10);
-            break;
-          case 'time':
-            this.tone(920, 0, 0.025, 'sine', 0.07, 620);
-            break;
-          case 'takeoff':
-            this.noise(1.1, 420, 0.12, 'lowpass');
-            this.tone(130, 0, 0.95, 'sawtooth', 0.035, 290);
-            break;
-          case 'ferry':
-            this.tone(98, 0, 0.95, 'sawtooth', 0.055, 92);
-            this.tone(147, 0.04, 0.90, 'triangle', 0.05, 140);
-            break;
-          default:
-            this.tone(520, 0, 0.05, 'triangle', 0.08);
-        }
-      } catch (e) {}
-    },
-    toggle() {
-      this.enabled = !this.enabled;
-      return this.enabled;
-    }
-  };
+  // --- Moduler (balans, ljud, rutter, ekonomi, quiz) ---
+  const BAL = window.GT_BALANCE || {};
+  const AudioMgr = window.GT_AUDIO || { enabled: true, play() {}, toggle() { return false; } };
+  const ROUTES = window.GT_ROUTES;
+  const ECON = window.GT_ECONOMY;
+  const QUIZ = window.GT_QUIZ;
 
   // --- Egna unika bläckstämplar för passet (100 % egen design med IATA-kod, land & sliten bläckstil) ---
   const CITY_STAMP_META = {
@@ -186,52 +62,22 @@
     `;
   }
 
-  // --- Geometri & Avstånd ---
+  // --- Geometri & Avstånd (delegeras till GT_ROUTES & GT_ECONOMY) ---
+  function homeCityName() {
+    return W.cities[W.startCity]?.name || 'startstaden';
+  }
+
   function calcDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371; // km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return Math.round(R * c);
+    return ROUTES.calcDistance(lat1, lon1, lat2, lon2);
   }
   const haversineKm = calcDistance;
 
   function getDistanceBetweenCities(cityKeyA, cityKeyB) {
-    const cA = W.cities[cityKeyA];
-    const cB = W.cities[cityKeyB];
-    if (!cA || !cB) return 0;
-    return calcDistance(cA.lat, cA.lon, cB.lat, cB.lon);
+    return ROUTES.getDistanceBetweenCities(W, cityKeyA, cityKeyB);
   }
 
-  // Avståndspris för souvenirer:
-  // - I ursprungsstaden: lokalt andrahandsvärde (55 %) för att förhindra köp-sälj-loopar.
-  // - Utomlands: grundpris × (1 + 0.15 × tusen km), max 3.0x.
   function calcSouvenirValue(souvenirKey, currentCityKey) {
-    const s = W.souvenirs[souvenirKey];
-    if (!s) return { price: 0, dist: 0, factor: 1, isLocal: false };
-    const originCityKey = s.origin;
-    if (originCityKey === currentCityKey) {
-      return {
-        price: Math.max(10, Math.round(s.price * 0.55)),
-        dist: 0,
-        factor: 0.55,
-        isLocal: true
-      };
-    }
-    let dist = 0;
-    if (W.cities[originCityKey] && W.cities[currentCityKey]) {
-      dist = getDistanceBetweenCities(originCityKey, currentCityKey);
-    }
-    const factor = Math.min(3.0, 1 + 0.15 * (dist / 1000));
-    return {
-      price: Math.round(s.price * factor),
-      dist,
-      factor,
-      isLocal: false
-    };
+    return ECON.calcSouvenirValue(W, souvenirKey, currentCityKey);
   }
 
   // --- Speltillstånd ---
@@ -256,7 +102,7 @@
     },
     deals: { kairo: 20 }, // Starta med ett sista-minuten-fynd så spelaren direkt ser REA-lappen!
     journal: [
-      { day: 1, text: `Avresa från ${W.cities[W.startCity]?.name || 'Malmö'} med nystämplat pass, tom ryggsäck och 10 000 kr i reskassan.` }
+      { day: 1, text: `Avresa från ${W.cities[W.startCity]?.name || 'Malmö'} med nystämplat pass, tom ryggsäck och ${(W.startCash || 4500).toLocaleString('sv-SE')} kr i reskassan.` }
     ],
     haggleState: {}, // { "city_day_item": { price, mood, locked } }
     completedRelays: new Set(),
@@ -284,19 +130,24 @@
     openContracts: [],
     claimedContracts: [],
     contractBonusPoints: 0,
-    claimedCitiesCount: 0
+    claimedCitiesCount: 0,
+    regionKnowledge: {}, // { europa: 36, asien: 12, ... } (0–100 %)
+    streak: 0 // Antal rätta svar i rad (Reseflyt)
   };
 
-  const BACKPACK_TIERS = [
-    { level: 1, slots: 2, name: 'Juicy Couture Daydreamer', price: 0, desc: 'Snygg men liten startväska med plats för 2 föremål.' },
-    { level: 2, slots: 5, name: 'Gul dagstursryggsäck', price: 950, desc: 'Smidig gul ryggsäck som rymmer 5 packplatser.' },
-    { level: 3, slots: 7, name: 'Reseduffelbag 65L', price: 1700, desc: 'Rymlig duffelbag med axelrem och 7 packplatser.' },
-    { level: 4, slots: 9, name: 'Stor vandringsryggsäck 85L', price: 2800, desc: 'Fullutrustad proffsryggsäck med sidofickor och hela 9 platser!' }
+  function getCurrentKnowledgeBonuses(cityKey = state.city) {
+    const c = W.cities[cityKey];
+    const reg = c ? ROUTES.normRegion(c.region) : '';
+    const pct = (state.regionKnowledge && reg) ? (state.regionKnowledge[reg] || 0) : 0;
+    return ECON.getKnowledgeBonuses(pct, state.streak || 0);
+  }
+
+  const BACKPACK_TIERS = BAL.BACKPACK_TIERS || [
+    { level: 1, slots: 4, name: 'Liten resväska', price: 0, desc: 'Smidig startväska med plats för 4 föremål.' }
   ];
 
   function getMaxBackpackSlots() {
-    const tier = BACKPACK_TIERS.find(t => t.level === (state.backpackLevel || 1)) || BACKPACK_TIERS[0];
-    return tier.slots;
+    return ECON.getMaxBackpackSlots(state.backpackLevel);
   }
 
   function hasGoalSouvenirFrom(cityKey) {
@@ -307,13 +158,14 @@
     return null;
   }
 
-  // Slumpar fram resans obligatoriska mål (BackPacker 1-stil):
-  // 3 olika utländska resmål från spridda världsdelar för souvenirer + 3 yrkeskompetenser.
+  // Slumpar fram resans obligatoriska mål — enbart bland städer som är 100 % nåbara tur-och-retur från startstaden!
   function generateJourneyGoals() {
-    const foreignKeys = Object.keys(W.cities).filter(k => k !== W.startCity && (W.cities[k].souvenirs || []).length > 0);
+    const reachable = ROUTES.getRoundTripReachableCities(W, W.startCity);
+    const candidatePool = reachable.length >= 3 ? reachable : Object.keys(W.cities).filter(k => k !== W.startCity);
+    const foreignKeys = candidatePool.filter(k => (W.cities[k].souvenirs || []).length > 0);
     const byRegion = {};
     foreignKeys.forEach(k => {
-      const reg = W.cities[k].region || 'Världen';
+      const reg = ROUTES.normRegion(W.cities[k].region);
       if (!byRegion[reg]) byRegion[reg] = [];
       byRegion[reg].push(k);
     });
@@ -346,132 +198,16 @@
   }
   ensureJourneyGoals();
 
-  // Förbereder mässingsmätaren så svaret inte alltid ligger nära mitten:
-  // slumpförskjuter skalan [min, max] så rätt svar hamnar på en oförutsägbar position (10–90 %),
-  // och startar alltid reglaget vid vänsterkanten så spelaren måste dra det själv.
-  function prepareNumericGauge(q) {
-    const step = q.step || 1;
-    const baseSpan = Math.max(step * 4, q.max - q.min);
-    const stepsCount = Math.max(4, Math.round(baseSpan / step));
-    const span = stepsCount * step;
-
-    // Slumpa var på skalan rätt svar hamnar (8 % – 92 %)
-    const targetFrac = 0.08 + Math.random() * 0.84;
-    let effMin = Math.round((q.ans - targetFrac * span) / step) * step;
-    if (q.min >= 0 && effMin < 0) effMin = 0;
-    let effMax = effMin + span;
-
-    // Låt inte årtalsfrågor glida in i framtiden
-    const isYear = q.unit === 'år' || (q.unit === '' && q.ans >= 1500 && q.ans <= 2025);
-    if (isYear && effMax > 2026) {
-      effMax = 2026;
-      effMin = Math.max(0, effMax - span);
-    }
-    if (q.ans < effMin) {
-      effMin = Math.max(0, Math.floor((q.ans - step) / step) * step);
-      effMax = effMin + span;
-    } else if (q.ans > effMax) {
-      effMax = Math.ceil((q.ans + step) / step) * step;
-      effMin = Math.max(0, effMax - span);
-    }
-
-    return { min: effMin, max: effMax, step, start: effMin };
-  }
-
-  // Bedömer drag-svar utifrån skalans faktiska spann (inte q.ans, som gjorde hela skalan rätt på årtal!)
-  function gradeNumericGauge(userVal, q, gMin, gMax) {
-    const span = Math.max(q.step || 1, gMax - gMin);
-    const diff = Math.abs(userVal - q.ans);
-    if (span <= 15) {
-      if (diff === 0) return 'exact';
-      if (diff <= 1) return 'close';
-      return 'miss';
-    }
-    const ratio = diff / span;
-    if (ratio <= 0.055) return 'exact';
-    if (ratio <= 0.11) return 'close';
-    return 'miss';
-  }
-
-  let lastPickedWasGlobe = false;
-
-  function normReg(r) {
-    return String(r || '').trim().toLowerCase();
-  }
-
-  // Plocka obesvarade svårare BackPacker-frågor (strikt matchade på stadens världsdel!)
   function pickHardQuestions(count, region = '') {
-    const pool = window.GT_HARD_QUESTIONS || [];
-    if (pool.length === 0 || count <= 0) return [];
-    const rNorm = normReg(region);
-    const regPool = rNorm ? pool.filter(q => normReg(q.region) === rNorm) : pool;
-    const basePool = regPool.length > 0 ? regPool : pool;
-    const unused = basePool.filter(q => !q.id || !state.usedQuestionIds.has(q.id));
-    const src = unused.length >= count ? unused : basePool;
-    return src.slice().sort(() => Math.random() - 0.5).slice(0, count).map(q => ({ ...q }));
+    return QUIZ.pickHardQuestions(state, count, region);
   }
 
-  // Plocka obesvarade interaktiva BackPacker-frågor (strikt matchade på stadens världsdel så man t.ex. aldrig får Puerto Rico i Italien!)
   function pickInteractiveQuestions(count, region = '') {
-    const pool = window.GT_INTERACTIVE_POOL || [];
-    if (pool.length === 0 || count <= 0) return [];
-    const rNorm = normReg(region);
-
-    // Filtrera strikt på världsdel om angiven (kartfrågor måste ALLTID tillhöra rätt världsdel!)
-    const regPool = rNorm ? pool.filter(q => normReg(q.region) === rNorm) : pool;
-    const nonGlobeFallback = pool.filter(q => q.t !== 'globe');
-    const basePool = regPool.length > 0 ? regPool : nonGlobeFallback;
-    const unused = basePool.filter(q => !q.id || !state.usedQuestionIds.has(q.id));
-    const src = unused.length >= count ? unused : basePool;
-
-    // Begränsa kartfrågor rejält: aldrig två gånger i rad och bara ca 25 % chans att en kartfråga ingår
-    const allowGlobe = !lastPickedWasGlobe && Math.random() < 0.25;
-    const filtered = allowGlobe ? src : src.filter(q => q.t !== 'globe');
-    const finalSrc = (filtered.length >= count ? filtered : src).slice().sort(() => Math.random() - 0.5);
-
-    const picked = [];
-    const usedTypes = new Set();
-    let globePicked = false;
-    for (const q of finalSrc) {
-      if (picked.length >= count) break;
-      if (q.t === 'globe' && globePicked) continue;
-      if (!usedTypes.has(q.t) || finalSrc.length - picked.length <= count - picked.length) {
-        picked.push({ ...q });
-        usedTypes.add(q.t);
-        if (q.t === 'globe') globePicked = true;
-      }
-    }
-    while (picked.length < count && finalSrc.length > picked.length) {
-      const next = finalSrc.find(q => !picked.some(p => p.id === q.id) && (q.t !== 'globe' || !globePicked));
-      if (!next) break;
-      picked.push({ ...next });
-      if (next.t === 'globe') globePicked = true;
-    }
-    lastPickedWasGlobe = globePicked;
-    return picked;
+    return QUIZ.pickInteractiveQuestions(state, count, region);
   }
 
-  // Hämta frågor från den centrala frågebanken (window.GT_QUESTIONS) med fall-back till inline
   function getQuestionsFor(cityKey, placeKey, fallbackList = []) {
-    const bank = window.GT_QUESTIONS || [];
-    const matching = bank.filter(q => q.place === placeKey && (!cityKey || q.city === cityKey));
-    const pool = matching.length > 0 ? matching : fallbackList;
-
-    // Prioritera obesvarade lokala frågor (3 per sevärdhet, 6 per jobb som i BackPacker 1 & 2!)
-    const unused = pool.filter(q => !q.id || !state.usedQuestionIds.has(q.id));
-    const source = unused.length > 0 ? unused : pool;
-    const maxCount = placeKey === 'job' ? 6 : 3;
-    let picked = source.slice().sort(() => Math.random() - 0.5).slice(0, maxCount).map(q => ({ ...q, t: q.type || q.t }));
-
-    // På sevärdheter: behåll alltid stadens lokala frågor i centrum; blanda bara ibland (30 %) in 1 utmanande fråga från SAMMA världsdel
-    const region = (cityKey && W.cities[cityKey] && W.cities[cityKey].region) || '';
-    if (placeKey !== 'job' && picked.length >= 3 && Math.random() < 0.30) {
-      const regionalHard = pickHardQuestions(1, region);
-      if (regionalHard.length > 0) {
-        picked[picked.length - 1] = regionalHard[0];
-      }
-    }
-    return picked;
+    return QUIZ.getQuestionsFor(W, state, cityKey, placeKey, fallbackList);
   }
 
   const SAVE_KEY = 'gt_save_v1';
@@ -523,7 +259,9 @@
         openContracts: state.openContracts || [],
         claimedContracts: state.claimedContracts || [],
         contractBonusPoints: state.contractBonusPoints || 0,
-        claimedCitiesCount: state.claimedCitiesCount || 0
+        claimedCitiesCount: state.claimedCitiesCount || 0,
+        regionKnowledge: state.regionKnowledge || {},
+        streak: state.streak || 0
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
     } catch (e) {}
@@ -593,6 +331,8 @@
     state.claimedContracts = Array.isArray(d.claimedContracts) ? d.claimedContracts : [];
     state.contractBonusPoints = d.contractBonusPoints || 0;
     state.claimedCitiesCount = d.claimedCitiesCount || 0;
+    state.regionKnowledge = (d.regionKnowledge && typeof d.regionKnowledge === 'object') ? d.regionKnowledge : {};
+    state.streak = Number(d.streak) || 0;
     window.GT_ACTIVE_BOTS = state.bots;
     window.GT_CITY_CLAIMS = state.cityClaims;
     ensureJourneyGoals();
@@ -740,13 +480,32 @@
     return state.backpack.some(item => item.id === itemId);
   }
 
-  // Kontrollera om staden blev gjord (visas INTE på meny i förväg – belönas med stämpel & först-på-plats-inmutning!)
+  // Kontrollera om staden blev gjord — ger pass-stämpel + gratis hotellnatt + 20 % avgångsrabatt!
   function checkCityCompletion() {
     const current = W.cities[state.city];
     if (!current) return;
     const allDone = current.highlights.every(h => state.donePlaces.has(h));
     if (allDone && !state.stamps.includes(state.city)) {
       state.stamps.push(state.city);
+
+      // Verklig resenytta av att "göra" en stad: gratis hotellnatt (eller +250 kr) + 20 % avgångsrabatt!
+      let hotelRewardTxt = '';
+      if (!state.freeHotelCities.has(state.city)) {
+        state.freeHotelCities.add(state.city);
+        hotelRewardTxt = `1 gratis hotellnatt i ${current.name}`;
+      } else {
+        changeCash(250, `Stämpelbonus i ${current.name}`);
+        hotelRewardTxt = `+250 kr i resenärsbonus`;
+      }
+      const outPool = getCityRoutePool(state.city).map(r => r.to);
+      let dealCityName = '';
+      if (outPool.length > 0) {
+        const dealTarget = outPool[Math.floor(Math.random() * outPool.length)];
+        state.deals[dealTarget] = Math.max(state.deals[dealTarget] || 0, 20);
+        state.departureBoard = null;
+        dealCityName = W.cities[dealTarget]?.name || dealTarget;
+      }
+
       let firstClaimBonus = false;
       if (!state.cityClaims) state.cityClaims = {};
       if (!state.cityClaims[state.city]) {
@@ -759,21 +518,24 @@
         };
         window.GT_CITY_CLAIMS = state.cityClaims;
         state.claimedCitiesCount = (state.claimedCitiesCount || 0) + 1;
-        changeCash(400, `Först-på-plats-bonus i ${current.name}`);
-        addJournal(`Mutade in ${current.name} som första resenär (+400 kr & egen flagga på jordgloben)!`);
+        changeCash(BAL.FIRST_CLAIM_BONUS || 250, `Först-på-plats-bonus i ${current.name}`);
+        addJournal(`Mutade in ${current.name} som första resenär (+${BAL.FIRST_CLAIM_BONUS || 250} kr & egen flagga på jordgloben)!`);
         firstClaimBonus = true;
       }
       checkPlayerOpenContracts();
-      triggerStampCelebration(current, firstClaimBonus);
+      triggerStampCelebration(current, firstClaimBonus, hotelRewardTxt, dealCityName);
     }
   }
 
-  function triggerStampCelebration(city, firstClaimBonus = false) {
+  function triggerStampCelebration(city, firstClaimBonus = false, hotelRewardTxt = '', dealCityName = '') {
     AudioMgr.play('stamp');
     AudioMgr.play('fanfar');
     const cityKey = Object.keys(W.cities).find(k => W.cities[k] === city) || state.city;
     const claimHtml = firstClaimBonus
-      ? `<div style="margin:8px auto; padding:6px 12px; background:#fff4d2; border:2px solid #c99a45; border-radius:6px; color:#7a4f12; font-size:12.5px; max-width:420px;"><b>🚩 FÖRST PÅ PLATS!</b> Du mutade in ${city.name} före alla andra (+400 kr &amp; gul flagga på jordgloben)!</div>`
+      ? `<div style="margin:8px auto; padding:6px 12px; background:#fff4d2; border:2px solid #c99a45; border-radius:6px; color:#7a4f12; font-size:12.5px; max-width:420px;"><b>🚩 FÖRST PÅ PLATS!</b> Du mutade in ${city.name} före alla andra (+${BAL.FIRST_CLAIM_BONUS || 250} kr &amp; gul flagga på jordgloben)!</div>`
+      : '';
+    const perkHtml = (hotelRewardTxt || dealCityName)
+      ? `<div style="margin:8px auto; padding:7px 12px; background:#edf7ee; border:2px solid #2f7d43; border-radius:6px; color:#1c542b; font-size:12.5px; max-width:420px;"><b>★ RESENÄRSBELÖNING:</b> ${hotelRewardTxt}${dealCityName ? ` + <b>20 % rabatt</b> på flyg mot ${dealCityName}!` : '!'}</div>`
       : '';
 
     const html = `
@@ -784,6 +546,7 @@
           <p style="font-size:16px; font-weight:600; color:#2f7d43; margin:0;">
             Du har gjort alla höjdpunkter i ${city.name}!
           </p>
+          ${perkHtml}
           ${claimHtml}
           <p style="font-size:13px; color:#5b3b1c; max-width:440px;">
             Staden räknas nu som officiellt gjord. Stämpeln har förts in i ditt officiella pass.
@@ -849,6 +612,13 @@
 
     // Event-remsa på stadsskylten om något pågår just i denna stad (döljs ute på världsarv)
     const cityEv = !state.activeWonder ? getCityEvent(state.city) : null;
+    if (el.cityRegion && !state.activeWonder && W.cities[state.city]) {
+      const c = W.cities[state.city];
+      const kb = getCurrentKnowledgeBonuses(state.city);
+      const perkTag = kb.tier === 2 ? ' (+30% lön, -10% resa)' : (kb.tier === 1 ? ' (+15% lön)' : '');
+      const streakTag = kb.streakActive ? ` · 🔥 Flyt ×${state.streak}` : '';
+      el.cityRegion.textContent = `${c.country} · ${c.region.toUpperCase()} · Kunskap ${kb.pct}%${perkTag}${streakTag}`;
+    }
     if (el.cityEventRibbon) {
       if (cityEv) {
         el.cityEventRibbon.textContent = `★ ${cityEv.title}: ${cityEv.effectText}`;
@@ -875,7 +645,8 @@
     state.visitedCities.add(state.city);
 
     // Byt bakgrundsmontage
-    el.mapLayer.style.backgroundImage = `url(${city.map || 'assets/maps/map1914a.jpg'})`;
+    // Bara städer med en egen karta visar en; andra visar enbart stadsfotot (ingen annans karta som fallback).
+    el.mapLayer.style.backgroundImage = city.map ? `url(${city.map})` : 'none';
     el.photoLayer.style.backgroundImage = `url(${city.skyline || 'assets/skylines/skyline.jpg'})`;
 
     // Titlar
@@ -885,14 +656,14 @@
     // Unik landstypisk stil på stadsskylten uppe till vänster!
     const badgeEl = document.querySelector('.city-plate');
     if (badgeEl) {
-      const themeMap = {
-        malmo: 'theme-se', stockholm: 'theme-se', kairo: 'theme-eg', delhi: 'theme-in',
-        tokyo: 'theme-jp', sanfrancisco: 'theme-us', newyork: 'theme-us', paris: 'theme-fr',
-        rom: 'theme-it', london: 'theme-gb', istanbul: 'theme-tr', bangkok: 'theme-th',
-        peking: 'theme-cn', sydney: 'theme-au', kapstaden: 'theme-za', rio: 'theme-br',
-        mexicocity: 'theme-mx'
-      };
-      badgeEl.className = `city-plate city-badge ${themeMap[state.city] || 'theme-se'}`;
+      // Skylttema efter stadens land (via flaggkoden). Länder utan eget tema får den neutrala skylten.
+      const THEMED_COUNTRIES = ['se', 'eg', 'in', 'jp', 'us', 'fr', 'it', 'gb', 'tr', 'th', 'cn', 'au', 'za', 'br', 'mx'];
+      const facts = window.GT_COUNTRY_FACTS || {};
+      // Faktadatan är nycklad på stad eller landsnamn; annars lånas flaggan från en annan stad i samma land.
+      const sameCountryKey = Object.keys(W.cities).find(k => W.cities[k].country === city.country && facts[k] && facts[k].flag);
+      const flagPath = (facts[state.city] || facts[city.country] || facts[sameCountryKey] || {}).flag || '';
+      const cc = (flagPath.match(/\/([a-z]{2})\.png$/) || [])[1];
+      badgeEl.className = `city-plate city-badge${THEMED_COUNTRIES.includes(cc) ? ` theme-${cc}` : ''}`;
     }
 
     // Bygg BackPacker-kartikoner på scenen
@@ -1287,7 +1058,7 @@
           </div>
         `;
       }
-    }, city.skyline);
+    }, city.skyline, { finishLabel: 'Avsluta aktiviteten »' });
   }
 
   // --- Modalhantering ---
@@ -1306,15 +1077,13 @@
     }
   }
 
-  // --- Höjdpunktsbesök (Fullskärmsfoto i äkta 90-tals BackPacker-stil!) ---
+  // --- Höjdpunktsbesök (Visa alltid namn, pris och tid FÖRE beslutet — ingen kostnad i bakhåll!) ---
   function openPlaceModal(placeKey, place) {
     if (!requireNotLateNight(place.name)) return;
     const isDone = state.donePlaces.has(placeKey);
-
-    if (!isDone && state.cash < place.fee) {
-      showToast(`Inträdet till ${place.name} kostar ${place.fee} kr — du behöver lite mer i reskassan!`, 3200);
-      return;
-    }
+    const fee = Number(place.fee) || 0;
+    const hours = Number(place.hours) || 2;
+    const canAfford = isDone || state.cash >= fee;
 
     const html = `
       <div class="scene-fullscreen scene-sight-full" style="background-image:url(${place.photo})">
@@ -1323,8 +1092,8 @@
             <h3>${place.name}</h3>
             <div class="sight-meta">
               ${isDone
-                ? '<span style="color:#78e08f; font-weight:bold;">REDAN BESÖKT</span> · Repetition'
-                : `Besök: ${place.hours} tim · Inträde: ${place.fee > 0 ? '-' + place.fee + ' kr' : 'Gratis'}`}
+                ? '<span style="color:#78e08f; font-weight:bold;">REDAN BESÖKT</span> · Repetition (Gratis)'
+                : `Besök: ${hours} tim · Inträde: ${fee > 0 ? '-' + fee + ' kr' : 'Gratis'}`}
             </div>
           </div>
           ${exitIconBtn('Tillbaka till staden')}
@@ -1332,40 +1101,57 @@
 
         <div class="sight-bottom-panel">
           <div class="sight-fact-card">${place.fact}</div>
-          <div id="quizContainer"></div>
+          <div id="quizContainer">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding-top:4px;">
+              <span style="font-size:12.5px; color:#e6d7bd;">
+                ${!canAfford
+                  ? `<span style="color:#ff7675;">Inträdet kostar ${fee} kr — du behöver lite mer i reskassan.</span>`
+                  : (isDone ? 'Vill du repetera frågorna här? Det kostar varken tid eller pengar.' : 'Kliv in för att utforska platsen! Full pott ger Guld & kunskapsbonus.')}
+              </span>
+              <div style="display:flex; gap:8px;">
+                <button class="globe-brass-btn" onclick="window.GT.closeModal()">Avvakta</button>
+                ${canAfford ? `<button class="stamp-action-btn" onclick="window.GT.startPlaceQuiz('${placeKey}', ${isDone})">${isDone ? 'Repetera quiz »' : `Besök platsen (${hours} tim${fee > 0 ? `, -${fee} kr` : ''}) »`}</button>` : ''}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     `;
     showModal(html);
-
-    // Beslutet fattades när man klickade på landmärket — hoppa direkt in till första frågan!
-    startPlaceQuiz(placeKey, isDone);
   }
 
   function startPlaceQuiz(placeKey, isRepeat = false) {
     const place = W.places[placeKey];
     if (!place) return;
+    const fee = Number(place.fee) || 0;
+    const hours = Number(place.hours) || 2;
     if (!isRepeat) {
-      if (place.fee > 0) changeCash(-place.fee, `Inträde ${place.name}`);
-      addHours(place.hours);
+      if (state.cash < fee) {
+        showToast(`Inträdet till ${place.name} kostar ${fee} kr!`, 2600);
+        return;
+      }
+      if (fee > 0) changeCash(-fee, `Inträde ${place.name}`);
+      addHours(hours);
     }
     AudioMgr.play('sight');
 
-    runQuiz(getQuestionsFor(place.city, placeKey, place.questions), ({ correct, total }) => {
-      if (correct >= total) {
-        state.donePlaces.add(placeKey);
-        if (!isRepeat) {
-          state.dayLog.activities.push(`Besökte ${place.name}`);
+    runQuiz(getQuestionsFor(place.city || state.city, placeKey, place.questions), ({ correct, total }) => {
+      state.donePlaces.add(placeKey);
+      const isPerfect = total > 0 && correct >= total;
+      const tier = isPerfect ? 'GULD' : (correct >= Math.ceil(total * 0.5) ? 'SILVER' : 'BRONS');
+      if (!isRepeat) {
+        state.dayLog.activities.push(`Besökte ${place.name} (${tier})`);
+        if (isPerfect && BAL.SIGHT_PERFECT_BONUS > 0) {
+          changeCash(BAL.SIGHT_PERFECT_BONUS, `Full pott vid ${place.name}`);
         }
-        renderCitySpots(W.cities[state.city]);
-        closeModal();
-        checkCityCompletion();
-      } else {
-        AudioMgr.play('wrong1');
-        renderCitySpots(W.cities[state.city]);
-        closeModal();
-        showToast(`${place.name}: ${correct}/${total} rätt. Du behöver alla rätt för att klara sevärdheten!`, 3600);
       }
+      renderCitySpots(W.cities[state.city]);
+      closeModal();
+      if (!isRepeat) {
+        const bonusTxt = isPerfect && BAL.SIGHT_PERFECT_BONUS > 0 ? ` · +${BAL.SIGHT_PERFECT_BONUS} kr kunskapsbonus!` : '';
+        showToast(`${place.name}: ${Math.round(correct * 10) / 10}/${total} rätt (${tier})${bonusTxt}`, 3000);
+      }
+      checkCityCompletion();
     }, place.photo);
   }
 
@@ -1780,633 +1566,9 @@
     }, false, 2400);
   }
 
-  // --- Quiz-motor (stöder flerval, mässingsmätare, fritext, 3D-kartnål, para ihop, ordna & bild/flagga!) ---
+  // --- Quiz-motor (delegeras till GT_QUIZ) ---
   function runQuiz(questions, onComplete, contextPhoto = null, opts = {}) {
-    let qIndex = 0;
-    let sessionCorrect = 0;
-    const container = document.getElementById('quizContainer');
-    const counterPrefix = opts.counterPrefix || 'FRÅGA';
-    const headerLabel = opts.headerLabel || 'Allmänbildningsprov';
-
-    const currentCity = W.cities[state.city];
-    const region = currentCity?.region || '';
-    const guidebook = !opts.disableGuidebook && state.backpack.find(i => {
-      const def = W.souvenirs[i.id];
-      return def && def.kind === 'kunskap' && def.region === region && (i.uses || def.uses) > 0;
-    });
-
-    function renderQuestion() {
-      if (qIndex >= questions.length) {
-        if (opts.skipDoneCard) {
-          onComplete({ correct: sessionCorrect, total: questions.length });
-          return;
-        }
-        container.innerHTML = `
-          <div style="text-align:center; padding:16px;">
-            <h4 style="color:#2f7d43; font-size:20px;">Väl genomfört!</h4>
-            <p>Du har svarat på alla frågorna (${Math.round(sessionCorrect * 10) / 10} av ${questions.length} rätt).</p>
-            <button class="btn-primary" style="margin-top:12px;" id="quizDoneBtn">Avsluta besöket</button>
-          </div>
-        `;
-        document.getElementById('quizDoneBtn').onclick = () => onComplete({ correct: sessionCorrect, total: questions.length });
-        return;
-      }
-
-      const q = questions[qIndex];
-      if (q.id) state.usedQuestionIds.add(q.id);
-      state.questionsTotal++;
-
-      const canUseGuide = guidebook && (q.t === 'mc' || q.t === 'image');
-      let html = `
-        <div class="quiz-box">
-          <div class="bp-quiz-header">
-            <span class="bp-quiz-counter">${counterPrefix} ${qIndex + 1} / ${questions.length}</span>
-            ${canUseGuide ? `<button class="globe-brass-btn" style="padding:3px 9px; font-size:11px;" id="useGuideBtn">Använd guidebok (${guidebook.uses ?? 3} kvar)</button>` : `<span style="font-size:11px; color:#c9b48f; font-style:italic;">${headerLabel}</span>`}
-          </div>
-          <div class="quiz-q">${q.q}</div>
-      `;
-
-      let activeGauge = null;
-      let matchRightList = null;
-      let orderState = null;
-
-      if (q.t === 'mc') {
-        const shuffled = [...q.a].sort(() => Math.random() - 0.5);
-        const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
-        const colsClass = shuffled.length === 2 ? 'cols-2' : (shuffled.length === 3 ? 'cols-3' : (shuffled.length >= 5 ? 'cols-many' : ''));
-        html += `<div class="quiz-options ${colsClass}">`;
-        shuffled.forEach((opt, i) => {
-          const isRight = (opt === q.a[0]);
-          html += `<button class="quiz-btn" data-right="${isRight ? '1' : '0'}"><span class="quiz-letter-seal">${letters[i] || (i + 1)}</span><span>${opt}</span></button>`;
-        });
-        html += `</div>`;
-      } else if (q.t === 'image') {
-        const shuffled = [...q.a].sort(() => Math.random() - 0.5);
-        const letters = ['A', 'B', 'C', 'D'];
-        html += `
-          <div class="bp-image-quiz-wrap">
-            <div class="bp-image-quiz-frame">
-              <img src="${q.img}" alt="Bildfråga">
-            </div>
-            <div class="quiz-options" style="flex:1;">
-              ${shuffled.map((opt, i) => {
-                const isRight = (opt === q.a[0]);
-                return `<button class="quiz-btn" data-right="${isRight ? '1' : '0'}"><span class="quiz-letter-seal">${letters[i] || (i + 1)}</span><span>${opt}</span></button>`;
-              }).join('')}
-            </div>
-          </div>
-        `;
-      } else if (q.t === 'match') {
-        matchRightList = q.pairs.map((p, idx) => ({ text: p[1], idx })).sort(() => Math.random() - 0.5);
-        html += `
-          <div class="bp-match-wrap">
-            <div class="bp-match-grid">
-              <div class="bp-match-col" id="matchLeftCol">
-                ${q.pairs.map((p, idx) => `<button class="bp-match-btn left" data-left="${idx}"><span class="bp-match-badge" id="mlBadge${idx}">${idx + 1}</span><span>${p[0]}</span></button>`).join('')}
-              </div>
-              <div class="bp-match-col" id="matchRightCol">
-                ${matchRightList.map((r, rPos) => `<button class="bp-match-btn right" data-right="${r.idx}" data-rpos="${rPos}"><span class="bp-match-badge empty" id="mrBadge${rPos}">?</span><span>${r.text}</span></button>`).join('')}
-              </div>
-            </div>
-            <div class="bp-match-footer">
-              <span id="matchHint" style="font-size:11.5px; color:#d6c5a5;">Klicka först till vänster och sedan på rätt par till höger.</span>
-              <button class="stamp-action-btn" id="matchSubmit" disabled style="opacity:0.45; padding:6px 14px; font-size:12px;">Lås paren</button>
-            </div>
-          </div>
-        `;
-      } else if (q.t === 'order') {
-        orderState = q.items.map((text, idx) => ({ text, idx }));
-        // Blanda så det inte råkar starta i exakt rätt ordning
-        for (let tries = 0; tries < 5; tries++) {
-          orderState.sort(() => Math.random() - 0.5);
-          if (orderState.some((it, pos) => it.idx !== pos)) break;
-        }
-        html += `
-          <div class="bp-order-wrap">
-            <div class="bp-order-list" id="orderList"></div>
-            <div class="bp-match-footer">
-              <span style="font-size:11.5px; color:#d6c5a5;">Flytta raderna med ▲ / ▼ tills ordningen från 1 till ${q.items.length} stämmer.</span>
-              <button class="stamp-action-btn" id="orderSubmit" style="padding:6px 14px; font-size:12px;">Lås ordningen</button>
-            </div>
-          </div>
-        `;
-      } else if (q.t === 'text') {
-        html += `
-          <div class="bp-text-quiz">
-            <input type="text" id="textQuizInput" class="bp-text-input" placeholder="Skriv ditt svar här..." autocomplete="off">
-            <button class="stamp-action-btn" id="textQuizSubmit">Svara</button>
-          </div>
-        `;
-      } else if (q.t === 'num') {
-        activeGauge = prepareNumericGauge(q);
-        html += `
-          <div class="brass-caliper">
-            <div class="caliper-scale-labels">
-              <span>${activeGauge.min.toLocaleString('sv-SE')} ${q.unit}</span>
-              <span>MÄSSINGSMÄTARE</span>
-              <span>${activeGauge.max.toLocaleString('sv-SE')} ${q.unit}</span>
-            </div>
-            <input type="range" id="gaugeInput" min="${activeGauge.min}" max="${activeGauge.max}" step="${activeGauge.step}" value="${activeGauge.start}">
-            <div class="caliper-readout">
-              <span>Gissning: <b id="gaugeVal">${activeGauge.start.toLocaleString('sv-SE')}</b> ${q.unit}</span>
-              <button class="stamp-action-btn" id="gaugeSubmit">Lås mätaren</button>
-            </div>
-          </div>
-        `;
-      } else if (q.t === 'globe') {
-        html += `
-          <div class="globe-quiz-wrap">
-            <canvas id="quizGlobeCanvas" class="globe-quiz-canvas" width="320" height="210"></canvas>
-            <div id="globeQuizSide">
-              <div style="font-size:12px; color:#d6c5a5; margin-bottom:6px;">
-                Snurra den blinda 3D-kartan (med landsgränser) och <b>klicka</b> för att sätta nålen!
-              </div>
-              <div class="globe-quiz-tools">
-                <button type="button" class="globe-brass-btn" id="qGlobeZoomIn" style="padding:3px 9px; font-size:11px;">+ Zooma in</button>
-                <button type="button" class="globe-brass-btn" id="qGlobeZoomOut" style="padding:3px 9px; font-size:11px;">− Zooma ut</button>
-              </div>
-              <div id="globeQuizStatus" style="font-family:'Courier New',monospace; font-size:11.5px; color:#ffd875; margin:6px 0 8px;">
-                Ingen nål satt ännu...
-              </div>
-              <button class="stamp-action-btn" id="globeQuizSubmit" disabled style="opacity:0.45;">Lås nålen &amp; svara</button>
-            </div>
-          </div>
-        `;
-      }
-
-      html += `</div>`;
-      container.innerHTML = html;
-
-      // Guidebok
-      const guideBtn = document.getElementById('useGuideBtn');
-      if (guideBtn) {
-        guideBtn.onclick = () => {
-          if (!guidebook) return;
-          const wrongBtns = Array.from(container.querySelectorAll('.quiz-btn[data-right="0"]:not(.disabled)'));
-          if (wrongBtns.length > 0) {
-            wrongBtns[0].classList.add('disabled');
-            guidebook.uses = (guidebook.uses ?? 3) - 1;
-            AudioMgr.play('klick');
-            showToast("Guideboken strök ett felaktigt alternativ!", 2000);
-            if (guidebook.uses <= 0) {
-              const idx = state.backpack.indexOf(guidebook);
-              if (idx >= 0) state.backpack.splice(idx, 1);
-              updateHUD();
-              showToast("Din guidebok är nu förbrukad.", 2500);
-            }
-            guideBtn.remove();
-          }
-        };
-      }
-
-      function showAnswerDeepDive(isCorrect, rightAnswerText, customNote = null) {
-        const imgSrc = q.photo || contextPhoto || W.cities[state.city]?.skyline || 'assets/photos/gamlastan.jpg';
-        const deepText = customNote || q.explain || (W.answerExplanations && W.answerExplanations[rightAnswerText]) ||
-          `Det rätta svaret på frågan är ${rightAnswerText}.`;
-
-        const canChallenge = Boolean(
-          isCorrect &&
-          window.GT_MP && window.GT_MP.active &&
-          (q.t === 'mc' || q.t === 'image') &&
-          Array.isArray(q.a) && q.a.length >= 2 &&
-          state.duelSentDay !== state.day
-        );
-        const oppName = (window.GT_MP && window.GT_MP.opponent && window.GT_MP.opponent.name) || 'Motståndaren';
-
-        const box = container.querySelector('.quiz-box');
-        if (!box) return;
-        box.innerHTML = `
-          <div class="bp-quiz-header" style="margin-bottom:8px;">
-            <span class="bp-quiz-counter">FRÅGA ${qIndex + 1} / ${questions.length} · ${isCorrect ? 'RÄTT SVAR' : 'FEL SVAR'}</span>
-            <span style="font-size:11px; color:#d8c39e; font-style:italic; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60%;">${q.q}</span>
-          </div>
-          <div class="quiz-explain-card ${isCorrect ? '' : 'wrong-border'}">
-            <img class="quiz-explain-thumb" src="${imgSrc}" alt="${rightAnswerText}">
-            <div class="quiz-explain-body">
-              <div class="quiz-explain-title" style="color:${isCorrect ? '#216e35' : '#9c2222'};">
-                ${isCorrect ? '✓ Rätt! ' : '✕ Rätt svar: '}${rightAnswerText}
-              </div>
-              <div class="quiz-explain-text">${deepText}</div>
-            </div>
-            <div class="quiz-explain-action" style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
-              ${canChallenge ? `<button class="globe-brass-btn" style="padding:5px 10px; font-size:11px; border-color:#38b6ff; color:#8cd7ff; white-space:nowrap;" id="quizChallengeBtn">⚡ Utmana ${oppName}</button>` : ''}
-              <button class="stamp-action-btn" style="padding:8px 16px; font-size:12.5px; white-space:nowrap;" id="quizNextBtn">
-                ${qIndex + 1 < questions.length ? 'Nästa fråga »' : 'Avsluta besöket »'}
-              </button>
-            </div>
-          </div>
-        `;
-        const chBtn = document.getElementById('quizChallengeBtn');
-        if (chBtn) {
-          chBtn.onclick = () => {
-            state.duelSentDay = state.day;
-            window.GT_MP.sendChallenge({
-              fromName: state.playerFirstName || 'Spelare',
-              q: q.q,
-              a: q.a.slice(0, 4),
-              explain: deepText,
-              img: q.img || null
-            });
-            chBtn.disabled = true;
-            chBtn.textContent = '✓ Utmaning skickad!';
-            AudioMgr.play('bell');
-            showToast(`Duellfråga skickad till ${oppName}! Klarar hen den inte vinner du +250 kr!`, 3200);
-          };
-        }
-        document.getElementById('quizNextBtn').onclick = () => {
-          AudioMgr.play('klick');
-          qIndex++;
-          renderQuestion();
-        };
-      }
-
-      if (q.t === 'mc' || q.t === 'image') {
-        const btns = container.querySelectorAll('.quiz-btn');
-        btns.forEach(btn => {
-          btn.onclick = () => {
-            btns.forEach(b => b.disabled = true);
-            const isRight = btn.dataset.right === '1';
-            if (isRight) {
-              btn.classList.add('correct');
-              AudioMgr.play('right1');
-              state.questionsCorrect++;
-              sessionCorrect++;
-            } else {
-              btn.classList.add('wrong');
-              AudioMgr.play('wrong1');
-              btns.forEach(b => { if (b.dataset.right === '1') b.classList.add('correct'); });
-            }
-            showAnswerDeepDive(isRight, q.a[0]);
-          };
-        });
-      } else if (q.t === 'match') {
-        let selectedLeft = null;
-        const pairsChosen = {}; // leftIdx -> rPos
-        const leftBtns = Array.from(container.querySelectorAll('.bp-match-btn.left'));
-        const rightBtns = Array.from(container.querySelectorAll('.bp-match-btn.right'));
-        const submitBtn = document.getElementById('matchSubmit');
-        const hintEl = document.getElementById('matchHint');
-
-        const refreshMatchUI = () => {
-          leftBtns.forEach(b => {
-            const li = Number(b.dataset.left);
-            b.classList.toggle('selected', selectedLeft === li);
-            b.classList.toggle('paired', pairsChosen[li] !== undefined);
-          });
-          rightBtns.forEach(b => {
-            const rp = Number(b.dataset.rpos);
-            const badge = document.getElementById(`mrBadge${rp}`);
-            const ownerLeft = Object.keys(pairsChosen).find(k => pairsChosen[k] === rp);
-            if (ownerLeft !== undefined) {
-              b.classList.add('paired');
-              if (badge) { badge.textContent = String(Number(ownerLeft) + 1); badge.classList.remove('empty'); }
-            } else {
-              b.classList.remove('paired');
-              if (badge) { badge.textContent = '?'; badge.classList.add('empty'); }
-            }
-          });
-          const ready = Object.keys(pairsChosen).length === q.pairs.length;
-          if (submitBtn) {
-            submitBtn.disabled = !ready;
-            submitBtn.style.opacity = ready ? '1' : '0.45';
-          }
-        };
-
-        leftBtns.forEach(b => {
-          b.onclick = () => {
-            selectedLeft = Number(b.dataset.left);
-            AudioMgr.play('klick');
-            if (hintEl) hintEl.textContent = `Vald: ${q.pairs[selectedLeft][0]} — klicka nu på dess par till höger!`;
-            refreshMatchUI();
-          };
-        });
-        rightBtns.forEach(b => {
-          b.onclick = () => {
-            if (selectedLeft === null) {
-              if (hintEl) hintEl.textContent = 'Välj först ett alternativ i vänstra spalten!';
-              return;
-            }
-            const rp = Number(b.dataset.rpos);
-            // Frigör om höger-knappen redan var parad med en annan vänster-rad
-            Object.keys(pairsChosen).forEach(k => { if (pairsChosen[k] === rp) delete pairsChosen[k]; });
-            pairsChosen[selectedLeft] = rp;
-            AudioMgr.play('klick');
-            // Hoppa automatiskt till nästa oparade vänster-rad
-            const nextLeft = q.pairs.findIndex((_, i) => pairsChosen[i] === undefined);
-            selectedLeft = nextLeft >= 0 ? nextLeft : null;
-            if (hintEl) hintEl.textContent = selectedLeft === null ? 'Alla par ihopkopplade! Klicka "Lås paren".' : `Vald: ${q.pairs[selectedLeft][0]} — klicka på dess par till höger.`;
-            refreshMatchUI();
-          };
-        });
-
-        // Förvälj rad 1 direkt för snabbare flyt!
-        selectedLeft = 0;
-        refreshMatchUI();
-
-        submitBtn.onclick = () => {
-          submitBtn.disabled = true;
-          let rightCount = 0;
-          q.pairs.forEach((p, li) => {
-            const rp = pairsChosen[li];
-            if (rp !== undefined && matchRightList[rp] && matchRightList[rp].idx === li) {
-              rightCount++;
-            }
-          });
-          const allRight = rightCount === q.pairs.length;
-          const partial = rightCount >= q.pairs.length - 1;
-          if (allRight) {
-            AudioMgr.play('right1');
-            state.questionsCorrect++;
-            sessionCorrect++;
-          } else if (partial) {
-            AudioMgr.play('right1');
-            state.questionsCorrect += 0.5;
-            sessionCorrect += 0.5;
-          } else {
-            AudioMgr.play('wrong1');
-          }
-          const summary = q.pairs.map(p => `${p[0]} = ${p[1]}`).join(' · ');
-          const note = `Du fick ${rightCount} av ${q.pairs.length} par rätt. ${q.explain || ''}`;
-          showAnswerDeepDive(partial, summary, note);
-        };
-      } else if (q.t === 'order') {
-        const listEl = document.getElementById('orderList');
-        const submitBtn = document.getElementById('orderSubmit');
-        const renderOrder = () => {
-          if (!listEl) return;
-          listEl.innerHTML = orderState.map((it, pos) => `
-            <div class="bp-order-row">
-              <span class="bp-order-num">${pos + 1}</span>
-              <span class="bp-order-text">${it.text}</span>
-              <div class="bp-order-arrows">
-                <button type="button" class="bp-order-move" data-dir="-1" data-pos="${pos}" ${pos === 0 ? 'disabled' : ''}>▲</button>
-                <button type="button" class="bp-order-move" data-dir="1" data-pos="${pos}" ${pos === orderState.length - 1 ? 'disabled' : ''}>▼</button>
-              </div>
-            </div>
-          `).join('');
-          listEl.querySelectorAll('.bp-order-move').forEach(btn => {
-            btn.onclick = () => {
-              const p = Number(btn.dataset.pos);
-              const d = Number(btn.dataset.dir);
-              const target = p + d;
-              if (target < 0 || target >= orderState.length) return;
-              [orderState[p], orderState[target]] = [orderState[target], orderState[p]];
-              AudioMgr.play('klick');
-              renderOrder();
-            };
-          });
-        };
-        renderOrder();
-        submitBtn.onclick = () => {
-          submitBtn.disabled = true;
-          let exactPositions = 0;
-          orderState.forEach((it, pos) => { if (it.idx === pos) exactPositions++; });
-          const allRight = exactPositions === q.items.length;
-          const partial = exactPositions >= 2;
-          if (allRight) {
-            AudioMgr.play('right1');
-            state.questionsCorrect++;
-            sessionCorrect++;
-          } else if (partial) {
-            AudioMgr.play('right1');
-            state.questionsCorrect += 0.5;
-            sessionCorrect += 0.5;
-          } else {
-            AudioMgr.play('wrong1');
-          }
-          const rightSeq = q.items.join(' → ');
-          const note = `${allRight ? 'Helt rätt ordning!' : `Du fick ${exactPositions} av ${q.items.length} på exakt rätt plats.`} ${q.explain || ''}`;
-          showAnswerDeepDive(allRight || partial, rightSeq, note);
-        };
-      } else if (q.t === 'num') {
-        const slider = document.getElementById('gaugeInput');
-        const display = document.getElementById('gaugeVal');
-        const submit = document.getElementById('gaugeSubmit');
-
-        slider.oninput = () => { display.textContent = Number(slider.value).toLocaleString('sv-SE'); };
-        submit.onclick = () => {
-          submit.disabled = true;
-          slider.disabled = true;
-          const userVal = Number(slider.value);
-          const gMin = activeGauge ? activeGauge.min : q.min;
-          const gMax = activeGauge ? activeGauge.max : q.max;
-          const grade = gradeNumericGauge(userVal, q, gMin, gMax);
-          let ok = false;
-          let note = '';
-          if (grade === 'exact') {
-            display.innerHTML = `<span style="color:#78e08f">Mitt i prick! Rätt svar: ${q.ans.toLocaleString('sv-SE')} ${q.unit}</span>`;
-            AudioMgr.play('right1');
-            state.questionsCorrect++;
-            sessionCorrect++;
-            ok = true;
-            note = `Du gissade ${userVal.toLocaleString('sv-SE')} ${q.unit} — imponerande nära det exakta värdet ${q.ans.toLocaleString('sv-SE')} ${q.unit}!`;
-            addJournal(`Satte en knivskarp uppskattning (${userVal.toLocaleString('sv-SE')} ${q.unit}) i ${W.cities[state.city].name}!`);
-          } else if (grade === 'close') {
-            display.innerHTML = `<span style="color:#ffd875">Nära! Rätt svar var ${q.ans.toLocaleString('sv-SE')} ${q.unit} (godkänt!)</span>`;
-            AudioMgr.play('right1');
-            state.questionsCorrect += 0.5;
-            sessionCorrect += 0.5;
-            ok = true;
-            note = `Din gissning (${userVal.toLocaleString('sv-SE')} ${q.unit}) var tillräckligt nära det exakta svaret ${q.ans.toLocaleString('sv-SE')} ${q.unit} för delpoäng.`;
-          } else {
-            display.innerHTML = `<span style="color:#ff7675">En bit ifrån — rätt svar var ${q.ans.toLocaleString('sv-SE')} ${q.unit}.</span>`;
-            AudioMgr.play('wrong1');
-            note = `Du gissade ${userVal.toLocaleString('sv-SE')} ${q.unit}, medan det exakta svaret är ${q.ans.toLocaleString('sv-SE')} ${q.unit}.`;
-          }
-          showAnswerDeepDive(ok, `${q.ans.toLocaleString('sv-SE')} ${q.unit}`, note);
-        };
-      } else if (q.t === 'globe') {
-        const qCanvas = document.getElementById('quizGlobeCanvas');
-        const sideEl = document.getElementById('globeQuizSide');
-        const statusEl = document.getElementById('globeQuizStatus');
-        const submitBtn = document.getElementById('globeQuizSubmit');
-        const zoomInBtn = document.getElementById('qGlobeZoomIn');
-        const zoomOutBtn = document.getElementById('qGlobeZoomOut');
-        let chosen = null;
-        let qGlobeFrame = null;
-
-        if (qCanvas && window.GlobeRenderer) {
-          // Starta alltid rejält bortvriden från målet (75–150° ifrån) så spelaren måste snurra & leta själv!
-          const offsetSign = Math.random() < 0.5 ? 1 : -1;
-          const offsetLon = offsetSign * (75 + Math.random() * 75);
-          let randStartLon = q.targetLon + offsetLon;
-          if (randStartLon > 180) randStartLon -= 360;
-          if (randStartLon < -180) randStartLon += 360;
-          const randStartLat = Math.max(-42, Math.min(50, (q.targetLat > 8 ? -14 : 26) + (Math.random() * 24 - 12)));
-
-          const qGlobe = new window.GlobeRenderer(qCanvas, {
-            quizMode: true,
-            radius: 122,
-            centerLat: randStartLat,
-            centerLon: randStartLon,
-            onGlobeClick: (lat, lon) => {
-              if (submitBtn.dataset.locked === '1') return;
-              chosen = { lat, lon };
-              qGlobe.pinMarker = { lat, lon, label: 'Din nål', color: '#ff4757' };
-              statusEl.textContent = `Nål satt: ${lat.toFixed(1)}°, ${lon.toFixed(1)}°`;
-              submitBtn.disabled = false;
-              submitBtn.style.opacity = '1';
-              AudioMgr.play('klick');
-            }
-          });
-
-          if (zoomInBtn) zoomInBtn.onclick = () => { qGlobe.radius = Math.min(340, qGlobe.radius + 40); };
-          if (zoomOutBtn) zoomOutBtn.onclick = () => { qGlobe.radius = Math.max(92, qGlobe.radius - 40); };
-
-          const qLoop = () => {
-            if (!document.getElementById('quizGlobeCanvas')) {
-              cancelAnimationFrame(qGlobeFrame);
-              return;
-            }
-            qGlobe.render([], '__none__', []);
-            qGlobeFrame = requestAnimationFrame(qLoop);
-          };
-          qGlobeFrame = requestAnimationFrame(qLoop);
-
-          submitBtn.onclick = () => {
-            if (!chosen) return;
-            submitBtn.dataset.locked = '1';
-            submitBtn.disabled = true;
-            const distKm = Math.round(haversineKm(chosen.lat, chosen.lon, q.targetLat, q.targetLon));
-            qGlobe.pinMarker = { lat: chosen.lat, lon: chosen.lon, label: 'Din nål', color: '#ff4757' };
-            qGlobe.targetMarker = { lat: q.targetLat, lon: q.targetLon, label: q.targetName, color: '#2ecc71' };
-
-            // Rotera globen mjukt till mittpunkten om punkterna är hyfsat nära varandra, annars till det rätta målet
-            if (distKm <= 5000) {
-              const midLat = (chosen.lat + q.targetLat) / 2;
-              let dLon = q.targetLon - chosen.lon;
-              if (dLon > 180) dLon -= 360;
-              if (dLon < -180) dLon += 360;
-              let midLon = chosen.lon + dLon / 2;
-              if (midLon > 180) midLon -= 360;
-              if (midLon < -180) midLon += 360;
-              const targetRad = distKm <= 1200 ? 175 : (distKm <= 2800 ? 140 : 112);
-              qGlobe.focusOn(midLat, midLon, null, targetRad, 650);
-            } else {
-              qGlobe.focusOn(q.targetLat, q.targetLon, null, 130, 650);
-            }
-
-            let ok = false;
-            let headline = '';
-            if (distKm <= 650) {
-              ok = true;
-              state.questionsCorrect++;
-              sessionCorrect++;
-              AudioMgr.play('right1');
-              headline = `✓ Mitt i prick! (${distKm.toLocaleString('sv-SE')} km ifrån)`;
-            } else if (distKm <= 1500) {
-              ok = true;
-              state.questionsCorrect += 0.5;
-              sessionCorrect += 0.5;
-              AudioMgr.play('right1');
-              headline = `✓ Nära! (${distKm.toLocaleString('sv-SE')} km ifrån · delpoäng)`;
-            } else {
-              AudioMgr.play('wrong1');
-              headline = `✕ ${distKm.toLocaleString('sv-SE')} km ifrån rätt plats`;
-            }
-
-            // Behåll 3D-jordgloben synlig med BÅDA nålarna + avståndsbågen och visa resultatet bredvid!
-            if (sideEl) {
-              sideEl.innerHTML = `
-                <div style="font-weight:bold; font-size:13px; color:${ok ? '#78e08f' : '#ff7675'}; margin-bottom:4px;">
-                  ${headline}
-                </div>
-                <div style="font-size:11px; color:#f2e6cf; margin-bottom:6px; display:flex; flex-wrap:wrap; gap:8px;">
-                  <span><span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#ff4757; vertical-align:middle; margin-right:3px;"></span>Din nål</span>
-                  <span><span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#2ecc71; vertical-align:middle; margin-right:3px;"></span>Rätt: <b>${q.targetName}</b></span>
-                </div>
-                <div style="font-size:11.5px; color:#d8cbb2; line-height:1.4; margin-bottom:8px;">
-                  ${q.explain || `Den exakta platsen är ${q.targetName}.`}
-                </div>
-                <div class="globe-quiz-tools" style="margin-bottom:8px;">
-                  <button type="button" class="globe-brass-btn" id="qGlobeShowTarget" style="padding:3px 8px; font-size:10.5px;">Visa rätt plats</button>
-                  <button type="button" class="globe-brass-btn" id="qGlobeShowPin" style="padding:3px 8px; font-size:10.5px;">Visa din nål</button>
-                </div>
-                <button class="stamp-action-btn" style="padding:8px 16px; font-size:12.5px;" id="quizNextBtn">
-                  ${qIndex + 1 < questions.length ? 'Nästa fråga »' : 'Avsluta besöket »'}
-                </button>
-              `;
-              const showTargetBtn = document.getElementById('qGlobeShowTarget');
-              const showPinBtn = document.getElementById('qGlobeShowPin');
-              if (showTargetBtn) showTargetBtn.onclick = () => qGlobe.focusOn(q.targetLat, q.targetLon, null, 155, 500);
-              if (showPinBtn) showPinBtn.onclick = () => qGlobe.focusOn(chosen.lat, chosen.lon, null, 155, 500);
-              const nextBtn = document.getElementById('quizNextBtn');
-              if (nextBtn) {
-                nextBtn.onclick = () => {
-                  AudioMgr.play('klick');
-                  qIndex++;
-                  renderQuestion();
-                };
-              }
-            }
-          };
-        }
-      } else if (q.t === 'text') {
-        const inp = document.getElementById('textQuizInput');
-        const submit = document.getElementById('textQuizSubmit');
-        if (inp) inp.focus();
-        const normTxt = (s) => String(s || '')
-          .toLowerCase()
-          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-z0-9\s]/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim();
-        const levenshtein = (a, b) => {
-          const m = a.length, n = b.length;
-          if (!m) return n;
-          if (!n) return m;
-          const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
-          for (let i = 0; i <= m; i++) dp[i][0] = i;
-          for (let j = 0; j <= n; j++) dp[0][j] = j;
-          for (let i = 1; i <= m; i++) {
-            for (let j = 1; j <= n; j++) {
-              const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-              dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
-            }
-          }
-          return dp[m][n];
-        };
-        const fuzzyMatch = (userRaw, targetRaw) => {
-          const u = normTxt(userRaw);
-          const t = normTxt(targetRaw);
-          if (u.length < 2 || !t) return false;
-          if (u === t) return true;
-          if (u.includes(t) || (t.includes(u) && u.length >= Math.min(4, t.length))) return true;
-          // Tillåt enbart efternamn (sista ordet) eller enskilt nyckelord
-          const words = t.split(' ').filter(w => w.length >= 3);
-          const lastName = words.length > 1 ? words[words.length - 1] : null;
-          const candidates = lastName ? [t, lastName] : [t];
-          return candidates.some(cand => {
-            const maxDist = cand.length >= 7 ? 2 : (cand.length >= 4 ? 1 : 0);
-            return levenshtein(u, cand) <= maxDist;
-          });
-        };
-        const checkText = () => {
-          if (submit.disabled) return;
-          submit.disabled = true;
-          inp.disabled = true;
-          const raw = (inp.value || '').trim();
-          const accepted = (q.accept || [q.ans]);
-          const isRight = raw.length >= 2 && accepted.some(a => fuzzyMatch(raw, a));
-          if (isRight) {
-            inp.style.borderColor = '#2f7d43';
-            inp.style.background = '#e6f5ea';
-            AudioMgr.play('right1');
-            state.questionsCorrect++;
-            sessionCorrect++;
-          } else {
-            inp.style.borderColor = '#a82828';
-            inp.style.background = '#fae6e6';
-            AudioMgr.play('wrong1');
-          }
-          showAnswerDeepDive(isRight, q.ans, q.explain);
-        };
-        submit.onclick = checkText;
-        inp.addEventListener('keydown', e => { if (e.key === 'Enter') checkText(); });
-      }
-    }
-
-    renderQuestion();
+    return QUIZ.runQuiz({ W, state, AudioMgr, showToast, updateHUD, addJournal }, questions, onComplete, contextPhoto, opts);
   }
 
   // --- Jobbpass (Riktig 3-spaltig dagstidning där jobbannonsen är inringad med röd penna!) ---
@@ -2440,8 +1602,12 @@
       : `Kolla avgångstavlan på flygplatsen för dagens Stand by-biljetter (-25 %).`) + botNewsLine;
 
     const cityMg = window.GT_MINIGAMES ? window.GT_MINIGAMES.getForCity(state.city, state.day) : null;
+    const camBonus = BAL.CAMERA_JOB_BONUS || 0.20;
+    const camPct = Math.round(camBonus * 100);
+    const kb = getCurrentKnowledgeBonuses(state.city);
+    const kbJobPct = Math.round(kb.totalJobBonus * 100);
     const classifiedAdsHtml = cityJobs.slice(0, 3).map((job, idx) => {
-      const finalPay = Math.round(job.pay * (hasCamera ? 1.15 : 1) * evMult);
+      const finalPay = Math.round(job.pay * (1 + (hasCamera ? camBonus : 0) + kb.totalJobBonus) * evMult);
       const doneKey = `${state.city}_${state.day}_${idx}`;
       const alreadyDone = !!state.jobsDoneToday[doneKey];
       const isMinigameAd = (idx === 2 && cityMg);
@@ -2472,7 +1638,8 @@
           </div>
           <p class="bp-ad-copy">${pitch}</p>
           ${recBadge}
-          ${hasCamera ? `<div class="bp-ad-bonus">+15 % Kamerabonus aktiv</div>` : ''}
+          ${hasCamera ? `<div class="bp-ad-bonus">+${camPct} % Kamerabonus aktiv</div>` : ''}
+          ${kbJobPct > 0 ? `<div class="bp-ad-bonus" style="color:#1c5c26;">+${kbJobPct} % Lokalkännedom${kb.streakActive ? ' &amp; Reseflyt' : ''}</div>` : ''}
           ${(cityEv && cityEv.jobBonus) ? `<div class="bp-ad-bonus">+${Math.round(cityEv.jobBonus * 100)} % eventbonus (${cityEv.title})</div>` : ''}
           <div class="bp-ad-action">
             ${alreadyDone
@@ -2552,13 +1719,15 @@
     if (!container || !window.GT_MINIGAMES) return;
 
     state.jobsDoneToday[`${state.city}_${state.day}_${jobIdx}`] = true;
-    addHours(job.hours);
 
     window.GT_MINIGAMES.start(gameId || mgInfo.id, container, ({ score, max, passed, summary }) => {
+      // Arbetstiden dras när passet är klart, inte innan det har börjat.
+      addHours(job.hours);
       const hasCamera = hasItem('kamera');
       const cityEv = getCityEvent(state.city);
       const evMult = (cityEv && cityEv.jobBonus) ? (1 + cityEv.jobBonus) : 1;
-      const maxPay = Math.round(job.pay * (hasCamera ? 1.15 : 1) * evMult);
+      const kbPay = getCurrentKnowledgeBonuses(state.city).totalJobBonus;
+      const maxPay = Math.round(job.pay * (1 + (hasCamera ? (BAL.CAMERA_JOB_BONUS || 0.20) : 0) + kbPay) * evMult);
       const ratio = max > 0 ? Math.max(0, Math.min(1, score / max)) : 0;
       const earned = Math.round(ratio * maxPay);
 
@@ -2618,7 +1787,6 @@
     if (!job) return;
 
     state.jobsDoneToday[`${state.city}_${state.day}_${jobIdx}`] = true;
-    addHours(job.hours);
 
     // Klassiskt BackPacker 1 & 2-arbetsprov: 6 frågor per jobb (3 yrkes-/stadsfrågor + 2 svårare utmaningsfrågor + 1 interaktiv fråga)!
     let baseQuestions;
@@ -2640,11 +1808,14 @@
     const container = document.getElementById('quizContainer');
 
     runQuiz(questions, ({ correct, total }) => {
+      // Arbetstiden dras när passet är klart, inte innan första frågan.
+      addHours(job.hours);
       const correctInJob = Math.round(correct * 10) / 10;
       const hasCamera = hasItem('kamera');
       const cityEv = getCityEvent(state.city);
       const evMult = (cityEv && cityEv.jobBonus) ? (1 + cityEv.jobBonus) : 1;
-      const maxPay = Math.round(job.pay * (hasCamera ? 1.15 : 1) * evMult);
+      const kbPay = getCurrentKnowledgeBonuses(state.city).totalJobBonus;
+      const maxPay = Math.round(job.pay * (1 + (hasCamera ? (BAL.CAMERA_JOB_BONUS || 0.20) : 0) + kbPay) * evMult);
       const earned = Math.round((correctInJob / total) * maxPay);
 
       changeCash(earned, `Lön från ${job.employer}`);
@@ -2704,8 +1875,9 @@
       `;
     }, city.skyline, {
       counterPrefix: 'UPPGIFT',
+      finishLabel: 'Avsluta passet »',
       headerLabel: job.employer,
-      skipDoneCard: true,
+      finishLabel: 'Avsluta passet »',
       disableGuidebook: true
     });
   }
@@ -2827,80 +1999,21 @@
     showModal(html);
   }
 
-  // --- Basar / Marknad, Pruta & Sälja (90-tals Basardisk!) ---
+  // --- Basar / Marknad, Pruta & Sälja (delegeras till GT_ECONOMY & GT_BALANCE) ---
   function getEffectiveBuyPrice(key) {
-    const s = W.souvenirs[key];
-    if (!s) return 0;
-    const hKey = `${state.city}_${state.day}_${key}`;
-    if (state.haggleState[hKey] && state.haggleState[hKey].price) {
-      return state.haggleState[hKey].price;
-    }
-    const cityEv = getCityEvent(state.city);
-    const disc = (cityEv && cityEv.buyDiscount) ? (1 - cityEv.buyDiscount) : 1;
-    return Math.round(s.price * disc);
+    return ECON.getEffectiveBuyPrice(W, state, key, getCityEvent(state.city));
   }
 
   function getEffectiveSellInfo(itemOrId) {
-    const isObj = itemOrId && typeof itemOrId === 'object';
-    const itemId = isObj ? itemOrId.id : itemOrId;
-    const buyPrice = isObj && typeof itemOrId.buyPrice === 'number' ? itemOrId.buyPrice : null;
-    const base = calcSouvenirValue(itemId, state.city);
-    // I ursprungsstaden kan man aldrig tjäna på att sälja tillbaka en prutad/rabatterad vara
-    if (base.isLocal) {
-      const cappedPrice = buyPrice !== null
-        ? Math.max(10, Math.min(base.price, Math.floor(buyPrice * 0.70)))
-        : base.price;
-      return { ...base, price: cappedPrice };
-    }
-    const cityEv = getCityEvent(state.city);
-    if (cityEv && cityEv.sellBonus) {
-      return {
-        ...base,
-        price: Math.round(base.price * (1 + cityEv.sellBonus)),
-        eventBonus: Math.round(cityEv.sellBonus * 100)
-      };
-    }
-    return base;
+    return ECON.getEffectiveSellInfo(W, state, itemOrId, getCityEvent(state.city));
   }
 
-  // Stadsanpassat marknadsnamn: "Basar" bara där det passar (Kairo, Istanbul, Delhi), annars "Marknad"
   function getMarketInfo(cityKey) {
-    const cityName = W.cities[cityKey]?.name || cityKey;
-    const custom = {
-      kairo:        { shortLabel: 'Basar',   title: 'Basaren i Kairo',            leaveText: 'Lämna basaren',   keeperFallback: 'Basarhandlaren i Kairo' },
-      istanbul:     { shortLabel: 'Basar',   title: 'Stora basaren i Istanbul',   leaveText: 'Lämna basaren',   keeperFallback: 'Basarhandlaren i Istanbul' },
-      delhi:        { shortLabel: 'Basar',   title: 'Kryddbasaren i Delhi',       leaveText: 'Lämna basaren',   keeperFallback: 'Basarhandlaren i Delhi' },
-      malmo:        { shortLabel: 'Marknad', title: 'Möllevångstorget · Marknad', leaveText: 'Lämna marknaden', keeperFallback: 'Torghandlaren på Möllan' },
-      stockholm:    { shortLabel: 'Marknad', title: 'Torghandel & Marknad',       leaveText: 'Lämna marknaden', keeperFallback: 'Torghandlaren i Stockholm' },
-      paris:        { shortLabel: 'Marknad', title: 'Marknaden på Rue Mouffetard',leaveText: 'Lämna marknaden', keeperFallback: 'Marknadshandlaren i Paris' },
-      rom:          { shortLabel: 'Marknad', title: 'Marknaden på Campo de’ Fiori',leaveText: 'Lämna marknaden', keeperFallback: 'Marknadshandlaren i Rom' },
-      london:       { shortLabel: 'Marknad', title: 'Portobello-marknaden',       leaveText: 'Lämna marknaden', keeperFallback: 'Antikhandlaren i London' },
-      tokyo:        { shortLabel: 'Marknad', title: 'Hantverksmarknaden i Tokyo', leaveText: 'Lämna marknaden', keeperFallback: 'Handlaren i Tokyo' },
-      bangkok:      { shortLabel: 'Marknad', title: 'Gatumarknaden i Bangkok',    leaveText: 'Lämna marknaden', keeperFallback: 'Marknadshandlaren i Bangkok' },
-      peking:       { shortLabel: 'Marknad', title: 'Antikmarknaden i Peking',    leaveText: 'Lämna marknaden', keeperFallback: 'Handlaren i Peking' },
-      sydney:       { shortLabel: 'Marknad', title: 'The Rocks-marknaden',        leaveText: 'Lämna marknaden', keeperFallback: 'Marknadshandlaren i Sydney' },
-      kapstaden:    { shortLabel: 'Marknad', title: 'Torgmarknaden i Kapstaden',  leaveText: 'Lämna marknaden', keeperFallback: 'Marknadshandlaren i Kapstaden' },
-      rio:          { shortLabel: 'Marknad', title: 'Hantverksmarknaden i Rio',   leaveText: 'Lämna marknaden', keeperFallback: 'Marknadshandlaren i Rio' },
-      mexicocity:   { shortLabel: 'Marknad', title: 'Mercado de la Ciudadela',    leaveText: 'Lämna marknaden', keeperFallback: 'Marknadshandlaren i Mexico City' },
-      sanfrancisco: { shortLabel: 'Marknad', title: 'Hamnmarknaden vid Pier 39',  leaveText: 'Lämna marknaden', keeperFallback: 'Marknadshandlaren i San Francisco' },
-      newyork:      { shortLabel: 'Marknad', title: 'Gatumarknaden på Manhattan', leaveText: 'Lämna marknaden', keeperFallback: 'Marknadshandlaren i New York' }
-    };
-    return custom[cityKey] || {
-      shortLabel: 'Marknad',
-      title: `Marknaden i ${cityName}`,
-      leaveText: 'Lämna marknaden',
-      keeperFallback: `Marknadshandlaren i ${cityName}`
-    };
+    return ECON.getMarketInfo(W, cityKey);
   }
 
-  const GEAR_SHOP_ITEMS = [
-    { id: 'parlor',      name: 'Språkparlör',    price: 650, photo: 'assets/souvenirs/guide_amerika.jpg', desc: 'Lär dig artiga fraser på 20 språk — höjer chansen att lyckas pruta från 62 % till 85 %!', effect: '85 % prutchans', unique: true },
-    { id: 'guide_asien', name: 'Fickguidebok',   price: 550, photo: 'assets/souvenirs/guide_asien.jpg',   desc: 'Avslöjar outforskade landmärken på stadskartan och stryker ett felaktigt svar i quiz (3 ggr).', effect: 'Avslöjar kartan + 3 tips', uses: 3, unique: false },
-    { id: 'kamera',      name: 'Systemkamera',   price: 900, photo: 'assets/souvenirs/kamera.jpg',        desc: 'Kompakt 35mm-kamera som gör dig eftertraktad på redaktioner och uppdrag.', effect: '+50 % lön på alla jobb', unique: true },
-    { id: 'kangor',      name: 'Vandringskängor',price: 700, photo: 'assets/souvenirs/kangor.jpg',        desc: 'Ingångna läderkängor som kortar restiden på långa underverksexpeditioner.', effect: 'Snabbare underverk', unique: true }
-  ];
-
-  const MAIL_HOME_COST = 250;
+  const GEAR_SHOP_ITEMS = BAL.GEAR_SHOP_ITEMS || [];
+  const MAIL_HOME_COST = BAL.MAIL_HOME_COST || 250;
 
   function upgradeBackpack() {
     const nextTier = BACKPACK_TIERS.find(t => t.level === (state.backpackLevel || 1) + 1);
@@ -2969,12 +2082,12 @@
       origin: item.origin,
       mailedDay: state.day
     });
-    changeCash(-MAIL_HOME_COST, `Postade hem ${item.name} till Stockholm`);
+    changeCash(-MAIL_HOME_COST, `Postade hem ${item.name} till ${homeCityName()}`);
     AudioMgr.play('stamp');
     AudioMgr.play('paper');
-    addJournal(`Postade hem ${item.name} (från ${W.cities[item.origin]?.name || item.origin}) till Stockholm för ${MAIL_HOME_COST} kr.`);
-    showToast(`${item.name} är på väg hem till Stockholm! Plats frigjord i ryggsäcken.`, 2800);
-    openBazaarModal(`Paketet med ${item.name} är frankerat och stämplat — tryggt på väg hem till Stockholm!`, 'gear');
+    addJournal(`Postade hem ${item.name} (från ${W.cities[item.origin]?.name || item.origin}) till ${homeCityName()} för ${MAIL_HOME_COST} kr.`);
+    showToast(`${item.name} är på väg hem till ${homeCityName()}! Plats frigjord i ryggsäcken.`, 2800);
+    openBazaarModal(`Paketet med ${item.name} är frankerat och stämplat — tryggt på väg hem till ${homeCityName()}!`, 'gear');
   }
 
   function openBazaarModal(customSpeech = null, activeTab = 'market') {
@@ -3008,7 +2121,7 @@
             </div>
             <div class="market-item-desc">${nextTier.desc} (Nuvarande: ${currentTier.slots} platser → <b>${nextTier.slots} platser</b>)</div>
             <div class="market-card-footer">
-              <span class="market-kind-pill">RYGGSÄCK NIVÅ ${nextTier.level} / 3</span>
+              <span class="market-kind-pill">RYGGSÄCK NIVÅ ${nextTier.level} / ${BACKPACK_TIERS.length}</span>
               <button class="market-btn-buy" onclick="window.GT.upgradeBackpack()">Uppgradera · ${nextTier.price} kr</button>
             </div>
           </div>
@@ -3067,7 +2180,7 @@
                       </div>
                       <div class="market-price-tag">${MAIL_HOME_COST} kr</div>
                     </div>
-                    <div class="market-item-desc">Från <b>${W.cities[item.origin]?.name || item.origin}</b> · Postas hem till Stockholm och frigör 1 ryggsäcksplats!</div>
+                    <div class="market-item-desc">Från <b>${W.cities[item.origin]?.name || item.origin}</b> · Postas hem till ${homeCityName()} och frigör 1 ryggsäcksplats!</div>
                     <div class="market-card-footer">
                       <span class="market-kind-pill">FLYGPACKET · SVERIGE</span>
                       <button class="market-btn-sell" onclick="window.GT.mailSouvenirHome(${idx})">Posta hem · ${MAIL_HOME_COST} kr</button>
@@ -3080,7 +2193,7 @@
 
       const mailedSummaryHtml = state.mailedHome.length > 0
         ? `<div style="margin-top:8px; padding:7px 9px; background:rgba(47,125,67,0.18); border:1px dashed #6bc982; border-radius:4px; font-size:11.5px; color:#d8f5de;">
-             <b>Redan postat hem till Stockholm (${state.mailedHome.length} st):</b>
+             <b>Redan postat hem till ${homeCityName()} (${state.mailedHome.length} st):</b>
              ${state.mailedHome.map(m => `${m.name} (${W.cities[m.origin]?.name || m.origin})`).join(', ')}
            </div>`
         : '';
@@ -3139,8 +2252,10 @@
                   <span class="market-kind-pill">${s.kind}</span>
                   <div class="market-btn-group">
                     ${canHaggle
-                      ? `<button class="market-btn-haggle" onclick="window.GT.haggleSouvenir('${k}')">Pruta -20 %</button>`
-                      : `<span class="market-locked-note">${hState.won ? 'Prutat klart' : 'Fast pris idag'}</span>`}
+                      ? `<button class="market-btn-haggle" onclick="window.GT.haggleSouvenir('${k}', 'polite')" title="Säkert bud (-10 %, hög chans)">-10%</button>
+                         <button class="market-btn-haggle" onclick="window.GT.haggleSouvenir('${k}', 'firm')" title="Lagom bud (-20 %, medelrisk)">-20%</button>
+                         <button class="market-btn-haggle" onclick="window.GT.haggleSouvenir('${k}', 'bold')" title="Skambud (-35 %, risk för +15 % straffpris!)">-35%!</button>`
+                      : `<span class="market-locked-note">${hState.won ? 'Prutat klart' : (hState.angry ? 'Sur handlare!' : 'Fast pris idag')}</span>`}
                     <button class="market-btn-buy" onclick="window.GT.buySouvenir('${k}')">Köp · ${currentPrice} kr</button>
                   </div>
                 </div>
@@ -3246,7 +2361,7 @@
             </div>
             <div class="market-keeper-strip">
               <span class="market-keeper-tag">${activeTab === 'gear' ? 'Utrustnings- & Postdisken' : keeper.name}</span>
-              <span class="market-keeper-quote">”${customSpeech || (activeTab === 'gear' ? 'Behöver du större ryggsäck, smarta reseprylar eller skicka hem ett paket till Stockholm?' : keeper.greet)}”</span>
+              <span class="market-keeper-quote">”${customSpeech || (activeTab === 'gear' ? `Behöver du större ryggsäck, smarta reseprylar eller skicka hem ett paket till ${homeCityName()}?` : keeper.greet)}”</span>
               ${cityEv && (cityEv.buyDiscount || cityEv.sellBonus) ? `<span class="market-event-pill">${cityEv.title}: ${cityEv.effectText}</span>` : ''}
             </div>
             ${bodyColumnsHtml}
@@ -3257,29 +2372,35 @@
     showModal(html);
   }
 
-  function haggleSouvenir(key) {
+  function haggleSouvenir(key, tier = 'firm') {
     const s = W.souvenirs[key];
     if (!s) return;
     const hKey = `${state.city}_${state.day}_${key}`;
     const basePrice = getEffectiveBuyPrice(key);
     const hasParlor = hasItem('parlor');
-    const roll = Math.random();
+    const kb = getCurrentKnowledgeBonuses(state.city);
+    const res = ECON.resolveHaggle(basePrice, tier, hasParlor, Math.random, kb.haggleBonus);
 
-    if (roll < (hasParlor ? 0.85 : 0.62)) {
-      const discounted = Math.max(20, Math.round(basePrice * 0.80));
-      state.haggleState[hKey] = { price: discounted, won: true, locked: true };
+    state.haggleState[hKey] = {
+      price: res.price,
+      won: res.won,
+      angry: res.outcome === 'angry',
+      locked: true
+    };
+
+    if (res.outcome === 'won') {
       AudioMgr.play('right1');
-      addJournal(`Prutade fram ett kanonpris på ${s.name} (${discounted} kr) i ${W.cities[state.city].name}!`);
-      openBazaarModal(`Haha, du är en skarp förhandlare! Okej då — ${discounted} kr för ${s.name}, men inte ett öre lägre!`);
-    } else if (roll < 0.88) {
-      const slight = Math.max(20, Math.round(basePrice * 0.90));
-      state.haggleState[hKey] = { price: slight, won: true, locked: true };
+      addJournal(`Prutade fram ett kanonpris på ${s.name} (${res.price} kr) i ${W.cities[state.city].name}!`);
+      openBazaarModal(`Haha, du är en skarp förhandlare! Okej då — ${res.price} kr för ${s.name}, men inte ett öre lägre!`);
+    } else if (res.outcome === 'half') {
       AudioMgr.play('klick');
-      openBazaarModal(`Nja, 20 procent rånar mig på mat på bordet! Vi möts halvvägs på ${s.name}: ${slight} kr.`);
-    } else {
-      state.haggleState[hKey] = { price: basePrice, won: false, locked: true };
+      openBazaarModal(`Nja, lite väl hårt! Vi möts halvvägs på ${s.name}: ${res.price} kr.`);
+    } else if (res.outcome === 'angry') {
       AudioMgr.play('wrong1');
-      openBazaarModal(`Hmph! Skambud på äkta hantverk! För ${s.name} gäller fast pris ${basePrice} kr idag.`);
+      openBazaarModal(`Skambud?! För en sådan förolämpning mot äkta hantverk höjer jag priset på ${s.name} till ${res.price} kr idag!`);
+    } else {
+      AudioMgr.play('wrong1');
+      openBazaarModal(`Tyvärr, jag kan inte gå lägre på ${s.name}. Fast pris ${res.price} kr idag.`);
     }
   }
 
@@ -3326,108 +2447,11 @@
     openBazaarModal(speech);
   }
 
-  // --- Ruttnätverk & Daglig Avgångstavla (BackPacker 1 & 2-systemet!) ---
-  // Varje stad har ett realistiskt ruttnätverk (grannstäder + utvalda långdistansnav)
-  // med sannolikhet (chance) och eventuell Stand by-linje, precis som i BP1/BP2.
-  const CITY_AIRLINE_PREFIX = {
-    malmo: 'SK', stockholm: 'SK', london: 'BA', paris: 'AF', rom: 'AZ', istanbul: 'TK',
-    kairo: 'MS', kapstaden: 'SA', delhi: 'AI', bangkok: 'TG', peking: 'CA',
-    tokyo: 'JL', sydney: 'QF', sanfrancisco: 'UA', newyork: 'AA',
-    mexicocity: 'AM', rio: 'RG'
-  };
-
-  const CITY_ROUTES = {
-    malmo: [
-      { to: 'stockholm', chance: 90 }, { to: 'london', chance: 90 }, { to: 'paris', chance: 86 },
-      { to: 'rom', chance: 78 }, { to: 'istanbul', chance: 72 }, { to: 'kairo', chance: 62 },
-      { to: 'newyork', chance: 55, standby: true }
-    ],
-    stockholm: [
-      { to: 'malmo', chance: 90 }, { to: 'london', chance: 90 }, { to: 'paris', chance: 85 }, { to: 'rom', chance: 75 },
-      { to: 'istanbul', chance: 70 }, { to: 'newyork', chance: 62 }, { to: 'kairo', chance: 58 },
-      { to: 'peking', chance: 45, standby: true }
-    ],
-    london: [
-      { to: 'malmo', chance: 85 }, { to: 'stockholm', chance: 85 }, { to: 'paris', chance: 95 }, { to: 'rom', chance: 80 },
-      { to: 'newyork', chance: 88 }, { to: 'kairo', chance: 65 }, { to: 'kapstaden', chance: 60 },
-      { to: 'delhi', chance: 55, standby: true }
-    ],
-    paris: [
-      { to: 'malmo', chance: 82 }, { to: 'london', chance: 95 }, { to: 'rom', chance: 90 }, { to: 'stockholm', chance: 78 },
-      { to: 'istanbul', chance: 75 }, { to: 'newyork', chance: 78 }, { to: 'kairo', chance: 68 },
-      { to: 'rio', chance: 55, standby: true }
-    ],
-    rom: [
-      { to: 'malmo', chance: 74 }, { to: 'paris', chance: 90 }, { to: 'london', chance: 80 }, { to: 'istanbul', chance: 88 },
-      { to: 'kairo', chance: 85 }, { to: 'stockholm', chance: 70 }, { to: 'kapstaden', chance: 55, standby: true }
-    ],
-    istanbul: [
-      { to: 'rom', chance: 88 }, { to: 'kairo', chance: 92 }, { to: 'paris', chance: 75 },
-      { to: 'delhi', chance: 82 }, { to: 'stockholm', chance: 65 }, { to: 'bangkok', chance: 58 },
-      { to: 'peking', chance: 55, standby: true }
-    ],
-    kairo: [
-      { to: 'istanbul', chance: 92 }, { to: 'rom', chance: 85 }, { to: 'delhi', chance: 82 },
-      { to: 'kapstaden', chance: 80 }, { to: 'paris', chance: 70 }, { to: 'london', chance: 65 },
-      { to: 'bangkok', chance: 52, standby: true }
-    ],
-    kapstaden: [
-      { to: 'kairo', chance: 82 }, { to: 'london', chance: 78 }, { to: 'rio', chance: 82 },
-      { to: 'rom', chance: 62 }, { to: 'sydney', chance: 60, standby: true }, { to: 'delhi', chance: 55 }
-    ],
-    delhi: [
-      { to: 'bangkok', chance: 92 }, { to: 'istanbul', chance: 82 }, { to: 'kairo', chance: 80 },
-      { to: 'peking', chance: 80 }, { to: 'london', chance: 65 }, { to: 'tokyo', chance: 62 },
-      { to: 'sydney', chance: 55, standby: true }
-    ],
-    bangkok: [
-      { to: 'delhi', chance: 92 }, { to: 'peking', chance: 86 }, { to: 'tokyo', chance: 86 },
-      { to: 'sydney', chance: 85 }, { to: 'istanbul', chance: 60 }, { to: 'kairo', chance: 55, standby: true }
-    ],
-    peking: [
-      { to: 'tokyo', chance: 95 }, { to: 'bangkok', chance: 86 }, { to: 'delhi', chance: 80 },
-      { to: 'sanfrancisco', chance: 72 }, { to: 'sydney', chance: 65 }, { to: 'istanbul', chance: 60 },
-      { to: 'stockholm', chance: 55, standby: true }
-    ],
-    tokyo: [
-      { to: 'peking', chance: 95 }, { to: 'bangkok', chance: 86 }, { to: 'sydney', chance: 86 },
-      { to: 'sanfrancisco', chance: 86 }, { to: 'delhi', chance: 65 }, { to: 'newyork', chance: 58, standby: true }
-    ],
-    sydney: [
-      { to: 'tokyo', chance: 86 }, { to: 'bangkok', chance: 85 }, { to: 'sanfrancisco', chance: 76 },
-      { to: 'peking', chance: 65 }, { to: 'kapstaden', chance: 60, standby: true }, { to: 'delhi', chance: 55 }
-    ],
-    sanfrancisco: [
-      { to: 'newyork', chance: 95 }, { to: 'mexicocity', chance: 90 }, { to: 'tokyo', chance: 86 },
-      { to: 'sydney', chance: 75 }, { to: 'peking', chance: 70 }, { to: 'london', chance: 58, standby: true }
-    ],
-    newyork: [
-      { to: 'london', chance: 92 }, { to: 'sanfrancisco', chance: 95 }, { to: 'mexicocity', chance: 86 },
-      { to: 'paris', chance: 80 }, { to: 'rio', chance: 80 }, { to: 'malmo', chance: 72 }, { to: 'stockholm', chance: 68 },
-      { to: 'tokyo', chance: 55, standby: true }
-    ],
-    mexicocity: [
-      { to: 'sanfrancisco', chance: 90 }, { to: 'newyork', chance: 90 }, { to: 'rio', chance: 85 },
-      { to: 'paris', chance: 62 }, { to: 'london', chance: 58 }, { to: 'tokyo', chance: 50, standby: true }
-    ],
-    rio: [
-      { to: 'mexicocity', chance: 85 }, { to: 'newyork', chance: 85 }, { to: 'kapstaden', chance: 82 },
-      { to: 'paris', chance: 72 }, { to: 'rom', chance: 65 }, { to: 'london', chance: 60, standby: true }
-    ]
-  };
+  // --- Ruttnätverk & Daglig Avgångstavla (delegeras till GT_ROUTES) ---
+  const CITY_AIRLINE_PREFIX = ROUTES.CITY_AIRLINE_PREFIX;
 
   function getCityRoutePool(cityKey) {
-    const defined = (W.cities[cityKey] && W.cities[cityKey].routes) || CITY_ROUTES[cityKey];
-    if (defined && defined.length > 0) {
-      return defined.filter(r => W.cities[r.to] && r.to !== cityKey);
-    }
-    // BP2-fallback: om en ny stad saknar handgjord lista, välj de 6 närmaste städerna geografiskt
-    return Object.keys(W.cities)
-      .filter(k => k !== cityKey)
-      .map(k => ({ to: k, dist: getDistanceBetweenCities(cityKey, k) }))
-      .sort((a, b) => a.dist - b.dist)
-      .slice(0, 6)
-      .map((r, i) => ({ to: r.to, chance: Math.max(55, 90 - i * 6) }));
+    return ROUTES.getCityRoutePool(W, cityKey);
   }
 
   // Drar dagens avgångar en gång per stad/dag (BP1: DEPDD / OriginalRules.departureBoard)
@@ -3518,63 +2542,19 @@
     return state.departureBoard;
   }
 
-  // --- Överlandståg mellan närliggande städer (BackPacker-tågstation!) ---
-  const CITY_TRAINS = {
-    malmo: [
-      { to: 'stockholm', name: 'X2000 Snabbtåg till Stockholm C', hours: 4, price: 360 }
-    ],
-    stockholm: [
-      { to: 'malmo', name: 'X2000 Snabbtåg till Malmö C', hours: 4, price: 360 }
-    ],
-    london: [
-      { to: 'paris', name: 'Eurostar genom Kanaltunneln', hours: 3, price: 480 }
-    ],
-    paris: [
-      { to: 'london', name: 'Eurostar genom Kanaltunneln', hours: 3, price: 480 },
-      { to: 'rom', name: 'Alpexressen (Nattåg genom Alperna)', hours: 10, price: 590 }
-    ],
-    rom: [
-      { to: 'paris', name: 'Alpexressen mot Paris Gare de Lyon', hours: 10, price: 590 },
-      { to: 'istanbul', name: 'Balkan- & Orientexpressen', hours: 15, price: 690 }
-    ],
-    istanbul: [
-      { to: 'rom', name: 'Orientexpressen västerut mot Rom', hours: 15, price: 690 }
-    ],
-    sanfrancisco: [
-      { to: 'newyork', name: 'California Zephyr (Amtrak kust-till-kust)', hours: 18, price: 880 }
-    ],
-    newyork: [
-      { to: 'sanfrancisco', name: 'California Zephyr (Amtrak västerut)', hours: 18, price: 880 },
-      { to: 'mexicocity', name: 'Pan-American Express söderut', hours: 16, price: 840 }
-    ],
-    mexicocity: [
-      { to: 'newyork', name: 'Pan-American Express norrut', hours: 16, price: 840 }
-    ],
-    delhi: [
-      { to: 'bangkok', name: 'Trans-Asiatiska landvägståget', hours: 16, price: 760 }
-    ],
-    bangkok: [
-      { to: 'delhi', name: 'Trans-Asiatiska landvägståget västerut', hours: 16, price: 760 },
-      { to: 'peking', name: 'Sydostasiatiska Expressen norrut', hours: 16, price: 790 }
-    ],
-    peking: [
-      { to: 'bangkok', name: 'Sydostasiatiska Expressen söderut', hours: 16, price: 790 }
-    ]
-  };
-
   // --- Resor och Avgångar: Avgångshall (Flyg), Tågstation (Tåg) & Oceanhamn (Båt)! ---
   function openTravelModal(mode = 'air') {
     const currentCity = W.cities[state.city];
     const hasBoats = currentCity.boats && currentCity.boats.length > 0;
-    const trains = [
-      ...(CITY_TRAINS[state.city] || []),
-      ...((window.GT_EXTRA_TRAINS && window.GT_EXTRA_TRAINS[state.city]) || [])
-    ];
+    const trains = ROUTES.getTrainsFrom(state.city);
     const hasTrains = trains.length > 0;
 
     if (window.AmbientMgr) {
       window.AmbientMgr.setScene(mode === 'sea' ? 'harbor' : (mode === 'train' ? 'train' : 'airport'));
     }
+
+    const kbTravel = getCurrentKnowledgeBonuses(state.city);
+    const kbDisc = kbTravel.ticketDiscount || 0;
 
     if (mode === 'train') {
       AudioMgr.play('flap');
@@ -3584,16 +2564,15 @@
           const dest = W.cities[tr.to];
           if (!dest) return;
           const dist = getDistanceBetweenCities(state.city, tr.to);
-          const block = window.GT_BOTS && window.GT_BOTS.isRouteBlocked(state.blockedRoutes, state.city, tr.to, state.day, 'player');
-          const effPrice = block ? Math.round(tr.price * 1.6) : tr.price;
+          const trPrice = Math.round(tr.price * (1 - kbDisc));
           trainsHtml += `
-            <div class="flap-row" style="border-color:${block ? 'rgba(255,107,107,0.55)' : 'rgba(110, 210, 145, 0.35)'}; background:${block ? 'rgba(54, 18, 18, 0.65)' : 'rgba(14, 38, 24, 0.65)'};">
+            <div class="flap-row" style="border-color:rgba(110, 210, 145, 0.35); background:rgba(14, 38, 24, 0.65);">
               <div>
-                <div class="flap-dest" style="color:${block ? '#ffb3b3' : '#a7f3c0'};">🚂 ${tr.name.toUpperCase()} ${block ? `<span style="font-size:10px; background:#a82828; color:#fff; padding:1px 6px; border-radius:3px; margin-left:4px;">🚫 FULLBOKAT (${block.by} t.o.m. Dag ${block.untilDay})</span>` : ''}</div>
-                <div class="flap-meta">TÅGLINJE TILL ${dest.name.toUpperCase()} (${dist.toLocaleString('sv-SE')} KM) · RESTID: ${tr.hours} TIM · ${block ? `NÖDPLATS +60 %: ${effPrice} KR` : `PRIS: ${tr.price} KR`}</div>
+                <div class="flap-dest" style="color:#a7f3c0;">🚂 ${tr.name.toUpperCase()} ${kbDisc > 0 ? `<span class="flight-standby">KUNSKAP -${Math.round(kbDisc * 100)}%</span>` : ''}</div>
+                <div class="flap-meta">TÅGLINJE TILL ${dest.name.toUpperCase()} (${dist.toLocaleString('sv-SE')} KM) · RESTID: ${tr.hours} TIM · PRIS: ${trPrice} KR</div>
               </div>
               <div>
-                <button class="ticket-btn" style="background:${block ? 'linear-gradient(180deg,#8c2d2d 0%,#521616 100%)' : 'linear-gradient(180deg,#3b8d56 0%,#235c36 100%)'}; color:#f7fff9;" onclick="window.GT.startTravel('${tr.to}', ${effPrice}, ${tr.hours}, false, true)">${block ? 'Nödplats (+60%)' : 'Köp tågbiljett'}<br>${effPrice} kr</button>
+                <button class="ticket-btn" style="background:linear-gradient(180deg,#3b8d56 0%,#235c36 100%); color:#f7fff9;" onclick="window.GT.startTravel('${tr.to}', ${trPrice}, ${tr.hours}, false, true)">Köp tågbiljett<br>${trPrice} kr</button>
               </div>
             </div>
           `;
@@ -3641,14 +2620,15 @@
           const dest = W.cities[b.to];
           if (!dest) return;
           const dist = getDistanceBetweenCities(state.city, b.to);
+          const bPrice = Math.round(b.price * (1 - kbDisc));
           boatsHtml += `
             <div class="flap-row boat-row">
               <div>
-                <div class="flap-dest"><img class="inline-icon round" src="assets/icons/harbor_3d.jpg" alt=""> ${b.name.toUpperCase()}</div>
-                <div class="flap-meta">OCEANLINJE TILL ${dest.name.toUpperCase()} (${dist.toLocaleString('sv-SE')} KM) · RESTID: ${b.days} DAGAR · PRIS: ${b.price} KR</div>
+                <div class="flap-dest"><img class="inline-icon round" src="assets/icons/harbor_3d.jpg" alt=""> ${b.name.toUpperCase()} ${kbDisc > 0 ? `<span class="flight-standby">KUNSKAP -${Math.round(kbDisc * 100)}%</span>` : ''}</div>
+                <div class="flap-meta">OCEANLINJE TILL ${dest.name.toUpperCase()} (${dist.toLocaleString('sv-SE')} KM) · RESTID: ${b.days} DAGAR · PRIS: ${bPrice} KR</div>
               </div>
               <div>
-                <button class="ticket-btn" onclick="window.GT.startTravel('${b.to}', ${b.price}, ${b.days}, true)">Mönstra på<br>${b.price} kr</button>
+                <button class="ticket-btn" onclick="window.GT.startTravel('${b.to}', ${bPrice}, ${b.days}, true)">Mönstra på<br>${bPrice} kr</button>
               </div>
             </div>
           `;
@@ -3713,9 +2693,11 @@
       if (destEv && destEv.flightMult) {
         price = Math.round(price * destEv.flightMult);
       }
+      if (kbDisc > 0) {
+        price = Math.round(price * (1 - kbDisc));
+      }
 
-      const routeBlock = window.GT_BOTS && window.GT_BOTS.isRouteBlocked(state.blockedRoutes, state.city, destKey, state.day, 'player');
-      const finalPrice = routeBlock ? Math.round(price * 1.6) : price;
+      const finalPrice = price;
       const isClosed = entry.status !== 'open';
       const closedLabel = entry.status === 'cancelled' ? 'INSTÄLLD' : 'FULLBOKAD';
 
@@ -3728,15 +2710,15 @@
               ${dest.name.toUpperCase()} (${dest.country.toUpperCase()})
               ${entry.standby ? `<span class="flight-standby">STAND BY -25%</span>` : ''}
               ${dealPercent > 0 ? `<span class="flight-deal">SISTA MINUTEN -${dealPercent}%</span>` : ''}
-              ${routeBlock ? `<span style="font-size:9.5px; background:#a82828; color:#fff; padding:1px 6px; border-radius:3px; margin-left:4px;">🚫 SPÅR UPPTAGET AV ${routeBlock.by.toUpperCase()} (t.o.m. Dag ${routeBlock.untilDay})</span>` : ''}
+              ${kbDisc > 0 ? `<span class="flight-standby">KUNSKAP -${Math.round(kbDisc * 100)}%</span>` : ''}
             </div>
-            <div class="flap-meta">STRÄCKA: ${dist.toLocaleString('sv-SE')} KM · FLYGTID: ${hours} TIM · ${routeBlock ? `NÖDBILJETT +60 %: ${finalPrice} KR` : `PRIS: ${price} KR`}</div>
+            <div class="flap-meta">STRÄCKA: ${dist.toLocaleString('sv-SE')} KM · FLYGTID: ${hours} TIM · PRIS: ${finalPrice} KR</div>
             ${destEv ? `<div class="flap-event-note">* ${destEv.title}: ${destEv.effectText}</div>` : ''}
           </div>
           <div>
             ${isClosed
               ? `<span class="flap-status-closed">${closedLabel}</span>`
-              : `<button class="ticket-btn" style="${routeBlock ? 'background:linear-gradient(180deg,#8c2d2d 0%,#521616 100%); color:#fff;' : ''}" onclick="window.GT.startTravel('${destKey}', ${finalPrice}, ${hours}, false)">${routeBlock ? 'Nödbiljett (+60%)' : 'Köp biljett'}<br>${finalPrice} kr</button>`}
+              : `<button class="ticket-btn" onclick="window.GT.startTravel('${destKey}', ${finalPrice}, ${hours}, false)">Köp biljett<br>${finalPrice} kr</button>`}
           </div>
         </div>
       `;
@@ -3835,6 +2817,18 @@
          </div>`
       : '';
 
+    const goals = ensureJourneyGoals();
+    const goalCitiesList = goals.souvenirCities.map(ck => ({
+      key: ck,
+      name: W.cities[ck]?.name || ck,
+      done: Boolean(hasGoalSouvenirFrom(ck))
+    }));
+    const goalQuickHtml = `<div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:5px; align-items:center;">
+      <span style="font-size:10.5px; color:#ff9f43; font-weight:bold;">★ Dina passmål (klicka för att visa):</span>
+      ${goalCitiesList.map(g => `<button type="button" class="globe-brass-btn" data-goal-focus="${g.key}" style="padding:2px 8px; font-size:10px; border-color:${g.done ? '#66e38c' : '#ff9f43'}; color:${g.done ? '#8cf0a4' : '#ffd875'};">${g.done ? '✓' : '★'} ${g.name}</button>`).join('')}
+      <span style="font-size:10px; color:#9ec7a6; margin-left:4px;">· Streckade linjer = direktförbindelser härifrån</span>
+    </div>`;
+
     const botLegendHtml = (state.bots && state.bots.length > 0)
       ? `<div style="margin-top:5px; padding-top:5px; border-top:1px dashed rgba(212,166,74,0.35); display:flex; flex-wrap:wrap; gap:5px; align-items:center;">
            <span style="font-size:10.5px; color:#ffd875; font-weight:bold;">Medresenärer (klicka för rutt):</span>
@@ -3873,6 +2867,7 @@
         <div class="globe-overlay-bottom">
           <div class="globe-info-strip">
             <div><b style="color:#ffd875;">Avverkade etapper:</b> ${routesSummary}</div>
+            ${goalQuickHtml}
             ${botLegendHtml}
             ${eventsHtml}
           </div>
@@ -3893,6 +2888,8 @@
       activeGlobeRenderer = new window.GlobeRenderer(canvas, {
         radius: autoRadius,
         doneWonders: state.doneWonders,
+        goalCities: goalCitiesList,
+        showRoutes: true,
         onWonderClick: (wKey, w) => openWonderModal(wKey, w)
       });
       activeGlobeRenderer.focusBotId = focusBotId || null;
@@ -3914,6 +2911,18 @@
       canvas.addEventListener('mousedown', stopSpin);
       canvas.addEventListener('touchstart', stopSpin, { passive: true });
       canvas.addEventListener('wheel', stopSpin, { passive: true });
+
+      document.querySelectorAll('[data-goal-focus]').forEach(btn => {
+        btn.onclick = () => {
+          const gKey = btn.dataset.goalFocus;
+          const gc = gKey && W.cities[gKey];
+          if (gc) {
+            stopSpin();
+            activeGlobeRenderer.focusOn(gc.lat, gc.lon, null, Math.max(260, activeGlobeRenderer.radius), 600);
+            AudioMgr.play('klick');
+          }
+        };
+      });
 
       document.querySelectorAll('[data-bot-focus]').forEach(btn => {
         btn.onclick = () => {
@@ -4040,18 +3049,14 @@
         addHours(timeValue);
       }
 
-      // Spara resrutten i reshistoriken & blockera sträckan i 3 dagar för övriga resenärer (Ticket to Ride-effekt!)
-      if (window.GT_BOTS) {
-        if (!state.blockedRoutes) state.blockedRoutes = {};
-        window.GT_BOTS.blockRoute(state.blockedRoutes, state.city, destKey, state.day, 'player', state.playerFirstName || 'Du', '#ffd875');
-      }
       state.travelHistory.push({
         from: state.city,
         to: destKey,
         dist: dist,
-        isBoat: isBoat
+        isBoat: isBoat,
+        isTrain: isTrain
       });
-      addJournal(`${isBoat ? 'Seglade med oceanångare' : 'Flög'} från ${origin.name} till ${dest.name} (${dist.toLocaleString('sv-SE')} km).`);
+      addJournal(`${isBoat ? 'Seglade med oceanångare' : (isTrain ? 'Åkte tåg' : 'Flög')} från ${origin.name} till ${dest.name} (${dist.toLocaleString('sv-SE')} km).`);
 
       state.city = destKey;
       state.visitedCities.add(destKey);
@@ -4066,7 +3071,7 @@
       if (hasDelivery) {
         showToast(`Du har ett stafettpaket till ${dest.name}! Gå till hotellet för belöning!`, 4000);
       } else {
-        maybeTriggerTravelEvent(isBoat);
+        maybeTriggerTravelEvent(isBoat, isTrain);
       }
     }
 
@@ -4184,11 +3189,15 @@
     if (tab === 'phone') {
       const goals = ensureJourneyGoals();
       const regionsVisited = getVisitedRegions().size;
-      const canAskLoan = state.cash < 1800 && (state.callsHomeUsed || 0) < 2;
-      const callsLeft = Math.max(0, 2 - (state.callsHomeUsed || 0));
-      const parentGreeting = state.cash < 1800
-        ? `"Hallå ${state.playerFirstName}! Vad roligt att du ringer från ${city.name}! Låter det lite tunt i reskassan? Du vet att vi alltid kan föra över en nöds slant om det kniper!"`
-        : `"Hej älskling! Är du ända borta i ${city.name} på dag ${state.day}? Glöm inte att äta ordentligt, spara på reskassan och samla dina stämplar i passet!"`;
+      const loanAmt = BAL.CALL_HOME_AMOUNT || 1200;
+      const loanThresh = BAL.CALL_HOME_THRESHOLD || 1500;
+      const loanMax = BAL.CALL_HOME_MAX || 2;
+      const loanPenalty = BAL.CALL_HOME_SCORE_PENALTY || 250;
+      const canAskLoan = state.cash < loanThresh && (state.callsHomeUsed || 0) < loanMax;
+      const callsLeft = Math.max(0, loanMax - (state.callsHomeUsed || 0));
+      const parentGreeting = state.cash < loanThresh
+        ? `"Hallå ${state.playerFirstName}! Vad roligt att du ringer från ${city.name}! Låter det lite tunt i reskassan? Vi kan föra över ett nödlån på ${loanAmt.toLocaleString('sv-SE')} kr — men det kostar ${loanPenalty} slutpoäng i klubben!"`
+        : `"Hej älskling! Är du ända borta i ${city.name} på dag ${state.day}? Glöm inte att jobba, pruta smart och bygga lokalkännedom!"`;
 
       const html = `
         <div class="scene-fullscreen scene-hotel-desk" style="background-image:url(${getHotelPhoto(state.city)})">
@@ -4218,13 +3227,13 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                   ${canAskLoan ? `
                     <button class="stamp-action-btn" onclick="window.GT.callHomeForMoney()">
-                      Be om nödpengar (+1 500 kr · ${callsLeft} kvar)
+                      Be om nödlån (+${loanAmt.toLocaleString('sv-SE')} kr · -${loanPenalty} p · ${callsLeft} kvar)
                     </button>
                   ` : `
                     <span style="font-size:11.5px; color:#c4b08e;">
-                      ${(state.callsHomeUsed || 0) >= 2
-                        ? 'Du har redan utnyttjat båda dina nödlån hemifrån under den här resan.'
-                        : 'Nödlån hemifrån (+1 500 kr) kan begäras när din reskassa sjunker under 1 800 kr.'}
+                      ${(state.callsHomeUsed || 0) >= loanMax
+                        ? 'Du har redan utnyttjat alla dina nödlån hemifrån under den här resan.'
+                        : `Nödlån hemifrån (+${loanAmt.toLocaleString('sv-SE')} kr, -${loanPenalty} slutpoäng) kan begäras när din reskassa sjunker under ${loanThresh.toLocaleString('sv-SE')} kr.`}
                     </span>
                   `}
                   <button class="globe-brass-btn" onclick="window.GT.openHotelModal('reception')">Lägg på luren</button>
@@ -4279,22 +3288,26 @@
   }
 
   function callHomeForMoney() {
-    if ((state.callsHomeUsed || 0) >= 2) {
-      showToast('Du har redan fått två nödlån hemifrån under denna resa.', 2600);
+    const loanAmt = BAL.CALL_HOME_AMOUNT || 1200;
+    const loanThresh = BAL.CALL_HOME_THRESHOLD || 1500;
+    const loanMax = BAL.CALL_HOME_MAX || 2;
+    const loanPenalty = BAL.CALL_HOME_SCORE_PENALTY || 250;
+    if ((state.callsHomeUsed || 0) >= loanMax) {
+      showToast('Du har redan fått dina nödlån hemifrån under denna resa.', 2600);
       return;
     }
-    if (state.cash >= 1800) {
-      showToast('Du har gott om reskassa kvar! Nödlån behövs först under 1 800 kr.', 2600);
+    if (state.cash >= loanThresh) {
+      showToast(`Du har gott om reskassa kvar! Nödlån behövs först under ${loanThresh.toLocaleString('sv-SE')} kr.`, 2600);
       return;
     }
     state.callsHomeUsed = (state.callsHomeUsed || 0) + 1;
-    changeCash(1500, 'Nödpengar hemifrån (telefonsamtal)');
-    addJournal(`Ringde hem till Sverige från ${W.cities[state.city]?.name || state.city} och fick 1 500 kr i nödpengar insatt på reskassan.`);
+    changeCash(loanAmt, `Nödlån hemifrån (-${loanPenalty} slutpoäng)`);
+    addJournal(`Ringde hem till Sverige från ${W.cities[state.city]?.name || state.city} och tog ett nödlån på ${loanAmt.toLocaleString('sv-SE')} kr (-${loanPenalty} p).`);
     AudioMgr.play('cash');
     saveGame();
     const reply = state.callsHomeUsed === 1
-      ? `"Självklart hjälper vi till, ${state.playerFirstName}! Vi förde just över 1 500 kr till ditt konto. Ta gärna ett jobbpass i lokaltidningen också så pengarna räcker hela vägen hem!"`
-      : `"Okej då, sista nöds lanten på 1 500 kr är på väg! Nu får du lova att pruta smart på basaren och jobba ihop resten själv. Vi håller tummarna!"`;
+      ? `"Självklart hjälper vi till, ${state.playerFirstName}! Vi förde just över ${loanAmt.toLocaleString('sv-SE')} kr. Ta gärna ett jobbpass i lokaltidningen och bygg lokalkännedom så pengarna räcker hela vägen hem!"`
+      : `"Okej då, sista nödlånet på ${loanAmt.toLocaleString('sv-SE')} kr är på väg! Nu får du pruta smart på marknaden och jobba ihop resten själv."`;
     openHotelModal('phone', reply);
   }
 
@@ -4419,23 +3432,28 @@
   }
 
   function sleepHotel(price) {
+    state.sleptBroke = false;
     if (price === 0 && state.freeHotelCities.has(state.city)) {
       state.freeHotelCities.delete(state.city);
       state.dayLog.activities.push('Gratis hotellnatt (stafettbelöning)');
     } else if (state.cash < price) {
-      showToast("Du har ont om pengar! Du tar ett enklare logi på tågstationen.", 3000);
-      addJournal(`Sov på en bänk på tågstationen i ${W.cities[state.city].name} med tom plånbok.`);
+      state.sleptBroke = true;
+      showToast('Ont om pengar! En obekväm natt på tågstationen kostar dig 3 morgontimmar imorgon.', 3400);
+      addJournal(`Sov på en bänk på tågstationen i ${W.cities[state.city].name} med tom plånbok (vaknar först kl. ${BAL.BROKE_SLEEP_WAKE_HOUR || 11}:00).`);
     } else {
       changeCash(-price, 'Hotellnatt');
     }
 
     AudioMgr.play('hotel');
 
-    const acts = state.dayLog.activities.length > 0 ? 
-      state.dayLog.activities.map(a => `<li>${a}</li>`).join('') : 
+    const acts = state.dayLog.activities.length > 0 ?
+      state.dayLog.activities.map(a => `<li>${a}</li>`).join('') :
       '<li>En lugn dag utan större strapatser.</li>';
 
-    const teaser = TEASERS[state.day % TEASERS.length];
+    const tomorrowEvs = (W.worldEvents || []).filter(ev => (state.day + 1) >= ev.startDay && (state.day + 1) <= ev.endDay);
+    const teaser = tomorrowEvs.length > 0
+      ? `Pågår imorgon i ${W.cities[tomorrowEvs[0].city]?.name || tomorrowEvs[0].city}: <b>${tomorrowEvs[0].title}</b> — ${tomorrowEvs[0].effectText}`
+      : TEASERS[state.day % TEASERS.length];
 
     state.deals = {};
     const routePool = getCityRoutePool(state.city).map(r => r.to);
@@ -4444,6 +3462,7 @@
     state.deals[luckyCity] = 25; // 25% sista-minuten-rabatt
     state.departureBoard = null; // Ny dag = ny avgångstavla i morgon bitti!
 
+    const wakeHour = state.sleptBroke ? (BAL.BROKE_SLEEP_WAKE_HOUR || 11) : (BAL.DAY_START_HOUR || 8);
     const reportHtml = `
       <div class="modal-hotel-ledger" style="max-width:600px;">
         <h3 style="margin:0 0 10px; font-family:Georgia,serif; color:#4d2f18; border-bottom:2px solid #8c6832; padding-bottom:6px;">Kvällsrapport · Dag ${state.day}</h3>
@@ -4451,6 +3470,7 @@
         <ul style="margin-left:20px; font-size:13.5px; line-height:1.6;">
           ${acts}
         </ul>
+        ${state.sleptBroke ? `<div style="margin-top:8px; padding:6px 10px; background:#fae6e6; border-left:3px solid #a82828; font-size:12px; color:#7a1c1c;"><b>Trött efter natten på stationen:</b> Du försover dig och kommer ut på stan först kl. ${String(wakeHour).padStart(2, '0')}:00.</div>` : ''}
         <div class="guestbook-note" style="margin-top:12px;">
           <div style="font-weight:bold; font-style:normal; color:#7a4f12; margin-bottom:4px;">Morgondagens spaning:</div>
           <div>${teaser}</div>
@@ -4467,7 +3487,9 @@
 
   function wakeUpNextDay() {
     state.day++;
-    state.hour = 8;
+    const wakeHour = state.sleptBroke ? (BAL.BROKE_SLEEP_WAKE_HOUR || 11) : (BAL.DAY_START_HOUR || 8);
+    state.hour = wakeHour;
+    state.sleptBroke = false;
     state.dayLog.activities = [];
     syncBotsToCurrentDay();
 
@@ -4484,7 +3506,7 @@
     if (daysLeft <= 5 && state.city !== W.startCity) {
       showToast(`SLUTSPURT! Endast ${daysLeft} dagar kvar, dags att ta dig hem till ${homeName}!`, 4000);
     } else {
-      showToast(`Dag ${state.day} har grytt! Klockan är 08:00.`, 2500);
+      showToast(`Dag ${state.day} har grytt! Klockan är ${String(wakeHour).padStart(2, '0')}:00.`, 2500);
     }
   }
 
@@ -4533,8 +3555,8 @@
       });
     }
 
-    const tierNames = { 1: 'Juicy Couture Daydreamer', 2: 'Gul dagstursryggsäck', 3: 'Reseduffelbag', 4: 'Stor vandringsryggsäck' };
-    const bagTitle = tierNames[state.backpackLevel] || tierNames[1];
+    const currentTierObj = BACKPACK_TIERS.find(t => t.level === (state.backpackLevel || 1)) || BACKPACK_TIERS[0];
+    const bagTitle = currentTierObj.name;
     const html = `
       <div class="scene-fullscreen scene-passport-full">
         <div style="width:100%; height:100%; display:flex; flex-direction:column; padding:14px 20px; gap:10px;">
@@ -4702,6 +3724,12 @@
                 <div class="pp-field-val">${accuracy} % rätt</div>
               </div>
             </div>
+            ${Object.keys(state.regionKnowledge || {}).length > 0 ? `
+              <div style="margin-top:6px; padding-top:5px; border-top:1px dotted rgba(130,108,78,0.35); font-size:10px; color:#4f371e;">
+                <b>Regional lokalkännedom:</b>
+                ${Object.entries(state.regionKnowledge).map(([rk, pct]) => `<span style="margin-right:6px;">${rk.charAt(0).toUpperCase() + rk.slice(1)} <b>${pct}%</b></span>`).join('')}
+              </div>
+            ` : ''}
           </div>
           <div class="passport-page-num">Sida 2</div>
         </div>
@@ -4810,29 +3838,36 @@
     showModal(html);
   }
 
-  // --- Resehändelser under flyg / oceanresa ---
+  // --- Resehändelser under flyg, tåg eller oceanresa ---
   let activeTravelEvent = null;
-
   let lastTravelEventLeg = -10;
+  const usedTravelEventIds = new Set();
 
-  function maybeTriggerTravelEvent(isBoat) {
-    const pool = (W.travelEvents && (isBoat ? W.travelEvents.boat : W.travelEvents.flight)) || [];
+  function maybeTriggerTravelEvent(isBoat, isTrain = false) {
+    const modeKey = isBoat ? 'boat' : (isTrain ? 'train' : 'flight');
+    const pool = (W.travelEvents && W.travelEvents[modeKey]) || [];
     if (pool.length === 0) return;
 
-    // Mer sällsynta & speciella resehändelser: aldrig två resor i rad, 25 % chans på flyg, 45 % på båt
     const currentLeg = state.travelHistory.length;
-    if (currentLeg - lastTravelEventLeg < 2) return;
-    const chance = isBoat ? 0.45 : 0.25;
+    if (currentLeg - lastTravelEventLeg < 1) return;
+    const chance = isBoat ? 0.70 : (isTrain ? 0.65 : 0.45);
     if (Math.random() > chance) return;
 
     lastTravelEventLeg = currentLeg;
-    const ev = pool[Math.floor(Math.random() * pool.length)];
+    const unused = pool.filter(e => !usedTravelEventIds.has(e.id));
+    const src = unused.length > 0 ? unused : pool;
+    const ev = src[Math.floor(Math.random() * src.length)];
+    if (ev.id) usedTravelEventIds.add(ev.id);
     activeTravelEvent = ev;
 
     const cityName = W.cities[state.city]?.name || state.city;
     const photoSrc = isBoat
       ? (Math.random() < 0.5 ? 'assets/travel/ship_ocean.jpg' : 'assets/travel/ship_harbor.jpg')
-      : (Math.random() < 0.5 ? 'assets/travel/plane_wing.jpg' : 'assets/travel/plane_runway.jpg');
+      : (isTrain
+        ? 'assets/photos/airport_hall.jpg'
+        : (Math.random() < 0.5 ? 'assets/travel/plane_wing.jpg' : 'assets/travel/plane_runway.jpg'));
+    const modeTag = isBoat ? 'TILL SJÖSS' : (isTrain ? 'PÅ TÅGET' : 'UNDER FLYGRESAN');
+    const modeKicker = isBoat ? 'OVÄNTAT TILL SJÖSS' : (isTrain ? 'MÖTE PÅ TÅGET' : 'OVÄNTAD RESEHÄNDELSE');
     const letters = ['A', 'B', 'C'];
 
     const choicesHtml = ev.choices.map((ch, idx) => `
@@ -4847,11 +3882,11 @@
         <div class="travel-event-photo-col">
           <div class="travel-event-polaroid">
             <img src="${photoSrc}" alt="Resehändelse">
-            <div class="travel-polaroid-cap">${isBoat ? 'TILL SJÖSS' : 'UNDER RESAN'} · DAG ${state.day}</div>
+            <div class="travel-polaroid-cap">${modeTag} · DAG ${state.day}</div>
           </div>
         </div>
         <div class="travel-event-body-col">
-          <div class="travel-event-kicker">${isBoat ? 'OVÄNTAT TILL SJÖSS' : 'OVÄNTAD RESEHÄNDELSE'} · ${cityName.toUpperCase()}</div>
+          <div class="travel-event-kicker">${modeKicker} · ${cityName.toUpperCase()}</div>
           <h3 class="travel-event-heading">${ev.title}</h3>
           <p class="travel-event-story">${ev.text}</p>
           <div class="travel-event-choices">${choicesHtml}</div>
@@ -4876,7 +3911,7 @@
         AudioMgr.play('right1');
         showToast(`Snyggt! Du vann +${ch.gamble.win} kr!`, 2800);
       } else {
-        changeCash(ch.gamble.lose, 'Förlust i salongen');
+        changeCash(ch.gamble.lose, 'Förlust på resan');
         AudioMgr.play('wrong1');
         showToast(`Otur! Du förlorade ${Math.abs(ch.gamble.lose)} kr.`, 2800);
       }
@@ -4886,6 +3921,12 @@
 
     if (ch.hours) {
       state.hour = Math.max(8, Math.min(24, state.hour + ch.hours));
+    }
+
+    if (ch.freeHotel) {
+      state.freeHotelCities.add(state.city);
+      AudioMgr.play('right1');
+      showToast(`Gratis hotellnatt i ${W.cities[state.city]?.name || state.city} inlagd!`, 3000);
     }
 
     if (ch.deal) {
@@ -5078,7 +4119,7 @@
 
     let selectedStartCity = defaultStart;
     let selectedDays = 30;
-    let selectedBotCount = 3;
+    let selectedBotCount = 0; // Solo som lugn standard — tävling mot bottar är ett aktivt val!
     let selectedDifficulty = 'mixed';
 
     const cityOptionsHtml = sortedCities.map(k => {
@@ -5285,6 +4326,8 @@
     state.claimedContracts = [];
     state.contractBonusPoints = 0;
     state.claimedCitiesCount = 0;
+    state.regionKnowledge = {};
+    state.streak = 0;
     state.bots = (window.GT_BOTS && chosenBotCount > 0)
       ? window.GT_BOTS.createBots(chosenBotCount, chosenBotDiff, chosenStart, W)
       : [];
@@ -5302,7 +4345,41 @@
     closeModal();
     renderCity();
     updateOpponentHUD();
-    showToast(`Trevlig resa från ${startName}, ${fn}! Se dina resmål i passet.`, 3400);
+    openDayOneBriefing();
+  }
+
+  // Tydlig välkomstbriefing på Dag 1 så spelaren direkt ser sitt ärende & kan planera på 3D-jordgloben!
+  function openDayOneBriefing() {
+    const goals = ensureJourneyGoals();
+    const startName = W.cities[state.startCity]?.name || 'startstaden';
+    const goalListHtml = goals.souvenirCities.map(ck => {
+      const c = W.cities[ck];
+      return `<li><b>${c ? c.name : ck}</b>${c ? ` (${c.country}, ${c.region})` : ''}</li>`;
+    }).join('');
+    const html = `
+      <div class="card-modal" style="max-width:560px; background:linear-gradient(180deg,#fdf7e8 0%,#f0e2c2 100%); border:3px ridge #9e7537;">
+        <div style="font-size:10.5px; letter-spacing:1.6px; color:#8c5a18; font-weight:bold; text-transform:uppercase;">GLOBETROTTERKLUBBEN · INCHECKNING DAG 1</div>
+        <h2 style="margin:4px 0 8px; font-family:Georgia,serif; color:#3d2410;">Välkommen till ${startName}, ${state.playerFirstName}!</h2>
+        <p style="font-size:13px; color:#4f371e; margin:0 0 10px; line-height:1.45;">
+          Du har <b>${W.dayLimit} dagar</b> och <b>${state.cash.toLocaleString('sv-SE')} kr</b> på dig att resa ut i världen och ta dig hem till <b>${startName}</b> igen. För att bli antagen i klubben krävs:
+        </p>
+        <div style="background:rgba(130,95,40,0.09); border-left:3px solid #9e7537; padding:9px 12px; font-size:13px; color:#2b1c0e; margin-bottom:12px;">
+          <div style="margin-bottom:5px;"><b>1. Besök minst ${goals.requiredRegions} världsdelar</b> och kom hem i tid.</div>
+          <div style="margin-bottom:5px;"><b>2. Klara ${goals.requiredCompetencies} olika jobbpass</b> i lokaltidningen (yrkeskompetens).</div>
+          <div><b>3. Köp (eller posta hem) en souvenir från:</b>
+            <ul style="margin:4px 0 0 18px; padding:0;">${goalListHtml}</ul>
+          </div>
+        </div>
+        <p style="font-size:12px; color:#6b5235; margin:0 0 12px; line-height:1.45;">
+          <b>Så klarar du resan:</b> Din startkassa (${state.cash.toLocaleString('sv-SE')} kr) räcker bara en bit. <b>Jobba</b> i dagstidningen, <b>handla souvenirer</b> för vinst långt bort, och <b>besök sevärdheter</b> för lokalkännedom (ger upp till +30 % lön, bättre prutning och -10 % biljettpris!).
+        </p>
+        <div class="modal-footer" style="justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <button class="globe-brass-btn" onclick="window.GT.openGlobeModal()">🗺️ Planera rutt på jordgloben</button>
+          <button class="stamp-action-btn" onclick="window.GT.closeModal()">Kliv ut i ${startName} »</button>
+        </div>
+      </div>
+    `;
+    showModal(html);
   }
 
   // --- 2-Spelare Online Duell (WebRTC / PeerJS med 4-siffrig rumskod, Live Poängmätare & Jobbdueller!) ---
@@ -5646,7 +4723,7 @@
           </div>
         `;
       }
-    }, city?.skyline);
+    }, city?.skyline, { finishLabel: 'Avsluta duellen »' });
   }
 
   function openIncomingChallenge() {
@@ -5724,7 +4801,7 @@
           </div>
 
           <p style="font-size:12.5px; color:#e6d7bd; margin:0 0 12px; line-height:1.4;">
-            Ni får <b>exakt samma slumpade passmål</b> och tävlar i realtid runt jorden! Ni ser varandras positioner och reslinjer (Röd vs. Blå) live på 3D-jordgloben. Först hem till <b>Malmö</b> med alla mål klara vinner!
+            Ni får <b>exakt samma slumpade passmål</b> och tävlar i realtid runt jorden! Ni ser varandras positioner och reslinjer (Röd vs. Blå) live på 3D-jordgloben. Först hem till <b>${homeCityName()}</b> med alla mål klara vinner!
           </p>
 
           <div class="mp-lobby-grid">
@@ -5872,7 +4949,7 @@
       <div class="card-modal" style="max-width:680px;">
         <div class="diploma">
           <div class="diploma-title">${iWon ? '★ DUELLSEGER! ★' : 'DUELLEN AVGJORD'}</div>
-          <div class="diploma-rank">${iWon ? `Grattis ${me.name}! Du slog ${o.name} i racet jorden runt!` : `${o.name} hann först hem till Malmö med alla mål klara!`}</div>
+          <div class="diploma-rank">${iWon ? `Grattis ${me.name}! Du slog ${o.name} i racet jorden runt!` : `${o.name} hann först hem till ${homeCityName()} med alla mål klara!`}</div>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
           <div class="stat-box" style="border:2px solid #c8322b; text-align:left; padding:10px;">
@@ -5910,7 +4987,7 @@
   function getVisitedRegions() {
     const regs = new Set();
     state.visitedCities.forEach(ck => {
-      if (W.cities[ck] && W.cities[ck].region) regs.add(W.cities[ck].region);
+      if (W.cities[ck] && W.cities[ck].region) regs.add(ROUTES.normRegion(W.cities[ck].region));
     });
     return regs;
   }
@@ -5952,11 +5029,25 @@
 
     let rank = 'Turist';
     const accuracy = state.questionsTotal > 0 ? (state.questionsCorrect / state.questionsTotal) : 0;
-    
+    const daysLeft = Math.max(0, (W.dayLimit || 30) - state.day);
+    const totalHomeSouvenirs = state.backpack.filter(it => it.kind !== 'kurir').length + (state.mailedHome || []).length;
+    const loanPenaltyTotal = (state.callsHomeUsed || 0) * (BAL.CALL_HOME_SCORE_PENALTY || 250);
+    const finalScore = Math.max(0,
+      state.stamps.length * 150 +
+      state.doneWonders.size * 220 +
+      state.competencies.length * 140 +
+      Math.round(accuracy * 300) +
+      (completedRoundTrip ? daysLeft * 45 : 0) +
+      Math.floor(Math.max(0, state.cash) / 100) +
+      totalHomeSouvenirs * 60 +
+      (state.contractBonusPoints || 0) -
+      loanPenaltyTotal
+    );
+
     if (completedRoundTrip) {
-      if (state.stamps.length >= 4 && state.doneWonders.size >= 2 && accuracy >= 0.75) {
+      if (finalScore >= 1650 && accuracy >= 0.70 && (state.callsHomeUsed || 0) === 0) {
         rank = 'Globetrotter';
-      } else if (state.stamps.length >= 3 && state.doneWonders.size >= 1) {
+      } else if (finalScore >= 1100) {
         rank = 'Upptäckare';
       } else {
         rank = 'Resenär';
@@ -5965,22 +5056,43 @@
 
     try {
       const museum = JSON.parse(localStorage.getItem('gt_museum') || '[]');
-      state.backpack.forEach(item => {
+      const allHomeItems = [
+        ...state.backpack.filter(it => it.kind !== 'kurir'),
+        ...(state.mailedHome || [])
+      ];
+      allHomeItems.forEach(item => {
         if (!museum.some(m => m.id === item.id)) {
           museum.push({ id: item.id, name: item.name, origin: item.origin });
         }
       });
       localStorage.setItem('gt_museum', JSON.stringify(museum));
-    } catch(e) {}
+    } catch (e) {}
+
+    let botStandingsHtml = '';
+    if (window.GT_BOTS && Array.isArray(state.bots) && state.bots.length > 0) {
+      const pEntry = { ...getPlayerBotEntry(), finished: completedRoundTrip };
+      const finalTable = window.GT_BOTS.getStandings(pEntry, state.bots);
+      botStandingsHtml = `
+        <div style="margin-top:10px;">
+          <h4 style="color:#6b461e; margin:0 0 4px; font-family:Georgia,serif;">Slutställning mot medresenärer:</h4>
+          <table class="bot-standings-table" style="font-size:12px;">
+            <thead><tr><th>#</th><th>Resenär</th><th>Stämplar</th><th>Yrken</th><th>Poäng</th></tr></thead>
+            <tbody>
+              ${finalTable.map(r => `<tr class="${r.isPlayer ? 'is-player' : ''}"><td><b>#${r.rank}</b></td><td>${r.name}${r.finished ? ' 🏁' : ''}</td><td>${r.stamps}</td><td>${r.competencies}</td><td><b>${r.score} p</b></td></tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
 
     const html = `
       <div class="card-modal" style="max-width:680px;">
         <div class="diploma">
           <div class="diploma-title">Globetrotterklubben</div>
-          <div class="diploma-rank">Antagen som: <b>${rank}</b></div>
+          <div class="diploma-rank">Antagen som: <b>${rank}</b> · <span>${finalScore.toLocaleString('sv-SE')} p</span></div>
           <p style="font-size:14px; color:#5b3b1c;">
             ${completedRoundTrip ? 
-              'Grattis! Du har rest jorden runt och återvänt hem till Stockholm inom tidsgränsen.' : 
+              `Grattis! Du har rest jorden runt och återvänt hem till ${homeCityName()} inom tidsgränsen.` : 
               'Tiden tog slut innan du hann hela vägen hem. Men du har samlat minnen och kunskap för livet!'}
           </p>
         </div>
@@ -5992,8 +5104,10 @@
           <div class="stat-box">Allmänbildning: <b>${Math.round(accuracy * 100)} % rätt</b></div>
           <div class="stat-box">Kvarvarande kassa: <b>${state.cash.toLocaleString('sv-SE')} kr</b></div>
           <div class="stat-box">Dagar använda: <b>${state.day} av ${W.dayLimit}</b></div>
-          <div class="stat-box">Hemförda souvenirer: <b>${state.backpack.length} st</b></div>
+          <div class="stat-box">Hemförda souvenirer: <b>${totalHomeSouvenirs} st</b></div>
         </div>
+
+        ${botStandingsHtml}
 
         <div style="margin-top:10px;">
           <h4 style="color:#6b461e; margin:0 0 4px; font-family:Georgia,serif;">Resans Klippbok:</h4>

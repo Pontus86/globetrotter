@@ -7,7 +7,7 @@ const root = typeof window !== 'undefined' ? window : global;
 
 root.GT_WORLD = {
   startCity: 'stockholm',
-  startCash: 10000,
+  startCash: 4500,
   dayLimit: 30,
   backpackSlots: 5,
 

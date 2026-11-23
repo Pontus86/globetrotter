@@ -242,6 +242,8 @@
       this.onGlobeClick = options.onGlobeClick || null;
       this.onWonderClick = options.onWonderClick || null;
       this.doneWonders = options.doneWonders || null;
+      this.goalCities = options.goalCities || null; // [{ key, done }]
+      this.showRoutes = options.showRoutes !== false;
       this.pinMarker = null;   // { lat, lon, label, color }
       this.targetMarker = null; // { lat, lon, label, color }
 
@@ -651,6 +653,40 @@
         ctx.restore();
       }
 
+      // 3b. Utgående direktförbindelser från nuvarande stad (gör globen till en riktig ruttplanerare!)
+      if (!this.mini && !this.quizMode && !this.flightAnimation && this.showRoutes && window.GT_ROUTES && window.GT_WORLD && window.GT_WORLD.cities && window.GT_WORLD.cities[currentCityKey]) {
+        const originC = window.GT_WORLD.cities[currentCityKey];
+        const outKeys = window.GT_ROUTES.getAllOutgoingEdges(window.GT_WORLD, currentCityKey);
+        if (outKeys.length > 0) {
+          const v1 = latLonToVector(originC.lat, originC.lon);
+          ctx.save();
+          ctx.setLineDash([5, 5]);
+          ctx.lineWidth = 1.6 * zoomScale;
+          ctx.strokeStyle = 'rgba(140, 240, 164, 0.58)';
+          outKeys.forEach(destKey => {
+            const c2 = window.GT_WORLD.cities[destKey];
+            if (!c2) return;
+            const v2 = latLonToVector(c2.lat, c2.lon);
+            ctx.beginPath();
+            let drawing = false;
+            const segments = 36;
+            for (let s = 0; s <= segments; s++) {
+              const v = slerp(v1, v2, s / segments);
+              const ll = vectorToLatLon(v);
+              const pt = this.project(ll[0], ll[1]);
+              if (pt.visible) {
+                if (!drawing) { ctx.moveTo(pt.x, pt.y); drawing = true; }
+                else { ctx.lineTo(pt.x, pt.y); }
+              } else {
+                drawing = false;
+              }
+            }
+            ctx.stroke();
+          });
+          ctx.restore();
+        }
+      }
+
       // 4. Tidigare avklarade resrutter (Röda linjen precis som i BackPacker!)
       if (!this.mini && travelHistory && travelHistory.length > 0) {
         ctx.save();
@@ -882,15 +918,29 @@
 
           const isCurrent = (key === currentCityKey);
           const cityEvent = activeEvents && activeEvents.find(ev => ev.city === key);
+          const goalEntry = Array.isArray(this.goalCities) ? this.goalCities.find(g => g.key === key) : null;
 
           if (this.mini) {
             ctx.save();
             ctx.beginPath();
-            ctx.arc(proj.x, proj.y, isCurrent ? 2.6 : (cityEvent ? 2.2 : 1.5), 0, Math.PI * 2);
-            ctx.fillStyle = isCurrent ? '#ffcc00' : (cityEvent ? cityEvent.color : '#fff');
+            ctx.arc(proj.x, proj.y, isCurrent ? 2.6 : (goalEntry ? 2.4 : (cityEvent ? 2.2 : 1.5)), 0, Math.PI * 2);
+            ctx.fillStyle = isCurrent ? '#ffcc00' : (goalEntry ? (goalEntry.done ? '#66e38c' : '#ff6b6b') : (cityEvent ? cityEvent.color : '#fff'));
             ctx.fill();
             ctx.restore();
             return;
+          }
+
+          // Pulserande målring för spelarens 3 passmål (souvenirstäder)
+          if (goalEntry) {
+            const gPulse = 0.5 + 0.5 * Math.sin(performance.now() / 320);
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(proj.x, proj.y, (11 + gPulse * 5) * zoomScale, 0, Math.PI * 2);
+            ctx.strokeStyle = goalEntry.done ? '#66e38c' : '#ff9f43';
+            ctx.globalAlpha = 0.92 - gPulse * 0.35;
+            ctx.lineWidth = 2.6;
+            ctx.stroke();
+            ctx.restore();
           }
 
           // Pulserande händelsering för aktiva världshändelser
@@ -942,7 +992,18 @@
           ctx.fillStyle = isCurrent ? '#ffd875' : '#f7f0e2';
           ctx.fillText(city.name, proj.x + 15, proj.y + fontSize * 0.34);
 
-          if (cityEvent && !this.flightAnimation) {
+          if (goalEntry && !this.flightAnimation) {
+            ctx.font = 'bold 9.5px sans-serif';
+            const gText = goalEntry.done ? '✓ MÅL KLART' : '★ PASSMÅL';
+            const gW = ctx.measureText(gText).width;
+            const gY = proj.y + boxH / 2 + 2;
+            ctx.fillStyle = goalEntry.done ? 'rgba(18, 52, 28, 0.94)' : 'rgba(66, 32, 10, 0.94)';
+            ctx.fillRect(proj.x + 10, gY, gW + 10, 14);
+            ctx.strokeStyle = goalEntry.done ? '#66e38c' : '#ff9f43';
+            ctx.strokeRect(proj.x + 10, gY, gW + 10, 14);
+            ctx.fillStyle = goalEntry.done ? '#8cf0a4' : '#ffd875';
+            ctx.fillText(gText, proj.x + 15, gY + 10.5);
+          } else if (cityEvent && !this.flightAnimation) {
             ctx.font = 'bold 10px sans-serif';
             const evText = `* ${cityEvent.title}`;
             const evW = ctx.measureText(evText).width;

@@ -31,7 +31,6 @@
       "lat": 59.91,
       "lon": 10.75,
       "tagline": "Fjordhuvudstad bland skog och skulpturer",
-      "map": "assets/maps/map1914a.jpg",
       "skyline": "assets/cities/oslo.jpg",
       "hotel": {
         "name": "Grand Hotel Karl Johan",
@@ -266,7 +265,6 @@
       "lat": 55.68,
       "lon": 12.57,
       "tagline": "Cykelstad med färgglada kanalhus och gemyt",
-      "map": "assets/maps/map1914a.jpg",
       "skyline": "assets/cities/kopenhamn.jpg",
       "hotel": {
         "name": "Hotel Nyhavn",
@@ -501,7 +499,6 @@
       "lat": 60.17,
       "lon": 24.94,
       "tagline": "Vit nyklassicism vid Finska viken",
-      "map": "assets/maps/map1914a.jpg",
       "skyline": "assets/cities/helsingfors.jpg",
       "hotel": {
         "name": "Hotell Esplanaden",
@@ -736,7 +733,6 @@
       "lat": 64.15,
       "lon": -21.94,
       "tagline": "Världens nordligaste huvudstad bland gejsrar",
-      "map": "assets/maps/map1914a.jpg",
       "skyline": "assets/cities/reykjavik.jpg",
       "hotel": {
         "name": "Guesthouse Laugavegur",
@@ -971,7 +967,6 @@
       "lat": 53.35,
       "lon": -6.26,
       "tagline": "Litteraturstad med gröna parker och livemusik",
-      "map": "assets/maps/map1914a.jpg",
       "skyline": "assets/cities/dublin.jpg",
       "hotel": {
         "name": "Temple Bar Inn",
@@ -1206,7 +1201,6 @@
       "lat": 52.37,
       "lon": 4.9,
       "tagline": "Kanalringar, smala gavelhus och miljoner cyklar",
-      "map": "assets/maps/map1914a.jpg",
       "skyline": "assets/cities/amsterdam.jpg",
       "hotel": {
         "name": "Canal House Hotel",
@@ -1441,7 +1435,6 @@
       "lat": 50.85,
       "lon": 4.35,
       "tagline": "Förgyllda skråhus, serietidningar och EU:s hjärta",
-      "map": "assets/maps/map1914a.jpg",
       "skyline": "assets/cities/bryssel.jpg",
       "hotel": {
         "name": "Hotel Grand-Place",
@@ -1675,7 +1668,6 @@
       "lat": 52.52,
       "lon": 13.4,
       "tagline": "Delad historia som blev Europas kreativa metropol",
-      "map": "assets/maps/map1914a.jpg",
       "skyline": "assets/cities/berlin.jpg",
       "hotel": {
         "name": "Pension Mitte",
@@ -1910,7 +1902,6 @@
       "lat": 50.08,
       "lon": 14.44,
       "tagline": "De hundra spirornas stad vid floden Moldau",
-      "map": "assets/maps/map1914a.jpg",
       "skyline": "assets/cities/prag.jpg",
       "hotel": {
         "name": "Hotel Malá Strana",
@@ -2145,7 +2136,6 @@
       "lat": 48.21,
       "lon": 16.37,
       "tagline": "Kejserliga palats, kafékultur och klassisk musik",
-      "map": "assets/maps/map1914a.jpg",
       "skyline": "assets/cities/wien.jpg",
       "hotel": {
         "name": "Hotel Ringstrasse",
@@ -2380,7 +2370,6 @@
       "lat": 47.37,
       "lon": 8.54,
       "tagline": "Alputsikt, kristallklar sjö och urmakarkonst",
-      "map": "assets/maps/map1914a.jpg",
       "skyline": "assets/cities/zurich.jpg",
       "hotel": {
         "name": "Hotel Limmatquai",
@@ -2615,7 +2604,6 @@
       "lat": 40.42,
       "lon": -3.7,
       "tagline": "Soliga torg, konstmuseer och sena kvällar",
-      "map": "assets/maps/map1914a.jpg",
       "skyline": "assets/cities/madrid.jpg",
       "hotel": {
         "name": "Hostal Puerta del Sol",
@@ -2850,7 +2838,6 @@
       "lat": 38.72,
       "lon": -9.14,
       "tagline": "Gula spårvagnar, kakelfasader och vemodig fado",
-      "map": "assets/maps/map1914a.jpg",
       "skyline": "assets/cities/lissabon.jpg",
       "hotel": {
         "name": "Pensão Alfama",
@@ -3085,7 +3072,6 @@
       "lat": 37.98,
       "lon": 23.73,
       "tagline": "Demokratins vagga under Parthenons marmortempel",
-      "map": "assets/maps/map1914a.jpg",
       "skyline": "assets/cities/aten.jpg",
       "hotel": {
         "name": "Hotel Plaka",
@@ -3320,7 +3306,6 @@
       "lat": 55.76,
       "lon": 37.62,
       "tagline": "Lökkupoler, mäktiga torg och palatslik tunnelbana",
-      "map": "assets/maps/map1914a.jpg",
       "skyline": "assets/cities/moskva.jpg",
       "hotel": {
         "name": "Hotell Arbat",
@@ -3555,7 +3540,6 @@
       "lat": 31.77,
       "lon": 35.21,
       "tagline": "Tre världsreligioners heliga stenstad",
-      "map": "assets/maps/map1914b.jpg",
       "skyline": "assets/cities/jerusalem.jpg",
       "hotel": {
         "name": "Guesthouse Gamla stan",
@@ -3790,7 +3774,6 @@
       "lat": 25.2,
       "lon": 55.27,
       "tagline": "Glittrande skyskrapor och guldmarknader vid öknen",
-      "map": "assets/maps/map1914b.jpg",
       "skyline": "assets/cities/dubai.jpg",
       "hotel": {
         "name": "Al Fahidi Heritage Inn",
@@ -4025,7 +4008,6 @@
       "lat": 19.08,
       "lon": 72.88,
       "tagline": "Bollywood, havspromenader och myllrande basarer",
-      "map": "assets/maps/map1914b.jpg",
       "skyline": "assets/cities/mumbai.jpg",
       "hotel": {
         "name": "Colaba Heritage Hotel",
@@ -4260,7 +4242,6 @@
       "lat": 27.72,
       "lon": 85.32,
       "tagline": "Böneflaggor och snöklädda Himalayatoppar",
-      "map": "assets/maps/map1914b.jpg",
       "skyline": "assets/cities/katmandu.jpg",
       "hotel": {
         "name": "Thamel Yak Lodge",
@@ -4495,7 +4476,6 @@
       "lat": 6.93,
       "lon": 79.85,
       "tagline": "Kryddhamn och palmkantad kust vid Indiska oceanen",
-      "map": "assets/maps/map1914b.jpg",
       "skyline": "assets/cities/colombo.jpg",
       "hotel": {
         "name": "Galle Face Guesthouse",
@@ -4730,7 +4710,6 @@
       "lat": 1.35,
       "lon": 103.82,
       "tagline": "Framtidsstad med hängande trädgårdar vid ekvatorn",
-      "map": "assets/maps/map1914b.jpg",
       "skyline": "assets/cities/singapore.jpg",
       "hotel": {
         "name": "Raffles Heritage Hostel",
@@ -4965,7 +4944,6 @@
       "lat": 21.03,
       "lon": 105.85,
       "tagline": "Tusenårig historia, mopeder och dimmiga sjöar",
-      "map": "assets/maps/map1914b.jpg",
       "skyline": "assets/cities/hanoi.jpg",
       "hotel": {
         "name": "Old Quarter Guesthouse",
@@ -5200,7 +5178,6 @@
       "lat": 22.32,
       "lon": 114.17,
       "tagline": "Neonskyltar, gröna färjor och branta bergstoppar",
-      "map": "assets/maps/map1914b.jpg",
       "skyline": "assets/cities/hongkong.jpg",
       "hotel": {
         "name": "Kowloon Harbour Inn",
@@ -5435,7 +5412,6 @@
       "lat": 37.57,
       "lon": 126.98,
       "tagline": "Kungapalats från 1300-talet mitt bland framtidsteknik",
-      "map": "assets/maps/map1914b.jpg",
       "skyline": "assets/cities/seoul.jpg",
       "hotel": {
         "name": "Hanok Guesthouse Bukchon",
@@ -5670,7 +5646,6 @@
       "lat": 35.01,
       "lon": 135.77,
       "tagline": "Japans gamla kejsarstad med tusen tempel",
-      "map": "assets/maps/map1914b.jpg",
       "skyline": "assets/cities/kyoto.jpg",
       "hotel": {
         "name": "Ryokan i Gion",
@@ -5905,7 +5880,6 @@
       "lat": -6.21,
       "lon": 106.85,
       "tagline": "Örikets pulserande jättestad på ön Java",
-      "map": "assets/maps/map1914b.jpg",
       "skyline": "assets/cities/jakarta.jpg",
       "hotel": {
         "name": "Kota Tua Colonial Inn",
@@ -6140,7 +6114,6 @@
       "lat": 14.6,
       "lon": 120.98,
       "tagline": "Spanska fästningsmurar, jeepneys och tropiska solnedgångar",
-      "map": "assets/maps/map1914b.jpg",
       "skyline": "assets/cities/manila.jpg",
       "hotel": {
         "name": "Intramuros Heritage Inn",
@@ -6375,7 +6348,6 @@
       "lat": 31.63,
       "lon": -7.98,
       "tagline": "Röda lermurar, kryddbasarer och snötäckta Atlasberg",
-      "map": "assets/maps/map1914c.jpg",
       "skyline": "assets/cities/marrakech.jpg",
       "hotel": {
         "name": "Riad i Medinan",
@@ -6610,7 +6582,6 @@
       "lat": 36.81,
       "lon": 10.18,
       "tagline": "Medelhavsblått kakel och det antika Karthago",
-      "map": "assets/maps/map1914c.jpg",
       "skyline": "assets/cities/tunis.jpg",
       "hotel": {
         "name": "Dar Medina Hotel",
@@ -6845,7 +6816,6 @@
       "lat": -1.29,
       "lon": 36.82,
       "tagline": "Savannens gröna storstad nära ekvatorn",
-      "map": "assets/maps/map1914c.jpg",
       "skyline": "assets/cities/nairobi.jpg",
       "hotel": {
         "name": "Safari Park Lodge",
@@ -7080,7 +7050,6 @@
       "lat": 9.03,
       "lon": 38.74,
       "tagline": "Kaffets hemland på Afrikas tak",
-      "map": "assets/maps/map1914c.jpg",
       "skyline": "assets/cities/addisabeba.jpg",
       "hotel": {
         "name": "Entoto Highlands Inn",
@@ -7315,7 +7284,6 @@
       "lat": 6.52,
       "lon": 3.38,
       "tagline": "Afrobeatens hemstad vid Atlantens laguner",
-      "map": "assets/maps/map1914c.jpg",
       "skyline": "assets/cities/lagos.jpg",
       "hotel": {
         "name": "Victoria Island Lodge",
@@ -7550,7 +7518,6 @@
       "lat": 14.72,
       "lon": -17.47,
       "tagline": "Afrikas västligaste udde mot Atlanten",
-      "map": "assets/maps/map1914c.jpg",
       "skyline": "assets/cities/dakar.jpg",
       "hotel": {
         "name": "Hotel Plateau",
@@ -7785,7 +7752,6 @@
       "lat": -6.79,
       "lon": 39.21,
       "tagline": "Fredens hamn vid Indiska oceanen mot Zanzibar",
-      "map": "assets/maps/map1914c.jpg",
       "skyline": "assets/cities/daressalaam.jpg",
       "hotel": {
         "name": "Oyster Bay Guesthouse",
@@ -8020,7 +7986,6 @@
       "lat": -18.88,
       "lon": 47.51,
       "tagline": "Kullstad i regnskogens och lemurernas örike",
-      "map": "assets/maps/map1914c.jpg",
       "skyline": "assets/cities/antananarivo.jpg",
       "hotel": {
         "name": "Haute-Ville Terrace Inn",
@@ -8255,7 +8220,6 @@
       "lat": 43.65,
       "lon": -79.38,
       "tagline": "Mångkulturell sjömetropol vid Lake Ontario",
-      "map": "assets/maps/map1914d.jpg",
       "skyline": "assets/cities/toronto.jpg",
       "hotel": {
         "name": "Harbourfront Inn",
@@ -8490,7 +8454,6 @@
       "lat": 49.28,
       "lon": -123.12,
       "tagline": "Regnskog, snötäckta berg och Stilla havet på samma plats",
-      "map": "assets/maps/map1914d.jpg",
       "skyline": "assets/cities/vancouver.jpg",
       "hotel": {
         "name": "Gastown Heritage Hotel",
@@ -8725,7 +8688,6 @@
       "lat": 41.88,
       "lon": -87.63,
       "tagline": "Skyskrapans födelsestad och bluesens huvudstad",
-      "map": "assets/maps/map1914d.jpg",
       "skyline": "assets/cities/chicago.jpg",
       "hotel": {
         "name": "Hotel Michigan Avenue",
@@ -8960,7 +8922,6 @@
       "lat": 34.05,
       "lon": -118.24,
       "tagline": "Drömfabriken Hollywood, palmer och Stilla havet",
-      "map": "assets/maps/map1914d.jpg",
       "skyline": "assets/cities/losangeles.jpg",
       "hotel": {
         "name": "Sunset Strip Motel",
@@ -9195,7 +9156,6 @@
       "lat": 25.76,
       "lon": -80.19,
       "tagline": "Pastellfärgad Art Deco, palmer och Karibiens port",
-      "map": "assets/maps/map1914d.jpg",
       "skyline": "assets/cities/miami.jpg",
       "hotel": {
         "name": "Art Deco Hotel Ocean Drive",
@@ -9430,7 +9390,6 @@
       "lat": 23.11,
       "lon": -82.37,
       "tagline": "50-talsbilar, koloniala torg och havsvågor mot Malecón",
-      "map": "assets/maps/map1914d.jpg",
       "skyline": "assets/cities/havanna.jpg",
       "hotel": {
         "name": "Casa Particular i Habana Vieja",
@@ -9665,7 +9624,6 @@
       "lat": 8.98,
       "lon": -79.52,
       "tagline": "Skyskrapor vid Stilla havet och världens berömda kanal",
-      "map": "assets/maps/map1914d.jpg",
       "skyline": "assets/cities/panamacity.jpg",
       "hotel": {
         "name": "Hotel Casco Viejo",
@@ -9900,7 +9858,6 @@
       "lat": -34.6,
       "lon": -58.38,
       "tagline": "Tangons födelsestad och \"Sydamerikas Paris\"",
-      "map": "assets/maps/map1914d.jpg",
       "skyline": "assets/cities/buenosaires.jpg",
       "hotel": {
         "name": "Hotel San Telmo",
@@ -10135,7 +10092,6 @@
       "lat": -12.05,
       "lon": -77.04,
       "tagline": "Stilla havets klippkust, guldmuseer och världsklassmat",
-      "map": "assets/maps/map1914d.jpg",
       "skyline": "assets/cities/lima.jpg",
       "hotel": {
         "name": "Miraflores Cliff Inn",
@@ -10370,7 +10326,6 @@
       "lat": -33.45,
       "lon": -70.67,
       "tagline": "Snöklädda 6 000-meterstoppar rakt bakom storstaden",
-      "map": "assets/maps/map1914d.jpg",
       "skyline": "assets/cities/santiago.jpg",
       "hotel": {
         "name": "Hotel Bellavista",
@@ -10605,7 +10560,6 @@
       "lat": 4.71,
       "lon": -74.07,
       "tagline": "Höglandsstad bland molnen, guldmuseum och kaffe",
-      "map": "assets/maps/map1914d.jpg",
       "skyline": "assets/cities/bogota.jpg",
       "hotel": {
         "name": "Posada La Candelaria",
@@ -10840,7 +10794,6 @@
       "lat": -0.18,
       "lon": -78.47,
       "tagline": "Ekvatorns vackra bergstad bland vulkaner",
-      "map": "assets/maps/map1914d.jpg",
       "skyline": "assets/cities/quito.jpg",
       "hotel": {
         "name": "Hotel Centro Histórico",
@@ -11075,7 +11028,6 @@
       "lat": -37.81,
       "lon": 144.96,
       "tagline": "Kafégränder, spårvagnar och sportens huvudstad",
-      "map": "assets/maps/map1914b.jpg",
       "skyline": "assets/cities/melbourne.jpg",
       "hotel": {
         "name": "Flinders Lane Hotel",
@@ -11310,7 +11262,6 @@
       "lat": -36.85,
       "lon": 174.76,
       "tagline": "Seglens stad byggd på femtio vilande vulkankäglor",
-      "map": "assets/maps/map1914b.jpg",
       "skyline": "assets/cities/auckland.jpg",
       "hotel": {
         "name": "Viaduct Harbour Inn",
@@ -11545,7 +11496,6 @@
       "lat": -41.29,
       "lon": 174.78,
       "tagline": "Världens sydligaste huvudstad vid Cooksundet",
-      "map": "assets/maps/map1914b.jpg",
       "skyline": "assets/cities/wellington.jpg",
       "hotel": {
         "name": "Cuba Street Boutique Inn",
@@ -11766,11 +11716,23 @@
 ];
 
   EXTRA_CITIES.forEach(item => {
+    // Säkra öppettider på signaturaktiviteter så inga städer blir permanent STÄNGDA
+    if (item.cityObj && item.cityObj.signature) {
+      if (item.cityObj.signature.openFrom === undefined) item.cityObj.signature.openFrom = 8;
+      if (item.cityObj.signature.openUntil === undefined) item.cityObj.signature.openUntil = 22;
+    }
     if (!W.cities[item.key]) {
       W.cities[item.key] = item.cityObj;
     }
-    Object.assign(W.places, item.placesObj);
-    Object.assign(W.souvenirs, item.souvDefs);
+    // Säkra city och fee på alla sevärdheter
+    Object.entries(item.placesObj || {}).forEach(([pk, pl]) => {
+      W.places[pk] = { city: item.key, fee: 0, ...pl };
+    });
+    // Säkra .price från .basePrice så marknaden aldrig visar NaN kr!
+    Object.entries(item.souvDefs || {}).forEach(([sk, sv]) => {
+      const safePrice = Number(sv.price !== undefined ? sv.price : sv.basePrice) || 250;
+      W.souvenirs[sk] = { ...sv, price: safePrice };
+    });
     if (!W.taverns) W.taverns = {};
     W.taverns[item.key] = item.tavern;
     window.GT_EXTRA_STAMPS[item.key] = {
@@ -11783,27 +11745,37 @@
 
     item.qs.forEach(q => Q.push(q));
 
-    // Registrera landsfakta och bibliotekets historietidslinje om landet är nytt
-    if (!window.GT_COUNTRY_FACTS[item.country]) {
-      window.GT_COUNTRY_FACTS[item.country] = {
+    // Registrera landsfakta & historietidslinje under stadsnyckeln (item.key) i exakt samma format som game.js läser!
+    if (!window.GT_COUNTRY_FACTS[item.key]) {
+      window.GT_COUNTRY_FACTS[item.key] = {
+        country: item.country,
         iso: item.iso,
         flag: 'assets/flags/' + item.iso + '.png',
-        capital: item.facts[0],
-        population: item.facts[1],
-        language: item.facts[2],
-        currency: item.facts[3],
-        continent: item.region,
-        facts: [item.facts[4], item.facts[5]],
-        trivia: item.cityObj.tagline
+        libraryName: `${item.name}s stadsbibliotek`,
+        libraryPhoto: 'assets/photos/libraries/lib_stockholm.jpg',
+        capital: item.facts[0] || item.name,
+        population: item.facts[1] || 'Uppgift saknas',
+        area: 'Se världsatlasen',
+        language: item.facts[2] || 'Lokalt språk',
+        currency: item.facts[3] || 'Lokal valuta',
+        government: 'Självständig stat',
+        timezone: 'Lokal tid',
+        dish: (item.tavern && item.tavern.drink) ? item.tavern.drink : 'Lokal husmanskost',
+        trivia: [item.facts[4], item.facts[5]].filter(Boolean)
       };
     }
-    if (!window.GT_COUNTRY_HISTORY[item.country]) {
-      window.GT_COUNTRY_HISTORY[item.country] = [
-        { year: 'Forntid', title: item.country + 's tidiga historia', desc: item.facts[4], img: item.cityObj.skyline },
-        { year: 'Historisk epok', title: item.cityObj.highlights[0] ? (W.places[item.cityObj.highlights[0]]?.name || item.name) : item.name, desc: item.cityObj.highlights[0] ? (W.places[item.cityObj.highlights[0]]?.fact || '') : '', img: item.cityObj.skyline },
-        { year: 'Kulturarv', title: item.cityObj.highlights[1] ? (W.places[item.cityObj.highlights[1]]?.name || item.name) : item.name, desc: item.cityObj.highlights[1] ? (W.places[item.cityObj.highlights[1]]?.fact || '') : '', img: item.cityObj.skyline },
-        { year: 'Idag', title: item.name + ' i modern tid', desc: item.facts[5], img: item.cityObj.skyline }
-      ];
+    if (!window.GT_COUNTRY_HISTORY[item.key]) {
+      const h0 = item.cityObj.highlights[0] && W.places[item.cityObj.highlights[0]];
+      const h1 = item.cityObj.highlights[1] && W.places[item.cityObj.highlights[1]];
+      window.GT_COUNTRY_HISTORY[item.key] = {
+        map: '',
+        timeline: [
+          { id: `${item.key}_t1`, year: 'Historia', name: `${item.country}s bakgrund`, role: item.region, text: item.facts[4] || item.cityObj.tagline },
+          { id: `${item.key}_t2`, year: 'Landmärke', name: h0 ? h0.name : item.name, role: item.name, text: h0 ? h0.fact : item.cityObj.tagline },
+          { id: `${item.key}_t3`, year: 'Kulturarv', name: h1 ? h1.name : item.name, role: item.name, text: h1 ? h1.fact : item.cityObj.tagline },
+          { id: `${item.key}_t4`, year: 'Idag', name: `${item.name} i nutid`, role: item.country, text: item.facts[5] || item.cityObj.tagline }
+        ]
+      };
     }
   });
 

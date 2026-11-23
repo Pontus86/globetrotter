@@ -1,13 +1,13 @@
 # Globetrotter
 
-Ett svenskt reseäventyr i webbläsaren, inspirerat av 90-talets klassiska *BackPacker*-spel och *80 Days*. Du startar i Malmö med 10 000 kr, ett tomt svenskt pass och 45 dagar på dig att resa jorden runt, arbeta längs vägen, handla på lokala marknader och ta dig hem igen.
+Ett svenskt reseäventyr i webbläsaren, inspirerat av 90-talets klassiska *BackPacker*-spel och *80 Days*. Du startar i Malmö (eller valfri startstad) med 10 000 kr, ett tomt svenskt pass och 30 dagar på dig (20 eller 45 dagar går också att välja) att resa jorden runt, arbeta längs vägen, handla på lokala marknader och ta dig hem igen.
 
 **Spela direkt i webbläsaren:** https://pontus86.github.io/globetrotter/
 
 ## Så fungerar spelet
 
 Varje ny resa slumpar fram personliga mål som skrivs in på sida 2 i ditt pass:
-- Besök minst **3 världsdelar** och återvänd till Malmö innan tiden tar slut.
+- Besök minst **3 världsdelar** och återvänd till din startstad innan tiden tar slut.
 - Skaffa **yrkeskompetens i 3 olika yrken** genom att ta jobbpass i lokaltidningen och klara arbetsprovet.
 - Ta med (eller posta hem) **souvenirer från 3 utvalda städer** runt om i världen.
 
