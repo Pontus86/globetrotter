@@ -244,6 +244,7 @@
       this.doneWonders = options.doneWonders || null;
       this.goalCities = options.goalCities || null; // [{ key, done }]
       this.showRoutes = options.showRoutes !== false;
+      this.selectedCityKey = null; // Visar namnskylt vid tap/klick (särskilt för mobil!)
       this.pinMarker = null;   // { lat, lon, label, color }
       this.targetMarker = null; // { lat, lon, label, color }
 
@@ -412,6 +413,21 @@
                 this.onWonderClick(bestKey, window.GT_WORLD.wonders[bestKey]);
                 return;
               }
+            }
+            // Kolla om spelaren tryckte/klickade på en stadsprick (tänder etiketten bara för den staden)
+            if (!this.quizMode && window.GT_WORLD && window.GT_WORLD.cities) {
+              let bestCity = null;
+              let bestDist = 20;
+              Object.entries(window.GT_WORLD.cities).forEach(([cKey, cObj]) => {
+                const p = this.project(cObj.lat, cObj.lon);
+                if (!p.visible) return;
+                const d = Math.hypot(sx - p.x, sy - p.y);
+                if (d < bestDist) {
+                  bestDist = d;
+                  bestCity = cKey;
+                }
+              });
+              this.selectedCityKey = bestCity;
             }
             if (this.onGlobeClick) {
               const ll = this.unproject(sx, sy);
@@ -910,8 +926,23 @@
         ctx.restore();
       }
 
-      // 6. Städer och aktiva världshändelser som markörer på jordgloben (döljs i blind kartquiz!)
+      // 6. Städer och aktiva världshändelser som rena markörer på jordgloben (inga permanenta namnskyltar som översvämmar kartan!)
       if (!this.quizMode && window.GT_WORLD && window.GT_WORLD.cities) {
+        let hoveredCityKey = null;
+        let hoveredCityDist = 18;
+        if (!this.mini && this.hoverPos) {
+          Object.entries(window.GT_WORLD.cities).forEach(([k, c]) => {
+            const p = this.project(c.lat, c.lon);
+            if (!p.visible) return;
+            const d = Math.hypot(this.hoverPos.x - p.x, this.hoverPos.y - p.y);
+            if (d < hoveredCityDist) {
+              hoveredCityDist = d;
+              hoveredCityKey = k;
+            }
+          });
+        }
+        const activeLabelKey = hoveredCityKey || this.selectedCityKey;
+
         Object.entries(window.GT_WORLD.cities).forEach(([key, city]) => {
           const proj = this.project(city.lat, city.lon);
           if (!proj.visible) return;
@@ -967,55 +998,68 @@
             ctx.restore();
           }
 
-          // Stadsknapp/nål
+          // Stadsknapp/nål (ren prick utan översvämmande text!)
           ctx.save();
           ctx.beginPath();
-          ctx.arc(proj.x, proj.y, (isCurrent ? 5.5 : 4.2) * zoomScale, 0, Math.PI * 2);
-          ctx.fillStyle = isCurrent ? '#ffcc00' : (cityEvent ? cityEvent.color : '#ffffff');
+          ctx.arc(proj.x, proj.y, (isCurrent ? 5.5 : (goalEntry ? 4.8 : 3.8)) * zoomScale, 0, Math.PI * 2);
+          ctx.fillStyle = isCurrent ? '#ffcc00' : (goalEntry ? (goalEntry.done ? '#66e38c' : '#ff9f43') : (cityEvent ? cityEvent.color : '#ffffff'));
           ctx.strokeStyle = '#181008';
-          ctx.lineWidth = 1.6;
+          ctx.lineWidth = 1.5;
           ctx.fill();
           ctx.stroke();
-
-          // Namnskylt
-          const fontSize = Math.round((isCurrent ? 13 : 11.5) * Math.min(1.25, zoomScale));
-          ctx.font = `${isCurrent ? 'bold ' : ''}${fontSize}px Georgia, serif`;
-          const textW = ctx.measureText(city.name).width;
-          const boxH = fontSize + 6;
-
-          ctx.fillStyle = 'rgba(14, 11, 8, 0.88)';
-          ctx.fillRect(proj.x + 10, proj.y - boxH / 2, textW + 10, boxH);
-          ctx.strokeStyle = isCurrent ? '#e9b949' : (cityEvent ? cityEvent.color : 'rgba(244, 234, 214, 0.55)');
-          ctx.lineWidth = 1;
-          ctx.strokeRect(proj.x + 10, proj.y - boxH / 2, textW + 10, boxH);
-
-          ctx.fillStyle = isCurrent ? '#ffd875' : '#f7f0e2';
-          ctx.fillText(city.name, proj.x + 15, proj.y + fontSize * 0.34);
-
-          if (goalEntry && !this.flightAnimation) {
-            ctx.font = 'bold 9.5px sans-serif';
-            const gText = goalEntry.done ? '✓ MÅL KLART' : '★ PASSMÅL';
-            const gW = ctx.measureText(gText).width;
-            const gY = proj.y + boxH / 2 + 2;
-            ctx.fillStyle = goalEntry.done ? 'rgba(18, 52, 28, 0.94)' : 'rgba(66, 32, 10, 0.94)';
-            ctx.fillRect(proj.x + 10, gY, gW + 10, 14);
-            ctx.strokeStyle = goalEntry.done ? '#66e38c' : '#ff9f43';
-            ctx.strokeRect(proj.x + 10, gY, gW + 10, 14);
-            ctx.fillStyle = goalEntry.done ? '#8cf0a4' : '#ffd875';
-            ctx.fillText(gText, proj.x + 15, gY + 10.5);
-          } else if (cityEvent && !this.flightAnimation) {
-            ctx.font = 'bold 10px sans-serif';
-            const evText = `* ${cityEvent.title}`;
-            const evW = ctx.measureText(evText).width;
-            ctx.fillStyle = 'rgba(18, 12, 8, 0.92)';
-            ctx.fillRect(proj.x + 10, proj.y + boxH / 2 + 2, evW + 10, 15);
-            ctx.strokeStyle = cityEvent.color || '#e9b949';
-            ctx.strokeRect(proj.x + 10, proj.y + boxH / 2 + 2, evW + 10, 15);
-            ctx.fillStyle = cityEvent.color || '#ffd27a';
-            ctx.fillText(evText, proj.x + 15, proj.y + boxH / 2 + 13);
-          }
           ctx.restore();
         });
+
+        // Rita namnskylt ENBART för den stad användaren hovrar över eller trycker på!
+        if (!this.mini && activeLabelKey && window.GT_WORLD.cities[activeLabelKey]) {
+          const city = window.GT_WORLD.cities[activeLabelKey];
+          const proj = this.project(city.lat, city.lon);
+          if (proj.visible) {
+            const isCurrent = (activeLabelKey === currentCityKey);
+            const cityEvent = activeEvents && activeEvents.find(ev => ev.city === activeLabelKey);
+            const goalEntry = Array.isArray(this.goalCities) ? this.goalCities.find(g => g.key === activeLabelKey) : null;
+            const label = `${city.name}${city.country ? `, ${city.country}` : ''}`;
+
+            ctx.save();
+            const fontSize = 12.5;
+            ctx.font = `bold ${fontSize}px Georgia, serif`;
+            const textW = ctx.measureText(label).width;
+            const boxH = fontSize + 8;
+            const boxX = Math.min(this.canvas.width - textW - 18, Math.max(8, proj.x + 12));
+            const boxY = Math.max(8, proj.y - boxH / 2);
+
+            ctx.fillStyle = 'rgba(14, 11, 8, 0.94)';
+            ctx.fillRect(boxX, boxY, textW + 12, boxH);
+            ctx.strokeStyle = isCurrent ? '#e9b949' : (goalEntry ? '#ff9f43' : (cityEvent ? cityEvent.color : 'rgba(244, 234, 214, 0.7)'));
+            ctx.lineWidth = 1.3;
+            ctx.strokeRect(boxX, boxY, textW + 12, boxH);
+            ctx.fillStyle = isCurrent ? '#ffd875' : '#f7f0e2';
+            ctx.fillText(label, boxX + 6, boxY + fontSize + 1);
+
+            if (goalEntry && !this.flightAnimation) {
+              ctx.font = 'bold 9.5px sans-serif';
+              const gText = goalEntry.done ? '✓ MÅL KLART' : '★ PASSMÅL';
+              const gW = ctx.measureText(gText).width;
+              ctx.fillStyle = goalEntry.done ? 'rgba(18, 52, 28, 0.95)' : 'rgba(66, 32, 10, 0.95)';
+              ctx.fillRect(boxX, boxY + boxH + 2, gW + 10, 15);
+              ctx.strokeStyle = goalEntry.done ? '#66e38c' : '#ff9f43';
+              ctx.strokeRect(boxX, boxY + boxH + 2, gW + 10, 15);
+              ctx.fillStyle = goalEntry.done ? '#8cf0a4' : '#ffd875';
+              ctx.fillText(gText, boxX + 5, boxY + boxH + 12.5);
+            } else if (cityEvent && !this.flightAnimation) {
+              ctx.font = 'bold 10px sans-serif';
+              const evText = `* ${cityEvent.title}`;
+              const evW = ctx.measureText(evText).width;
+              ctx.fillStyle = 'rgba(18, 12, 8, 0.94)';
+              ctx.fillRect(boxX, boxY + boxH + 2, evW + 10, 15);
+              ctx.strokeStyle = cityEvent.color || '#e9b949';
+              ctx.strokeRect(boxX, boxY + boxH + 2, evW + 10, 15);
+              ctx.fillStyle = cityEvent.color || '#ffd27a';
+              ctx.fillText(evText, boxX + 5, boxY + boxH + 13);
+            }
+            ctx.restore();
+          }
+        }
       }
 
       // 6b. 20 Världsarv & Naturunder på jordgloben (döljs i blind kartquiz!)
