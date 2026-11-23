@@ -146,7 +146,7 @@ root.GT_WORLD = {
           { t: 'mc', q: 'Vilken malen rot ger curryblandningar och gyllene dal-grytor dess färg?', a: ['Gurkmeja', 'Saffran', 'Kardemumma', 'Ingefära'] },
           { t: 'mc', q: 'Vad heter Indiens officiella valuta?', a: ['Rupie', 'Rupiah', 'Taka', 'Baht'] },
           { t: 'mc', q: 'I vilken mäktig bergskedja norr om Indien reser sig jordens högsta bergstoppar?', a: ['Himalaya', 'Karakoram', 'Hindukush', 'Altai'] },
-          { t: 'mc', q: 'Vilken stad vid Bengaliska viken var huvudstad i Brittiska Indien fram till 1911?', a: ['Calcutta (Kolkata)', 'Bombay (Mumbai)', 'Madras (Chennai)', 'Agra'] }
+          { t: 'mc', q: 'Vilken stad vid Bengaliska viken var huvudstad i Brittiska Indien fram till 1911?', a: ['Calcutta', 'Bombay', 'Madras', 'Agra'] }
         ]
       }
     },
@@ -335,7 +335,7 @@ root.GT_WORLD = {
       questions: [
         { t: 'mc', q: 'Vilken ung faraos nästan intakta guldskatter och grav upptäcktes av Howard Carter 1922?', a: ['Tutankhamon', 'Ramses II', 'Akhenaton', 'Seti I'] },
         { t: 'mc', q: 'Vad heter den berömda svarta stenplatta med grekisk och egyptisk text som gav nyckeln till hieroglyferna?', a: ['Rosettastenen', 'Palermostenen', 'Narmerpaletten', 'Hammurabis stele'] },
-        { t: 'mc', q: 'Vilken egyptisk forntida solgud avbildades traditionellt med falkhuvud och en lysande solskiva?', a: ['Ra (Re)', 'Anubis', 'Osiris', 'Sobek'] },
+        { t: 'mc', q: 'Vilken egyptisk forntida solgud avbildades traditionellt med falkhuvud och en lysande solskiva?', a: ['Ra', 'Anubis', 'Osiris', 'Sobek'] },
         { t: 'globe', q: 'Peka på 3D-jordgloben: Var mynnar Nilen ut i Medelhavet (Nildeltat)?', targetLat: 31.20, targetLon: 30.80, targetName: 'Nildeltat', startLat: 26, startLon: 25, explain: 'Nildeltat norr om Kairo är ett av världens bördigaste och mest tätbefolkade floddeltan, format under tiotusentals år av bördigt slam från Östafrika.' }
       ]
     },
@@ -467,7 +467,7 @@ root.GT_WORLD = {
       fact: 'Empire State Building på Manhattan byggdes i rekordfart under den stora depressionens inledning 1930–1931. Den ståtliga art déco-byggnaden reser sig med spiran mot skyn och är en symbol för New Yorks ambitioner.',
       questions: [
         { t: 'mc', q: 'Vad kallas New Yorks legendariska teater- och nöjeskvarter strax norr om skyskrapan vid Broadway?', a: ['Times Square / Theater District', 'Wall Street', 'SoHo', 'Greenwich Village'] },
-        { t: 'mc', q: 'Vad var skyskrapans högsta metallspira ursprungligen tänkt att användas som, innan idén övergavs?', a: ['Förtöjningsmast för luftskepp (zeppelinare)', 'Radioteleskop', 'Blixtfångare för kraftverk', 'Utsiktsbalkong för fallskärmshoppare'] },
+        { t: 'mc', q: 'Vad var skyskrapans högsta metallspira ursprungligen tänkt att användas som, innan idén övergavs?', a: ['Förtöjningsmast för luftskepp', 'Radioteleskop', 'Blixtfångare för kraftverk', 'Utsiktsbalkong för fallskärmshoppare'] },
         { t: 'mc', q: 'Vad heter den finansiella gatan på södra Manhattan där New York-börsen (NYSE) är belägen?', a: ['Wall Street', 'Broadway', 'Fifth Avenue', 'Madison Avenue'] }
       ]
     },
@@ -519,7 +519,7 @@ root.GT_WORLD = {
       fact: 'I hjärtat av New Delhi reser sig den monumentala triumfbågen i gul sandsten längs paradgatan Kartavya Path. På kvällarna samlas tusentals familjer i parkerna runt monumentet.',
       questions: [
         { t: 'mc', q: 'Vilken brittisk arkitekt ritade stora delar av New Delhi och själva India Gate?', a: ['Edwin Lutyens', 'Christopher Wren', 'Norman Foster', 'John Nash'] },
-        { t: 'mc', q: 'Till minne av vilka soldater restes India Gate ursprungligen på 1920-talet?', a: ['Indiska soldater som stupade i första världskriget', 'Mogulrikets kavalleri', 'Självständighetsrörelsen 1947', 'Handelsflottans sjömän'] }
+        { t: 'mc', q: 'Till minne av vilka soldater restes India Gate ursprungligen på 1920-talet?', a: ['Indiska soldater som stupade i första världskriget', 'Mogulrikets kavalleri', 'Kriget mot Persien', 'Handelsflottans sjömän'] }
       ]
     },
     humayun: {
@@ -566,7 +566,7 @@ root.GT_WORLD = {
       fee: 0,
       fact: 'Längs San Franciscos norra hamnkaj ligger pirer fulla av fiskrestauranger, historiska fartyg och högljudda sjölejon som solar sig på flytbryggorna vid Pier 39.',
       questions: [
-        { t: 'mc', q: 'Vilken syrlig brödsort är San Francisco världsberömt för, ofta serverad urgröpt med musselsoppa?', a: ['Surdegsbröd (Sourdough)', 'Brioche', 'Pumpernickel', 'Ciabatta'] },
+        { t: 'mc', q: 'Vilken syrlig brödsort är San Francisco världsberömt för, ofta serverad urgröpt med musselsoppa?', a: ['Surdegsbröd', 'Brioche', 'Pumpernickel', 'Ciabatta'] },
         { t: 'mc', q: 'Vilket stort världshav ligger precis väster om San Francisco?', a: ['Stilla havet', 'Atlanten', 'Indiska oceanen', 'Karibiska havet'] }
       ]
     },
@@ -578,7 +578,7 @@ root.GT_WORLD = {
       fee: 0,
       fact: 'San Franciscos Chinatown är Nordamerikas äldsta kinesiska stadsdel, med drakportar, tebutiker och lyktor. Strax intill slingrar sig den branta, blomsterkantade serpentingatan Lombard Street.',
       questions: [
-        { t: 'mc', q: 'Vilken känd lyckokaka som ofta serveras på kinesiska restauranger i väst har sitt ursprung i Kalifornien?', a: ['Fortune cookie (lyckokaka)', 'Månkaka', 'Macaron', 'Mochi'] },
+        { t: 'mc', q: 'Vilken känd lyckokaka som ofta serveras på kinesiska restauranger i väst har sitt ursprung i Kalifornien?', a: ['Fortune cookie', 'Månkaka', 'Macaron', 'Mochi'] },
         { t: 'num', q: 'Hur många skarpa hårnålskurvor har den berömda branta delen av Lombard Street?', ans: 8, min: 2, max: 20, step: 1, unit: 'kurvor' }
       ]
     },
@@ -591,7 +591,7 @@ root.GT_WORLD = {
       fact: 'Mitt bland Manhattans skyskrapor breder en enorm grön oas ut sig med sjöar, broar, löparspår och utomhusscener som fungerar som New York-bornas gemensamma bakgård.',
       questions: [
         { t: 'mc', q: 'Vilken tidigare Beatles-medlem hedras i minneslunden "Strawberry Fields" i Central Park?', a: ['John Lennon', 'George Harrison', 'Paul McCartney', 'Ringo Starr'] },
-        { t: 'mc', q: 'Vilket världsberömt konstmuseum ligger direkt längs Central Parks östra sida på Fifth Avenue?', a: ['Metropolitan Museum of Art (The Met)', 'Tate Modern', 'Louvren', 'Pradomuseet'] }
+        { t: 'mc', q: 'Vilket världsberömt konstmuseum ligger direkt längs Central Parks östra sida på Fifth Avenue?', a: ['Metropolitan Museum of Art', 'Tate Modern', 'Louvren', 'Pradomuseet'] }
       ]
     },
     brooklynbridge: {
@@ -646,7 +646,7 @@ root.GT_WORLD = {
       fact: 'Taj Mahal vid floden Yamuna i Agra är känt över hela jorden för sina reflekterande spegeldammar, minareter och fasader i vit Makrana-marmor med ädelstensornament i form av blommor och arabesker.',
       questions: [
         { t: 'mc', q: 'I vilken indisk stad strax söder om Delhi ligger Taj Mahal?', a: ['Agra', 'Jaipur', 'Varanasi', 'Lucknow'] },
-        { t: 'mc', q: 'Vad kallas den persiskt inspirerade symmetriska trädgårdsformen i fyra kvadranter som omger mausoleet?', a: ['Charbagh (fyrdelad paradisträdgård)', 'Mandala-park', 'Zen-trädgård', 'Engelsk park'] },
+        { t: 'mc', q: 'Vad kallas den persiskt inspirerade symmetriska trädgårdsformen i fyra kvadranter som omger mausoleet?', a: ['Charbagh', 'Mandala-park', 'Zen-trädgård', 'Engelsk park'] },
         { t: 'mc', q: 'Vilken brittisk kunglighet fotograferades ensam och melankolisk framför Taj Mahal 1992 i en världsberömd bild?', a: ['Prinsessan Diana', 'Drottning Elizabeth II', 'Drottning Victoria', 'Prinsessan Margaret'] }
       ]
     },
@@ -799,7 +799,8 @@ root.GT_WORLD = {
       title: 'Körsbärsblomning',
       startDay: 1,
       endDay: 10,
-      effectText: '+40 % lön på jobb och +25 % på souvenirer i Tokyo!',
+      effectText: 'Körsbärsträden står i full blom och staden sjuder av liv, extra jobb och besökare.',
+      rumorText: 'I Tokyo har körsbärsträden slagit ut över parkerna. Hotellen är fulla, krogarna skriker efter extra folk och samlare betalar glatt för långväga minnen.',
       jobBonus: 0.40,
       sellBonus: 0.25,
       color: '#ff8fb1'
@@ -810,7 +811,8 @@ root.GT_WORLD = {
       title: 'Stor Basarvecka',
       startDay: 2,
       endDay: 12,
-      effectText: '20 % lägre inköpspriser på alla varor i Kairos basar!',
+      effectText: 'Handelsmän från hela Nordafrika fyller gränderna med fynd och kryddor.',
+      rumorText: 'Kairo har stor marknadsvecka i gränderna kring Khan el-Khalili. Köpmännen bjuder under varandra för att bli av med sina varor.',
       buyDiscount: 0.20,
       color: '#f5b041'
     },
@@ -820,7 +822,8 @@ root.GT_WORLD = {
       title: 'Flygstrejk i NYC',
       startDay: 5,
       endDay: 15,
-      effectText: '+25 % dyrare flyg till New York, men +35 % extra jobblön!',
+      effectText: 'Stadens teatrar och tidningar går på högvarv under högsäsongen.',
+      rumorText: 'Det är premiärvecka på Broadway i New York. Flygen dit är dyra just nu, men redaktioner och scener betalar riktigt bra för tillfällig hjälp.',
       flightMult: 1.25,
       jobBonus: 0.35,
       color: '#e74c3c'
@@ -831,7 +834,8 @@ root.GT_WORLD = {
       title: 'Monsun över Delhi',
       startDay: 8,
       endDay: 22,
-      effectText: '20 % billigare flyg till Delhi under monsunsäsongen!',
+      effectText: 'Regnskurar håller turisterna borta och gör flygstolarna ovanligt billiga.',
+      rumorText: 'Monsunregnen drar in över Delhi, så flygbolagen rear ut sina tomma säten dit just nu.',
       flightMult: 0.80,
       color: '#5dade2'
     },
@@ -841,7 +845,8 @@ root.GT_WORLD = {
       title: 'Jazzfestival i SF',
       startDay: 10,
       endDay: 28,
-      effectText: 'Besökare betalar +35 % extra för souvenirer i San Francisco!',
+      effectText: 'Hela bukten myllrar av musiker, besökare och köpsugna samlare.',
+      rumorText: 'Det är stor jazzfestival vid bukten i San Francisco. Besökarna letar efter ovanliga minnen från världens alla hörn.',
       sellBonus: 0.35,
       color: '#af7ac5'
     }
@@ -872,7 +877,7 @@ root.GT_WORLD = {
       { author: 'Hanna', note: 'Spara lite tid till Taj Mahal, utflykten tar nästan en hel dag men är värd varenda krona!' }
     ],
     tokyo: [
-      { author: 'Kalle-Foto', note: 'Kameran i basaren är dyr, men +50 % på alla jobbpass betalar igen sig blixtsnabbt.' },
+      { author: 'Kalle-Foto', note: 'Kameran i basaren ger ett skönt lönepåslag på +15 % på alla jobbpass under resan.' },
       { author: 'Yuki', note: 'Ont om pengar mot USA? Ta Stilla Havs-ångaren från hamnen istället för dyrt flyg!' }
     ],
     sanfrancisco: [

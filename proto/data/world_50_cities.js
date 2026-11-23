@@ -185,10 +185,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Norge (Oslo)?",
         "a": [
-          "Norsk krona (NOK)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Norsk krona",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Norge betalar man med Norsk krona (NOK). Norge har världens näst längsta kustlinje tack vare sina djupa fjordar."
       },
@@ -420,10 +420,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Danmark (Köpenhamn)?",
         "a": [
-          "Dansk krona (DKK)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Dansk krona",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Danmark betalar man med Dansk krona (DKK). Danmark består av halvön Jylland och över 400 öar."
       },
@@ -655,10 +655,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Finland (Helsingfors)?",
         "a": [
-          "Euro (EUR)",
-          "Brittiskt pund (GBP)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Euro",
+          "Brittiskt pund",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Finland betalar man med Euro (EUR). Finland kallas \"De tusen sjöarnas land\" och har över 180 000 sjöar."
       },
@@ -890,10 +890,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Island (Reykjavik)?",
         "a": [
-          "Isländsk krona (ISK)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Isländsk krona",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Island betalar man med Isländsk krona (ISK). Island drivs nästan helt av geotermisk energi och vattenkraft."
       },
@@ -1125,10 +1125,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Irland (Dublin)?",
         "a": [
-          "Euro (EUR)",
-          "Brittiskt pund (GBP)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Euro",
+          "Brittiskt pund",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Irland betalar man med Euro (EUR). Irland har fostrat fyra Nobelpristagare i litteratur, däribland W.B. Yeats och Samuel Beckett."
       },
@@ -1360,10 +1360,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Nederländerna (Amsterdam)?",
         "a": [
-          "Euro (EUR)",
-          "Brittiskt pund (GBP)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Euro",
+          "Brittiskt pund",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Nederländerna betalar man med Euro (EUR). Ungefär en fjärdedel av Nederländerna ligger under havsnivån, skyddat av vallar."
       },
@@ -1539,7 +1539,7 @@
         "t": "mc",
         "q": "Vilket århundrade förstördes stora delar av Grand-Place innan det byggdes upp i barockstil?",
         "a": [
-          "1695 (under nioårskriget)",
+          "1695",
           "1944",
           "1412",
           "1815"
@@ -1594,10 +1594,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Belgien (Bryssel)?",
         "a": [
-          "Euro (EUR)",
-          "Brittiskt pund (GBP)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Euro",
+          "Brittiskt pund",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Belgien betalar man med Euro (EUR). Bryssel är säte för både EU-kommissionen och NATO."
       },
@@ -1608,7 +1608,7 @@
         "t": "mc",
         "q": "Vilket århundrade förstördes stora delar av Grand-Place innan det byggdes upp i barockstil?",
         "a": [
-          "1695 (under nioårskriget)",
+          "1695",
           "1944",
           "1412",
           "1815"
@@ -1829,10 +1829,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Tyskland (Berlin)?",
         "a": [
-          "Euro (EUR)",
-          "Brittiskt pund (GBP)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Euro",
+          "Brittiskt pund",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Tyskland betalar man med Euro (EUR). Berlin har fler broar än Venedig (omkring 1 700 stycken)."
       },
@@ -2064,10 +2064,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Tjeckien (Prag)?",
         "a": [
-          "Tjeckisk koruna (CZK)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Tjeckisk koruna",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Tjeckien betalar man med Tjeckisk koruna (CZK). Prag undgick större bombningar under andra världskriget och har kvar sin medeltida stadskärna."
       },
@@ -2299,10 +2299,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Österrike (Wien)?",
         "a": [
-          "Euro (EUR)",
-          "Brittiskt pund (GBP)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Euro",
+          "Brittiskt pund",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Österrike betalar man med Euro (EUR). Wien var centrum för den klassiska musiken med Mozart, Beethoven, Haydn, Schubert och Strauss."
       },
@@ -2534,10 +2534,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Schweiz (Zürich)?",
         "a": [
-          "Schweizisk franc (CHF)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Schweizisk franc",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Schweiz betalar man med Schweizisk franc (CHF). Schweiz har inte varit i krig sedan 1815 och är berömt för sin neutralitet och direktdemokrati."
       },
@@ -2713,7 +2713,7 @@
         "t": "mc",
         "q": "Vilken världsberömd målning av Diego Velázquez är Pradomuseets främsta skatt?",
         "a": [
-          "Las Meninas (Hovdamerna)",
+          "Las Meninas",
           "Guernica",
           "Nattvakten",
           "Skriet"
@@ -2769,10 +2769,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Spanien (Madrid)?",
         "a": [
-          "Euro (EUR)",
-          "Brittiskt pund (GBP)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Euro",
+          "Brittiskt pund",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Spanien betalar man med Euro (EUR). Madrid ligger 667 meter över havet och är en av Europas högst belägna huvudstäder."
       },
@@ -2783,7 +2783,7 @@
         "t": "mc",
         "q": "Vilken världsberömd målning av Diego Velázquez är Pradomuseets främsta skatt?",
         "a": [
-          "Las Meninas (Hovdamerna)",
+          "Las Meninas",
           "Guernica",
           "Nattvakten",
           "Skriet"
@@ -3004,10 +3004,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Portugal (Lissabon)?",
         "a": [
-          "Euro (EUR)",
-          "Brittiskt pund (GBP)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Euro",
+          "Brittiskt pund",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Portugal betalar man med Euro (EUR). Lissabon är en av världens äldsta städer — äldre än både Rom och Paris."
       },
@@ -3239,10 +3239,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Grekland (Aten)?",
         "a": [
-          "Euro (EUR)",
-          "Brittiskt pund (GBP)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Euro",
+          "Brittiskt pund",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Grekland betalar man med Euro (EUR). Aten är uppkallat efter gudinnan Athena och var världens första kända demokrati."
       },
@@ -3474,10 +3474,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Ryssland (Moskva)?",
         "a": [
-          "Rubel (RUB)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Rubel",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Ryssland betalar man med Rubel (RUB). Ryssland är världens till ytan största land och spänner över hela 11 tidszoner."
       },
@@ -3667,7 +3667,7 @@
         "t": "mc",
         "q": "Vilken form har grundplanen på den guldklädda Klippdomen?",
         "a": [
-          "Åttkantig (oktogon)",
+          "Åttkantig",
           "Kvadratisk",
           "Triangulär",
           "Korsformad"
@@ -3709,10 +3709,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Israel (Jerusalem)?",
         "a": [
-          "Shekel (ILS)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Shekel",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Israel betalar man med Shekel (ILS). Döda havet strax öster om Jerusalem ligger 430 meter under havsnivån — jordens lägsta punkt på land."
       },
@@ -3737,7 +3737,7 @@
         "t": "mc",
         "q": "Vilken form har grundplanen på den guldklädda Klippdomen?",
         "a": [
-          "Åttkantig (oktogon)",
+          "Åttkantig",
           "Kvadratisk",
           "Triangulär",
           "Korsformad"
@@ -3944,10 +3944,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Förenade Arabemiraten (Dubai)?",
         "a": [
-          "Dirham (AED)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Dirham",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Förenade Arabemiraten betalar man med Dirham (AED). Dubai växte på bara 50 år från en liten pärlfiskeby till en av världens mest besökta städer."
       },
@@ -4179,10 +4179,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Indien (Mumbai)?",
         "a": [
-          "Indisk rupie (INR)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Indisk rupie",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Indien betalar man med Indisk rupie (INR). Mumbai ligger på en grupp öar som kopplades ihop under 1700- och 1800-talen."
       },
@@ -4414,10 +4414,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Nepal (Katmandu)?",
         "a": [
-          "Nepalesisk rupie (NPR)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Nepalesisk rupie",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Nepal betalar man med Nepalesisk rupie (NPR). Åtta av världens tio högsta berg ligger helt eller delvis i Nepal."
       },
@@ -4649,10 +4649,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Sri Lanka (Colombo)?",
         "a": [
-          "Sri lankesisk rupie (LKR)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Sri lankesisk rupie",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Sri Lanka betalar man med Sri lankesisk rupie (LKR). Sri Lanka är en av världens största exportörer av te och äkta kanel."
       },
@@ -4884,10 +4884,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Singapore (Singapore)?",
         "a": [
-          "Singaporiansk dollar (SGD)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Schweizisk franc (CHF)"
+          "Singaporiansk dollar",
+          "Euro",
+          "Yen",
+          "Schweizisk franc"
         ],
         "explain": "I Singapore betalar man med Singaporiansk dollar (SGD). Singapore är en av världens tre kvarvarande självständiga stadsstater."
       },
@@ -5119,10 +5119,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Vietnam (Hanoi)?",
         "a": [
-          "Dong (VND)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Dong",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Vietnam betalar man med Dong (VND). Vietnam är världens näst största kaffeexportör efter Brasilien."
       },
@@ -5340,7 +5340,7 @@
         "t": "mc",
         "q": "I vilket land ligger staden Hongkong?",
         "a": [
-          "Kina (Hongkong)",
+          "Kina",
           "Brasilien",
           "Kanada",
           "Egypten"
@@ -5354,10 +5354,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Kina (Hongkong) (Hongkong)?",
         "a": [
-          "Hongkongdollar (HKD)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Schweizisk franc (CHF)"
+          "Hongkongdollar",
+          "Euro",
+          "Yen",
+          "Schweizisk franc"
         ],
         "explain": "I Kina (Hongkong) betalar man med Hongkongdollar (HKD). Hongkong har flest skyskrapor av alla städer i hela världen."
       },
@@ -5589,10 +5589,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Sydkorea (Seoul)?",
         "a": [
-          "Sydkoreansk won (KRW)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Sydkoreansk won",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Sydkorea betalar man med Sydkoreansk won (KRW). Sydkorea är världsledande inom både elektronik, film och K-pop."
       },
@@ -5768,7 +5768,7 @@
         "t": "mc",
         "q": "Vilket djur vaktar som budbärare i stenstatyer överallt vid Fushimi Inari?",
         "a": [
-          "Räv (Kitsune)",
+          "Räv",
           "Trana",
           "Drake",
           "Karp"
@@ -5782,7 +5782,7 @@
         "t": "mc",
         "q": "Hur länge var Kyoto Japans kejserliga huvudstad innan Tokyo tog över 1868?",
         "a": [
-          "Över 1 000 år (794–1868)",
+          "Över 1 000 år",
           "Cirka 100 år",
           "50 år",
           "300 år"
@@ -5824,10 +5824,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Japan (Kyoto)?",
         "a": [
-          "Yen (JPY)",
-          "Euro (EUR)",
-          "Svensk krona (SEK)",
-          "Amerikansk dollar (USD)"
+          "Yen",
+          "Euro",
+          "Svensk krona",
+          "Amerikansk dollar"
         ],
         "explain": "I Japan betalar man med Yen (JPY). Kyoto skonades under andra världskriget och har hela 17 UNESCO-världsarv."
       },
@@ -5838,7 +5838,7 @@
         "t": "mc",
         "q": "Vilket djur vaktar som budbärare i stenstatyer överallt vid Fushimi Inari?",
         "a": [
-          "Räv (Kitsune)",
+          "Räv",
           "Trana",
           "Drake",
           "Karp"
@@ -5852,7 +5852,7 @@
         "t": "mc",
         "q": "Hur länge var Kyoto Japans kejserliga huvudstad innan Tokyo tog över 1868?",
         "a": [
-          "Över 1 000 år (794–1868)",
+          "Över 1 000 år",
           "Cirka 100 år",
           "50 år",
           "300 år"
@@ -6059,10 +6059,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Indonesien (Jakarta)?",
         "a": [
-          "Rupiah (IDR)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Rupiah",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Indonesien betalar man med Rupiah (IDR). Indonesien är världens fjärde folkrikaste land och har över 120 aktiva vulkaner."
       },
@@ -6294,10 +6294,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Filippinerna (Manila)?",
         "a": [
-          "Filippinsk peso (PHP)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Filippinsk peso",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Filippinerna betalar man med Filippinsk peso (PHP). Filippinerna består av över 7 600 tropiska öar i västra Stilla havet."
       },
@@ -6529,10 +6529,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Marocko (Marrakech)?",
         "a": [
-          "Marockansk dirham (MAD)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Marockansk dirham",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Marocko betalar man med Marockansk dirham (MAD). Marocko har världens äldsta kontinuerligt verksamma universitet (Al-Qarawiyyin i Fès från 859)."
       },
@@ -6764,10 +6764,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Tunisien (Tunis)?",
         "a": [
-          "Tunisisk dinar (TND)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Tunisisk dinar",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Tunisien betalar man med Tunisisk dinar (TND). Tunisien ligger bara 140 kilometer över Medelhavet från Sicilien."
       },
@@ -6957,7 +6957,7 @@
         "t": "mc",
         "q": "Vilken berömd bok utspelar sig på kaffefarmen utanför Nairobi?",
         "a": [
-          "Den afrikanska farmen (Mitt Afrika)",
+          "Den afrikanska farmen",
           "Djungelboken",
           "Mörkrets hjärta",
           "Den gamle och havet"
@@ -6999,10 +6999,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Kenya (Nairobi)?",
         "a": [
-          "Kenyansk shilling (KES)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Kenyansk shilling",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Kenya betalar man med Kenyansk shilling (KES). Kenya är berömt för världens främsta långdistanslöpare från Rift Valley."
       },
@@ -7027,7 +7027,7 @@
         "t": "mc",
         "q": "Vilken berömd bok utspelar sig på kaffefarmen utanför Nairobi?",
         "a": [
-          "Den afrikanska farmen (Mitt Afrika)",
+          "Den afrikanska farmen",
           "Djungelboken",
           "Mörkrets hjärta",
           "Den gamle och havet"
@@ -7192,7 +7192,7 @@
         "t": "mc",
         "q": "Vilken världsberömd dryck har sitt vilda ursprung i Etiopiens högländer?",
         "a": [
-          "Kaffe (Arabica)",
+          "Kaffe",
           "Grönt te",
           "Kakao",
           "Mate"
@@ -7234,10 +7234,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Etiopien (Addis Abeba)?",
         "a": [
-          "Birr (ETB)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Birr",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Etiopien betalar man med Birr (ETB). Etiopien har sin egen kalender med 13 månader som ligger 7–8 år efter vår."
       },
@@ -7262,7 +7262,7 @@
         "t": "mc",
         "q": "Vilken världsberömd dryck har sitt vilda ursprung i Etiopiens högländer?",
         "a": [
-          "Kaffe (Arabica)",
+          "Kaffe",
           "Grönt te",
           "Kakao",
           "Mate"
@@ -7441,7 +7441,7 @@
         "t": "mc",
         "q": "Vilket hav sköljer mot Lagos stränder i söder?",
         "a": [
-          "Atlanten (Guineabukten)",
+          "Atlanten",
           "Indiska oceanen",
           "Medelhavet",
           "Röda havet"
@@ -7469,10 +7469,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Nigeria (Lagos)?",
         "a": [
-          "Naira (NGN)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Naira",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Nigeria betalar man med Naira (NGN). Nigeria är Afrikas folkrikaste land med över 500 talade språk."
       },
@@ -7511,7 +7511,7 @@
         "t": "mc",
         "q": "Vilket hav sköljer mot Lagos stränder i söder?",
         "a": [
-          "Atlanten (Guineabukten)",
+          "Atlanten",
           "Indiska oceanen",
           "Medelhavet",
           "Röda havet"
@@ -7676,7 +7676,7 @@
         "t": "mc",
         "q": "Varför har sjön Lac Rose utanför Dakar en starkt rosa färg?",
         "a": [
-          "Saltälskande mikroalger (Dunaliella salina)",
+          "Saltälskande mikroalger",
           "Rosa sand på botten",
           "Flamingofjädrar",
           "Kopparmineraler"
@@ -7704,10 +7704,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Senegal (Dakar)?",
         "a": [
-          "CFA-franc (XOF)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "CFA-franc",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Senegal betalar man med CFA-franc (XOF). Dakar var länge det klassiska slutmålet för ökenrallyt Paris–Dakar."
       },
@@ -7746,7 +7746,7 @@
         "t": "mc",
         "q": "Varför har sjön Lac Rose utanför Dakar en starkt rosa färg?",
         "a": [
-          "Saltälskande mikroalger (Dunaliella salina)",
+          "Saltälskande mikroalger",
           "Rosa sand på botten",
           "Flamingofjädrar",
           "Kopparmineraler"
@@ -7911,7 +7911,7 @@
         "t": "mc",
         "q": "Vilket språk talas gemensamt över hela Tanzania och Östafrika?",
         "a": [
-          "Swahili (Kiswahili)",
+          "Swahili",
           "Zulu",
           "Amhariska",
           "Hausa"
@@ -7939,10 +7939,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Tanzania (Dar es-Salaam)?",
         "a": [
-          "Tanzanisk shilling (TZS)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Tanzanisk shilling",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Tanzania betalar man med Tanzanisk shilling (TZS). I Tanzania finns både Afrikas högsta berg Kilimanjaro och Serengeti-savannen."
       },
@@ -7981,7 +7981,7 @@
         "t": "mc",
         "q": "Vilket språk talas gemensamt över hela Tanzania och Östafrika?",
         "a": [
-          "Swahili (Kiswahili)",
+          "Swahili",
           "Zulu",
           "Amhariska",
           "Hausa"
@@ -8174,10 +8174,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Madagaskar (Antananarivo)?",
         "a": [
-          "Ariary (MGA)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Ariary",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Madagaskar betalar man med Ariary (MGA). Madagaskar är världens fjärde största ö och över 80 % av växt- och djurlivet finns ingen annanstans."
       },
@@ -8367,7 +8367,7 @@
         "t": "mc",
         "q": "Vilket trädslag har bladet som pryder Kanadas rödvita flagga?",
         "a": [
-          "Lönn (Lönnlöv)",
+          "Lönn",
           "Ek",
           "Björk",
           "Tall"
@@ -8409,10 +8409,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Kanada (Toronto)?",
         "a": [
-          "Kanadensisk dollar (CAD)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Schweizisk franc (CHF)"
+          "Kanadensisk dollar",
+          "Euro",
+          "Yen",
+          "Schweizisk franc"
         ],
         "explain": "I Kanada betalar man med Kanadensisk dollar (CAD). Kanada är världens näst största land till ytan och har världens längsta kustlinje."
       },
@@ -8437,7 +8437,7 @@
         "t": "mc",
         "q": "Vilket trädslag har bladet som pryder Kanadas rödvita flagga?",
         "a": [
-          "Lönn (Lönnlöv)",
+          "Lönn",
           "Ek",
           "Björk",
           "Tall"
@@ -8602,7 +8602,7 @@
         "t": "mc",
         "q": "Vilken berömd nordamerikansk bergskedja reser sig öster om Vancouver?",
         "a": [
-          "Klippiga bergen (Rocky Mountains)",
+          "Klippiga bergen",
           "Appalacherna",
           "Anderna",
           "Alperna"
@@ -8644,10 +8644,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Kanada (Vancouver)?",
         "a": [
-          "Kanadensisk dollar (CAD)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Schweizisk franc (CHF)"
+          "Kanadensisk dollar",
+          "Euro",
+          "Yen",
+          "Schweizisk franc"
         ],
         "explain": "I Kanada betalar man med Kanadensisk dollar (CAD). Vancouver stod värd för de olympiska vinterspelen år 2010."
       },
@@ -8672,7 +8672,7 @@
         "t": "mc",
         "q": "Vilken berömd nordamerikansk bergskedja reser sig öster om Vancouver?",
         "a": [
-          "Klippiga bergen (Rocky Mountains)",
+          "Klippiga bergen",
           "Appalacherna",
           "Anderna",
           "Alperna"
@@ -8879,10 +8879,10 @@
         "t": "mc",
         "q": "Vilken valuta används i USA (Chicago)?",
         "a": [
-          "Amerikansk dollar (USD)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Schweizisk franc (CHF)"
+          "Amerikansk dollar",
+          "Euro",
+          "Yen",
+          "Schweizisk franc"
         ],
         "explain": "I USA betalar man med Amerikansk dollar (USD). Chicago färgar hela Chicagofloden klargrön varje år på St. Patrick’s Day."
       },
@@ -9114,10 +9114,10 @@
         "t": "mc",
         "q": "Vilken valuta används i USA (Los Angeles)?",
         "a": [
-          "Amerikansk dollar (USD)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Schweizisk franc (CHF)"
+          "Amerikansk dollar",
+          "Euro",
+          "Yen",
+          "Schweizisk franc"
         ],
         "explain": "I USA betalar man med Amerikansk dollar (USD). Oscarsgalan har delats ut i Los Angeles-området sedan 1929."
       },
@@ -9349,10 +9349,10 @@
         "t": "mc",
         "q": "Vilken valuta används i USA (Miami)?",
         "a": [
-          "Amerikansk dollar (USD)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Schweizisk franc (CHF)"
+          "Amerikansk dollar",
+          "Euro",
+          "Yen",
+          "Schweizisk franc"
         ],
         "explain": "I USA betalar man med Amerikansk dollar (USD). Miami är världens största kryssningshamn."
       },
@@ -9584,10 +9584,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Kuba (Havanna)?",
         "a": [
-          "Kubansk peso (CUP)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Kubansk peso",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Kuba betalar man med Kubansk peso (CUP). Kuba har gett världen musikstilar som son, mambo, cha-cha-cha och rumba."
       },
@@ -9819,10 +9819,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Panama (Panama City)?",
         "a": [
-          "Balboa (PAB) & USD",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Balboa & USD",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Panama betalar man med Balboa (PAB) & USD. Omkring 14 000 fartyg passerar genom Panamakanalen varje år."
       },
@@ -10054,10 +10054,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Argentina (Buenos Aires)?",
         "a": [
-          "Argentinsk peso (ARS)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Argentinsk peso",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Argentina betalar man med Argentinsk peso (ARS). Buenos Aires betyder \"Goda vindar\" på spanska."
       },
@@ -10289,10 +10289,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Peru (Lima)?",
         "a": [
-          "Sol (PEN)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Sol",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Peru betalar man med Sol (PEN). Potatisen odlades första gången i Anderna i Peru för över 7 000 år sedan — landet har över 3 000 sorter!"
       },
@@ -10496,7 +10496,7 @@
         "t": "mc",
         "q": "Vilken berömd stillahavsö med jättelika stenstatyer (moai) tillhör Chile?",
         "a": [
-          "Påskön (Rapa Nui)",
+          "Påskön",
           "Galápagos",
           "Tahiti",
           "Fiji"
@@ -10524,10 +10524,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Chile (Santiago)?",
         "a": [
-          "Chilensk peso (CLP)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Chilensk peso",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Chile betalar man med Chilensk peso (CLP). Chile är över 4 300 km långt från norr till söder men i snitt bara 177 km brett."
       },
@@ -10566,7 +10566,7 @@
         "t": "mc",
         "q": "Vilken berömd stillahavsö med jättelika stenstatyer (moai) tillhör Chile?",
         "a": [
-          "Påskön (Rapa Nui)",
+          "Påskön",
           "Galápagos",
           "Tahiti",
           "Fiji"
@@ -10759,10 +10759,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Colombia (Bogotá)?",
         "a": [
-          "Colombiansk peso (COP)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Amerikansk dollar (USD)"
+          "Colombiansk peso",
+          "Euro",
+          "Yen",
+          "Amerikansk dollar"
         ],
         "explain": "I Colombia betalar man med Colombiansk peso (COP). Colombia är det enda landet i Sydamerika med kust mot både Stilla havet och Karibiska havet."
       },
@@ -10994,10 +10994,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Ecuador (Quito)?",
         "a": [
-          "Amerikansk dollar (USD)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Schweizisk franc (CHF)"
+          "Amerikansk dollar",
+          "Euro",
+          "Yen",
+          "Schweizisk franc"
         ],
         "explain": "I Ecuador betalar man med Amerikansk dollar (USD). Quito ligger på 2 850 meters höjd och är världens näst högst belägna huvudstad."
       },
@@ -11229,10 +11229,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Australien (Melbourne)?",
         "a": [
-          "Australisk dollar (AUD)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Schweizisk franc (CHF)"
+          "Australisk dollar",
+          "Euro",
+          "Yen",
+          "Schweizisk franc"
         ],
         "explain": "I Australien betalar man med Australisk dollar (AUD). Melbourne var Australiens tillfälliga huvudstad mellan 1901 och 1927."
       },
@@ -11408,7 +11408,7 @@
         "t": "mc",
         "q": "Vilket smeknamn har Auckland fått på grund av alla sina småbåtshamnar?",
         "a": [
-          "City of Sails (Seglens stad)",
+          "City of Sails",
           "City of Bridges",
           "City of Gold",
           "City of Fog"
@@ -11464,10 +11464,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Nya Zeeland (Auckland)?",
         "a": [
-          "Nyzeeländsk dollar (NZD)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Schweizisk franc (CHF)"
+          "Nyzeeländsk dollar",
+          "Euro",
+          "Yen",
+          "Schweizisk franc"
         ],
         "explain": "I Nya Zeeland betalar man med Nyzeeländsk dollar (NZD). Nya Zeeland var det första landet i världen som införde kvinnlig rösträtt (1893)."
       },
@@ -11478,7 +11478,7 @@
         "t": "mc",
         "q": "Vilket smeknamn har Auckland fått på grund av alla sina småbåtshamnar?",
         "a": [
-          "City of Sails (Seglens stad)",
+          "City of Sails",
           "City of Bridges",
           "City of Gold",
           "City of Fog"
@@ -11699,10 +11699,10 @@
         "t": "mc",
         "q": "Vilken valuta används i Nya Zeeland (Wellington)?",
         "a": [
-          "Nyzeeländsk dollar (NZD)",
-          "Euro (EUR)",
-          "Yen (JPY)",
-          "Schweizisk franc (CHF)"
+          "Nyzeeländsk dollar",
+          "Euro",
+          "Yen",
+          "Schweizisk franc"
         ],
         "explain": "I Nya Zeeland betalar man med Nyzeeländsk dollar (NZD). Wellington kallas ofta \"Windy Wellington\" på grund av vindarna genom Cooksundet."
       },

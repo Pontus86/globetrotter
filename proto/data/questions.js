@@ -200,9 +200,9 @@
     "difficulty": 1,
     "q": "Vilken stad vid Bengaliska viken var huvudstad i Brittiska Indien fram till 1911?",
     "a": [
-      "Calcutta (Kolkata)",
-      "Bombay (Mumbai)",
-      "Madras (Chennai)",
+      "Calcutta",
+      "Bombay",
+      "Madras",
       "Agra"
     ],
     "photo": "assets/photos/redfort.jpg"
@@ -571,7 +571,7 @@
     "difficulty": 1,
     "q": "Vilken egyptisk forntida solgud avbildades traditionellt med falkhuvud och en lysande solskiva?",
     "a": [
-      "Ra (Re)",
+      "Ra",
       "Anubis",
       "Osiris",
       "Sobek"
@@ -1093,7 +1093,7 @@
     "difficulty": 1,
     "q": "Vad var skyskrapans högsta metallspira ursprungligen tänkt att användas som, innan idén övergavs?",
     "a": [
-      "Förtöjningsmast för luftskepp (zeppelinare)",
+      "Förtöjningsmast för luftskepp",
       "Radioteleskop",
       "Blixtfångare för kraftverk",
       "Utsiktsbalkong för fallskärmshoppare"
@@ -1280,7 +1280,7 @@
     "a": [
       "Indiska soldater som stupade i första världskriget",
       "Mogulrikets kavalleri",
-      "Självständighetsrörelsen 1947",
+      "Kriget mot Persien",
       "Handelsflottans sjömän"
     ],
     "photo": "assets/photos/indiagate.jpg"
@@ -1397,7 +1397,7 @@
     "difficulty": 1,
     "q": "Vilken syrlig brödsort är San Francisco världsberömt för, ofta serverad urgröpt med musselsoppa?",
     "a": [
-      "Surdegsbröd (Sourdough)",
+      "Surdegsbröd",
       "Brioche",
       "Pumpernickel",
       "Ciabatta"
@@ -1431,7 +1431,7 @@
     "difficulty": 1,
     "q": "Vilken känd lyckokaka som ofta serveras på kinesiska restauranger i väst har sitt ursprung i Kalifornien?",
     "a": [
-      "Fortune cookie (lyckokaka)",
+      "Fortune cookie",
       "Månkaka",
       "Macaron",
       "Mochi"
@@ -1481,7 +1481,7 @@
     "difficulty": 1,
     "q": "Vilket världsberömt konstmuseum ligger direkt längs Central Parks östra sida på Fifth Avenue?",
     "a": [
-      "Metropolitan Museum of Art (The Met)",
+      "Metropolitan Museum of Art",
       "Tate Modern",
       "Louvren",
       "Pradomuseet"
@@ -1598,7 +1598,7 @@
     "difficulty": 1,
     "q": "Vad kallas den persiskt inspirerade symmetriska trädgårdsformen i fyra kvadranter som omger mausoleet?",
     "a": [
-      "Charbagh (fyrdelad paradisträdgård)",
+      "Charbagh",
       "Mandala-park",
       "Zen-trädgård",
       "Engelsk park"

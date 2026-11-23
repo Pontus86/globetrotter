@@ -641,10 +641,19 @@
     }, duration);
   }
 
+  function requireNotLateNight(actionLabel = 'detta') {
+    if (state.hour >= 24) {
+      AudioMgr.play('time');
+      showToast(`Klockan har passerat midnatt och staden har stängt! Checka in på hotellet för natten innan du kan fortsätta.`, 3600);
+      return false;
+    }
+    return true;
+  }
+
   function addHours(h) {
     state.hour += h;
     if (state.hour >= 24) {
-      showToast("Klockan har blivit sen! Ta in på hotellet för natten.", 3000);
+      showToast("Klockan har passerat midnatt! Staden stänger för natten — checka in på hotellet.", 3400);
       AudioMgr.play('time');
     }
     updateHUD();
@@ -1077,6 +1086,7 @@
   }
 
   function openSignatureModal(city, sig) {
+    if (!requireNotLateNight(sig.name)) return;
     const isOpen = state.hour >= sig.openFrom && state.hour < sig.openUntil;
     const doneToday = Boolean(state.signatureDoneToday[`${state.city}_${state.day}`]);
     const sigPack = (window.GT_SIGNATURE_QUIZZES && window.GT_SIGNATURE_QUIZZES[state.city]) || null;
@@ -1094,7 +1104,7 @@
           ${exitIconBtn('Tillbaka till staden')}
         </div>
         <div class="sight-bottom-panel">
-          <div id="sigQuizContainer">
+          <div id="quizContainer">
             <div class="sight-fact-card" style="margin-bottom:8px;">
               ${sig.desc}
               <div style="margin-top:6px; font-size:12px; color:#ffd875;"><b>Lokal utmaning (3 frågor):</b> ${rewardHint}</div>
@@ -1137,7 +1147,7 @@
       questions = [...questions, ...pickHardQuestions(3 - questions.length, city.region)];
     }
 
-    const container = document.getElementById('sigQuizContainer');
+    const container = document.getElementById('quizContainer');
     if (!container || questions.length === 0) {
       closeModal();
       renderCitySpots(city);
@@ -1166,7 +1176,6 @@
           rewardHtml = `Imponerande lokalkännedom! Du fick <b>+350 kr</b> i bonus samt en <b>gratis hotellnatt i ${city.name}</b>!`;
           addJournal(`Glänste på ${sig.name} i ${city.name} (${correct}/${total}) och belönades med +350 kr och fri hotellnatt!`);
         } else {
-          // Lokalt förankrad energi- & gästfrihetsbonus (t.ex. Falafel på Möllan i Malmö!)
           state.hour = Math.max(8, state.hour - 2);
           state.freeHotelCities.add(state.city);
           rewardHtml = `Mätt, glad och full av energi! Du fick tillbaka <b>2 timmar på klockan</b> samt en <b>gratis hotellnatt i ${city.name}</b>!`;
@@ -1181,16 +1190,19 @@
       updateHUD();
       renderCitySpots(city);
 
-      container.innerHTML = `
-        <div class="sight-fact-card" style="text-align:center;">
-          <div style="font-size:16px; font-weight:bold; color:${passed ? '#78e08f' : '#ffd875'}; margin-bottom:6px;">
-            ${passed ? `✓ Bra jobbat på ${sig.name}! (${correct}/${total} rätt)` : `${sig.name} avklarat (${correct}/${total} rätt)`}
+      const box = document.getElementById('quizContainer');
+      if (box) {
+        box.innerHTML = `
+          <div class="sight-fact-card" style="text-align:center;">
+            <div style="font-size:16px; font-weight:bold; color:${passed ? '#78e08f' : '#ffd875'}; margin-bottom:6px;">
+              ${passed ? `✓ Bra jobbat på ${sig.name}! (${correct}/${total} rätt)` : `${sig.name} avklarat (${correct}/${total} rätt)`}
+            </div>
+            <div style="font-size:13px; color:#f4ead6; margin-bottom:12px;">${rewardHtml}</div>
+            <button class="stamp-action-btn" onclick="window.GT.closeModal()">Tillbaka till ${city.name} »</button>
           </div>
-          <div style="font-size:13px; color:#f4ead6; margin-bottom:12px;">${rewardHtml}</div>
-          <button class="stamp-action-btn" onclick="window.GT.closeModal()">Tillbaka till ${city.name} »</button>
-        </div>
-      `;
-    }, container, city.skyline);
+        `;
+      }
+    }, city.skyline);
   }
 
   // --- Modalhantering ---
@@ -1211,6 +1223,7 @@
 
   // --- Höjdpunktsbesök (Fullskärmsfoto i äkta 90-tals BackPacker-stil!) ---
   function openPlaceModal(placeKey, place) {
+    if (!requireNotLateNight(place.name)) return;
     const isDone = state.donePlaces.has(placeKey);
 
     if (!isDone && state.cash < place.fee) {
@@ -1253,14 +1266,21 @@
     }
     AudioMgr.play('sight');
 
-    runQuiz(getQuestionsFor(place.city, placeKey, place.questions), () => {
-      state.donePlaces.add(placeKey);
-      if (!isRepeat) {
-        state.dayLog.activities.push(`Besökte ${place.name}`);
+    runQuiz(getQuestionsFor(place.city, placeKey, place.questions), ({ correct, total }) => {
+      if (correct >= total) {
+        state.donePlaces.add(placeKey);
+        if (!isRepeat) {
+          state.dayLog.activities.push(`Besökte ${place.name}`);
+        }
+        renderCitySpots(W.cities[state.city]);
+        closeModal();
+        checkCityCompletion();
+      } else {
+        AudioMgr.play('wrong1');
+        renderCitySpots(W.cities[state.city]);
+        closeModal();
+        showToast(`${place.name}: ${correct}/${total} rätt. Du behöver alla rätt för att klara sevärdheten!`, 3600);
       }
-      renderCitySpots(W.cities[state.city]);
-      closeModal();
-      checkCityCompletion();
     }, place.photo);
   }
 
@@ -1407,6 +1427,7 @@
 
     el.spotsContainer.innerHTML = '';
 
+    const wId = wonder.id || state.activeWonder;
     const spotCoords = [
       [22, 48],
       [50, 39],
@@ -1416,51 +1437,55 @@
     const spotTitles = wonder.spots || questions.map((_, i) => `Upptäcktsplats ${i + 1}`);
 
     questions.forEach((qObj, idx) => {
-      const spotKey = `${wonder.id}_${idx}`;
+      const spotKey = `${wId}_${idx}`;
       const isDone = state.doneWonderSpots.has(spotKey);
       const pos = spotCoords[idx % spotCoords.length];
       const title = spotTitles[idx] || `Plats ${idx + 1}`;
 
       const badgeHtml = isDone
-        ? `<div class="spot-photo" style="background-image:url(${wonder.photo}); border-color:#66e38c;"><span style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(20,60,30,0.45); color:#8cf0a4; font-size:24px; font-weight:900;">✓</span></div>`
-        : `<div class="spot-undiscovered-badge" style="border-color:#ffbe3d; color:#ffd875; box-shadow:0 0 18px rgba(255,190,61,0.55), 0 6px 14px rgba(0,0,0,0.85);"><span>★</span></div>`;
+        ? `<div class="spot-photo" style="background-image:url(${wonder.photo}); border-color:#66e38c; position:relative;"><span style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(20,60,30,0.45); color:#8cf0a4; font-size:24px; font-weight:900;">✓</span></div>`
+        : `<div class="spot-undiscovered-badge" style="border-color:#ffbe3d; color:#ffd875; box-shadow:0 0 18px rgba(255,190,61,0.55), 0 6px 14px rgba(0,0,0,0.85);"><span>★${idx + 1}</span></div>`;
 
       const spotEl = createSpot(
         pos[0], pos[1],
         `sight ${isDone ? 'done' : 'undiscovered'}`,
         badgeHtml,
         title,
-        () => openWonderSpotQuiz(wonder.id, idx)
+        () => openWonderSpotQuiz(wId, idx)
       );
       el.spotsContainer.appendChild(spotEl);
     });
 
     // Unikt världsarvs-minispel direkt på platsen!
-    const wonderMg = WONDER_MINIGAME_MAP[wonder.id];
+    const wonderMg = WONDER_MINIGAME_MAP[wId];
     if (wonderMg && window.GT_MINIGAMES) {
       const mgSpot = createSpot(
         60, 74,
         'sight',
         `<div class="spot-photo" style="background-image:url(${wonder.photo}); border-color:#ffbe3d; box-shadow:0 0 18px rgba(255,190,61,0.65);"></div>`,
         `★ Spela: ${wonderMg.label}`,
-        () => openWonderMinigame(wonder.id)
+        () => openWonderMinigame(wId)
       );
       el.spotsContainer.appendChild(mgSpot);
     }
 
-    // Tydlig återrese-ikon tillbaka till närmaste stad
+    // Tydlig återrese-ikon tillbaka till närmaste stad (alltid synlig etikett även på mobil!)
     const gwCity = W.cities[wonder.from];
     const gwName = gwCity ? gwCity.name : wonder.from;
     const returnSpot = createSpot(
       30, 75,
-      'service',
-      `<img class="spot-service-img" src="assets/icons/airport_3d.jpg" alt="Återvänd">`,
-      `Återvänd till ${gwName}`,
+      'service wonder-return-spot',
+      `<div class="spot-badge" style="border-color:#ffd875;"><img class="spot-model-img" src="assets/icons/airport_3d.jpg" alt="Återvänd"></div>`,
+      `« Återvänd till ${gwName}`,
       () => returnFromWonder()
     );
     el.spotsContainer.appendChild(returnSpot);
 
     updateHUD();
+    if (el.cityEventRibbon) {
+      el.cityEventRibbon.innerHTML = `<button type="button" class="globe-brass-btn" style="padding:3px 10px; font-size:11px;" onclick="window.GT.returnFromWonder()">« Återvänd till ${gwName}</button>`;
+      el.cityEventRibbon.classList.remove('hidden');
+    }
     if (window.AmbientMgr) {
       window.AmbientMgr.setScene('wonder', wonder.region || 'Europa');
     }
@@ -1470,8 +1495,9 @@
     const wonder = W.wonders[wonderId];
     if (!wonder || !wonder.questions || !wonder.questions[spotIdx]) return;
     const spotTitle = (wonder.spots && wonder.spots[spotIdx]) || `${wonder.name} #${spotIdx + 1}`;
-    const qObj = wonder.questions[spotIdx];
-    const spotKey = `${wonder.id}_${spotIdx}`;
+    const qObj = { ...wonder.questions[spotIdx], t: wonder.questions[spotIdx].t || wonder.questions[spotIdx].type || 'mc' };
+    const wId = wonder.id || wonderId;
+    const spotKey = `${wId}_${spotIdx}`;
     const isAlreadyDone = state.doneWonderSpots.has(spotKey);
 
     const html = `
@@ -1494,13 +1520,18 @@
     `;
     showModal(html);
 
-    runQuiz([qObj], () => {
+    runQuiz([qObj], ({ correct, total }) => {
+      if (correct < total) {
+        closeModal();
+        showToast('Svara rätt för att utforska platsen! Prova igen.', 3000);
+        return;
+      }
       state.doneWonderSpots.add(spotKey);
       const totalSpots = (wonder.questions || []).length;
-      const doneSpotsCount = (wonder.questions || []).filter((_, i) => state.doneWonderSpots.has(`${wonder.id}_${i}`)).length;
+      const doneSpotsCount = (wonder.questions || []).filter((_, i) => state.doneWonderSpots.has(`${wId}_${i}`)).length;
 
-      if (doneSpotsCount >= totalSpots && !state.doneWonders.has(wonder.id)) {
-        state.doneWonders.add(wonder.id);
+      if (doneSpotsCount >= totalSpots && !state.doneWonders.has(wId)) {
+        state.doneWonders.add(wId);
         state.dayLog.activities.push(`Utforskat världsarvet ${wonder.name}`);
         addJournal(`Utforskat hela världsarvet ${wonder.name} (${wonder.country}) under expeditionen från ${W.cities[wonder.from]?.name || wonder.from}.`);
         AudioMgr.play('fanfar');
@@ -2229,13 +2260,49 @@
         const inp = document.getElementById('textQuizInput');
         const submit = document.getElementById('textQuizSubmit');
         if (inp) inp.focus();
+        const normTxt = (s) => String(s || '')
+          .toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9\s]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        const levenshtein = (a, b) => {
+          const m = a.length, n = b.length;
+          if (!m) return n;
+          if (!n) return m;
+          const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+          for (let i = 0; i <= m; i++) dp[i][0] = i;
+          for (let j = 0; j <= n; j++) dp[0][j] = j;
+          for (let i = 1; i <= m; i++) {
+            for (let j = 1; j <= n; j++) {
+              const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+              dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+            }
+          }
+          return dp[m][n];
+        };
+        const fuzzyMatch = (userRaw, targetRaw) => {
+          const u = normTxt(userRaw);
+          const t = normTxt(targetRaw);
+          if (u.length < 2 || !t) return false;
+          if (u === t) return true;
+          if (u.includes(t) || (t.includes(u) && u.length >= Math.min(4, t.length))) return true;
+          // Tillåt enbart efternamn (sista ordet) eller enskilt nyckelord
+          const words = t.split(' ').filter(w => w.length >= 3);
+          const lastName = words.length > 1 ? words[words.length - 1] : null;
+          const candidates = lastName ? [t, lastName] : [t];
+          return candidates.some(cand => {
+            const maxDist = cand.length >= 7 ? 2 : (cand.length >= 4 ? 1 : 0);
+            return levenshtein(u, cand) <= maxDist;
+          });
+        };
         const checkText = () => {
           if (submit.disabled) return;
           submit.disabled = true;
           inp.disabled = true;
-          const raw = (inp.value || '').trim().toLowerCase();
-          const accepted = (q.accept || [q.ans]).map(s => String(s).toLowerCase());
-          const isRight = raw.length >= 2 && accepted.some(a => raw.includes(a) || a.includes(raw) && raw.length >= Math.min(4, a.length));
+          const raw = (inp.value || '').trim();
+          const accepted = (q.accept || [q.ans]);
+          const isRight = raw.length >= 2 && accepted.some(a => fuzzyMatch(raw, a));
           if (isRight) {
             inp.style.borderColor = '#2f7d43';
             inp.style.background = '#e6f5ea';
@@ -2259,6 +2326,7 @@
 
   // --- Jobbpass (Riktig 3-spaltig dagstidning där jobbannonsen är inringad med röd penna!) ---
   function openJobModal() {
+    if (!requireNotLateNight('Dagstidningen')) return;
     AudioMgr.play('paper');
     const city = W.cities[state.city];
     const cityJobs = (city && Array.isArray(city.jobs) && city.jobs.length > 0)
@@ -2288,7 +2356,7 @@
 
     const cityMg = window.GT_MINIGAMES ? window.GT_MINIGAMES.getForCity(state.city, state.day) : null;
     const classifiedAdsHtml = cityJobs.slice(0, 3).map((job, idx) => {
-      const finalPay = Math.round(job.pay * (hasCamera ? 1.5 : 1) * evMult);
+      const finalPay = Math.round(job.pay * (hasCamera ? 1.15 : 1) * evMult);
       const doneKey = `${state.city}_${state.day}_${idx}`;
       const alreadyDone = !!state.jobsDoneToday[doneKey];
       const isMinigameAd = (idx === 2 && cityMg);
@@ -2319,7 +2387,7 @@
           </div>
           <p class="bp-ad-copy">${pitch}</p>
           ${recBadge}
-          ${hasCamera ? `<div class="bp-ad-bonus">+50 % Kamerabonus aktiv</div>` : ''}
+          ${hasCamera ? `<div class="bp-ad-bonus">+15 % Kamerabonus aktiv</div>` : ''}
           ${(cityEv && cityEv.jobBonus) ? `<div class="bp-ad-bonus">+${Math.round(cityEv.jobBonus * 100)} % eventbonus (${cityEv.title})</div>` : ''}
           <div class="bp-ad-action">
             ${alreadyDone
@@ -2405,7 +2473,7 @@
       const hasCamera = hasItem('kamera');
       const cityEv = getCityEvent(state.city);
       const evMult = (cityEv && cityEv.jobBonus) ? (1 + cityEv.jobBonus) : 1;
-      const maxPay = Math.round(job.pay * (hasCamera ? 1.5 : 1) * evMult);
+      const maxPay = Math.round(job.pay * (hasCamera ? 1.15 : 1) * evMult);
       const ratio = max > 0 ? Math.max(0, Math.min(1, score / max)) : 0;
       const earned = Math.round(ratio * maxPay);
 
@@ -2491,7 +2559,7 @@
       const hasCamera = hasItem('kamera');
       const cityEv = getCityEvent(state.city);
       const evMult = (cityEv && cityEv.jobBonus) ? (1 + cityEv.jobBonus) : 1;
-      const maxPay = Math.round(job.pay * (hasCamera ? 1.5 : 1) * evMult);
+      const maxPay = Math.round(job.pay * (hasCamera ? 1.15 : 1) * evMult);
       const earned = Math.round((correctInJob / total) * maxPay);
 
       changeCash(earned, `Lön från ${job.employer}`);
@@ -2559,6 +2627,7 @@
 
   // --- Stadens Bibliotek & Uppslagsverk om Landet (Fakta & Karta + Interaktiv Historietidslinje!) ---
   function openLibraryModal(activeTab = 'facts', timelineIdx = 0) {
+    if (!requireNotLateNight('Biblioteket')) return;
     AudioMgr.play('paper');
     const city = W.cities[state.city];
     const cf = (window.GT_COUNTRY_FACTS && window.GT_COUNTRY_FACTS[state.city]) || null;
@@ -2824,6 +2893,7 @@
   }
 
   function openBazaarModal(customSpeech = null, activeTab = 'market') {
+    if (!requireNotLateNight('Marknaden')) return;
     if (window.AmbientMgr) window.AmbientMgr.setScene('bazaar');
     const city = W.cities[state.city];
     const mInfo = getMarketInfo(state.city);
@@ -4143,7 +4213,11 @@
       msg = `Bartendern ritar ett kryss på din stadskarta: <i>"Missa inte <b>${revealPlace ? revealPlace.name : revealKey}</b> medan du är i ${city.name}! Jag markerade vägen åt dig."</i>`;
     } else if (activeEvs.length > 0) {
       const ev = activeEvs[Math.floor(Math.random() * activeEvs.length)];
-      msg = `Du smyger ner på en barstol och råkar höra två reseledare viska: <i>"Har du hört om <b>${ev.title}</b> i ${W.cities[ev.city]?.name}? ${ev.effectText}"</i>`;
+      const evCityName = W.cities[ev.city]?.name || ev.city;
+      state.deals[ev.city] = Math.max(state.deals[ev.city] || 0, 15);
+      saveGame();
+      const rumorStory = ev.rumorText || ev.effectText;
+      msg = `Du smyger ner på en barstol och hör en gammal reseledare berätta om <b>${ev.title}</b> i <b>${evCityName}</b>: <i>"${rumorStory}"</i><br><span style="color:#78e08f; font-size:11.5px;">★ Personlig kontakt: Reseledaren gav just dig en privat rabattkod på resan mot ${evCityName}!</span>`;
     } else {
       msg = `Två luttrade backpackers vid grannbordet diskuterar souvenirpriser: <i>"Köp billigt i ${city.name}, men sälj så långt bort över jordgloben du bara kan!"</i>`;
     }
@@ -5357,13 +5431,12 @@
             </div>
             <span style="font-size:12px; color:#ffd875; font-weight:bold;">Pott: 300 kr</span>
           </div>
-          <div id="botDuelQuizContainer"></div>
+          <div id="quizContainer"></div>
         </div>
       </div>
     `;
     showModal(html);
 
-    const container = document.getElementById('botDuelQuizContainer');
     runQuiz(duelQuestions.slice(0, 3), ({ correct, total }) => {
       const myScore = Math.round(correct * 10) / 10;
       let headline = '';
@@ -5388,6 +5461,7 @@
       }
       saveGame();
       updateOpponentHUD();
+      const container = document.getElementById('quizContainer');
       if (container) {
         container.innerHTML = `
           <div style="text-align:center; padding:16px 8px;">
@@ -5397,7 +5471,7 @@
           </div>
         `;
       }
-    }, container, city?.skyline);
+    }, city?.skyline);
   }
 
   function openIncomingChallenge() {

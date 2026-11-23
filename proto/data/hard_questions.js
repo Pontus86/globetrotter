@@ -153,7 +153,7 @@
     {
       id: 'hq_as_10', t: 'mc', region: 'Asien', difficulty: 3,
       q: 'Vilket land är det enda i Sydostasien som aldrig koloniserades av någon europeisk makt?',
-      a: ['Thailand', 'Burma (Myanmar)', 'Laos', 'Kambodja'],
+      a: ['Thailand', 'Burma', 'Laos', 'Kambodja'],
       explain: 'Siam (dagens Thailand) behöll sin självständighet under 1800-talet genom skicklig diplomati och fungerade som buffertzon mellan Brittiska Indien och Franska Indokina.'
     },
     {
@@ -251,7 +251,7 @@
     {
       id: 'hq_na_03', t: 'mc', region: 'Nordamerika', difficulty: 3,
       q: 'Vilken av USA:s fem stora sjöar (Great Lakes) är den enda som ligger helt inom USA:s gränser?',
-      a: ['Michigansjön', 'Övre sjön (Lake Superior)', 'Huronsjön', 'Eriesjön'],
+      a: ['Michigansjön', 'Övre sjön', 'Huronsjön', 'Eriesjön'],
       explain: 'Alla de andra fyra Stora sjöarna delas mellan USA och Kanada, medan Michigansjön helt omges av amerikanska delstater.'
     },
     {
@@ -404,7 +404,7 @@
         {
           id: 'sig_malmo_1', t: 'mc',
           q: 'Vilken är huvudingrediensen i den klassiska falafeln som serveras runt Möllevångstorget i Malmö?',
-          a: ['Blötlagda kikärter (ibland blandade med bondbönor)', 'Kokt potatis och vetemjöl', 'Röda linser och ris', 'Friterad aubergine och halloumi'],
+          a: ['Blötlagda kikärter', 'Kokt potatis och vetemjöl', 'Röda linser och ris', 'Friterad aubergine och halloumi'],
           explain: 'Äkta falafel görs på okokta, blötlagda och malda kikärter (eller fava-/bondbönor i egyptisk stil) som kryddas och friteras krispiga.'
         },
         {
@@ -506,7 +506,7 @@
         {
           id: 'sig_tokyo_2', t: 'mc',
           q: 'Vad består traditionell japansk dashi-buljong huvudsakligen av?',
-          a: ['Kombu-tång och torkad bonitofisk (katsuobushi)', 'Sojasås och sesamolja', 'Kycklingben och ingefära', 'Risvinäger och sjögrässalt'],
+          a: ['Kombu-tång och torkad bonitofisk', 'Sojasås och sesamolja', 'Kycklingben och ingefära', 'Risvinäger och sjögrässalt'],
           explain: 'Kombu och katsuobushi ger tillsammans en djup, ren umamibuljong som är grunden i misosoppa och många rätter.'
         },
         {
@@ -524,7 +524,7 @@
         {
           id: 'sig_rom_1', t: 'mc',
           q: 'Vilket kött används i en traditionell romersk pasta alla carbonara?',
-          a: ['Guanciale (lufttorkad griskind)', 'Prosciutto crudo', 'Mortadella', 'Salami Milano'],
+          a: ['Guanciale', 'Prosciutto crudo', 'Mortadella', 'Salami Milano'],
           explain: 'Romerska klassiker som carbonara och amatriciana lagas traditionellt med guanciale, Pecorino Romano, äggula och rikligt med svartpeppar, utan grädde.'
         },
         {

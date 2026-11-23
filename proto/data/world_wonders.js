@@ -35,7 +35,7 @@
         {
           q: 'Vad heter den berömda glaciären som kalvar enorma isberg ut i Ilulissat isfjord?',
           t: 'mc',
-          a: ['Sermeq Kujalleq (Jakobshavn Isbræ)', 'Vatnajökull', 'Jostedalsbreen', 'Perito Moreno'],
+          a: ['Sermeq Kujalleq', 'Vatnajökull', 'Jostedalsbreen', 'Perito Moreno'],
           explain: 'Sermeq Kujalleq (även kallad Jakobshavn Isbræ) rör sig upp till 40 meter per dygn och producerar omkring 10 % av alla isberg på Grönland.'
         },
         {
@@ -81,7 +81,7 @@
         {
           q: 'Varifrån transporterades de mindre "blåstenarna" (bluestones) till Stonehenge för över 4 500 år sedan?',
           t: 'mc',
-          a: ['Preseli-bergen i Wales (ca 240 km bort)', 'Skotska högländerna', 'Klippkusten i Dover', 'Irland'],
+          a: ['Preseli-bergen i Wales', 'Skotska högländerna', 'Klippkusten i Dover', 'Irland'],
           explain: 'Geologiska analyser har visat att blåstenarna bröts i Preseli Hills i västra Wales och fraktades över 240 kilometer till Wiltshire.'
         },
         {
@@ -197,7 +197,7 @@
         {
           q: 'Vilken farao lät bygga den allra största pyramiden på Gizaplatån?',
           t: 'mc',
-          a: ['Cheops (Khufu)', 'Tutankhamon', 'Ramses II', 'Kleopatra'],
+          a: ['Cheops', 'Tutankhamon', 'Ramses II', 'Kleopatra'],
           explain: 'Cheopspyramiden byggdes omkring 2560 f.Kr. åt farao Khufu (Cheops) och var världens högsta byggnad i över 3 800 år.'
         },
         {
@@ -243,7 +243,7 @@
         {
           q: 'Vad heter den mest kända tempelfasaden som dyker upp vid slutet av klyftan Siq i Petra?',
           t: 'mc',
-          a: ['Al-Khazneh (Skattkammaren)', 'Hagia Sofia', 'Parthenon', 'Abu Simbel'],
+          a: ['Al-Khazneh', 'Hagia Sofia', 'Parthenon', 'Abu Simbel'],
           explain: 'Al-Khazneh ("Skattkammaren") är 40 meter hög och uthuggen direkt i den rosaröda sandstensväggen under det första århundradet e.Kr.'
         },
         {
@@ -445,7 +445,7 @@
         {
           q: 'Vilken religion vigdes Angkor Wat ursprungligen åt, innan det senare blev ett buddhistiskt tempel?',
           t: 'mc',
-          a: ['Hinduism (guden Vishnu)', 'Shintoism', 'Zoroastrism', 'Sikhism'],
+          a: ['Hinduism', 'Shintoism', 'Zoroastrism', 'Sikhism'],
           explain: 'Angkor Wat byggdes som ett hinduiskt tempel helgat åt guden Vishnu och symboliserar det mytiska berget Meru, gudarnas hemvist.'
         },
         {
@@ -485,13 +485,13 @@
         {
           q: 'Vilken typ av berggrund har vattnet under miljontals år format till Ha Long-buktens branta torn och grottor?',
           t: 'mc',
-          a: ['Kalksten (karstlandskap)', 'Vulkanisk basalt', 'Röd sandsten', 'Gnejs'],
+          a: ['Kalksten', 'Vulkanisk basalt', 'Röd sandsten', 'Gnejs'],
           explain: 'Ha Long-bukten är ett av världens mest spektakulära marina karstlandskap, där regn och hav långsamt har löst upp kalkstenen.'
         },
         {
           q: 'I vilket havsområde ligger Ha Long-bukten i norra Vietnam?',
           t: 'mc',
-          a: ['Tonkinbukten (Sydkinesiska havet)', 'Bengaliska viken', 'Andamansjön', 'Gula havet'],
+          a: ['Tonkinbukten', 'Bengaliska viken', 'Andamansjön', 'Gula havet'],
           explain: 'Ha Long-bukten ligger i provinsen Quang Ninh vid Tonkinbukten, omkring 160 kilometer öster om huvudstaden Hanoi.'
         }
       ]
@@ -519,7 +519,7 @@
         {
           q: 'Under vilken kinesisk dynasti byggdes de mest välbevarade sten- och tegelavsnitten av muren kring Peking?',
           t: 'mc',
-          a: ['Mingdynastin (1368–1644)', 'Handynastin', 'Tangdynastin', 'Qingdynastin'],
+          a: ['Mingdynastin', 'Handynastin', 'Tangdynastin', 'Qingdynastin'],
           explain: 'Även om de första murarna förenades redan under kejsar Qin Shi Huang år 221 f.Kr., byggdes de berömda stenmurarna vid Badaling och Mutianyu under Mingdynastin.'
         },
         {
@@ -640,7 +640,7 @@
         {
           q: 'Varför har klippan Uluru sin karaktäristiska roströda färg?',
           t: 'mc',
-          a: ['Järnmineraler i sandstenen har oxiderat (rostat) på ytan', 'Den består av röd lava', 'Den täcks av röd ökenmossa', 'Den målades i forntiden'],
+          a: ['Järnmineraler i sandstenen har oxiderat på ytan', 'Den består av röd lava', 'Den täcks av röd ökenmossa', 'Den målades i forntiden'],
           explain: 'Under ytan är arkos-sandstenen faktiskt grå, men järnet i stenen har rostat av regn och syre under miljontals år.'
         },
         {
@@ -803,7 +803,7 @@
         {
           q: 'Vad heter den mest dramatiska, U-formade och 80 meter höga huvudklyftan i Iguazúfallen?',
           t: 'mc',
-          a: ['Djävulsgapet (Garganta del Diablo)', 'Änglafallet', 'Silverporten', 'Smaragdavgrunden'],
+          a: ['Djävulsgapet', 'Änglafallet', 'Silverporten', 'Smaragdavgrunden'],
           explain: 'Garganta del Diablo samlar nästan hälften av flodens vattenmassor i en hästskoformad klyfta där vattendimman ständigt skapar regnbågar.'
         },
         {
