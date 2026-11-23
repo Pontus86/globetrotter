@@ -1136,8 +1136,44 @@
         }
       }
 
-      // 6d. AI-Bottar på jordgloben (upp till 6 färgade medresenärer, kan slås av/på)
+      // 6d. AI-Bottar på jordgloben (både deras reslinjer & nuvarande positioner!)
       if (!this.mini && !this.quizMode && this.showBots && Array.isArray(window.GT_ACTIVE_BOTS) && window.GT_ACTIVE_BOTS.length > 0 && window.GT_WORLD && window.GT_WORLD.cities) {
+        // 1) Rita varje bots resrutt som en färgad, streckad båge på jordgloben
+        window.GT_ACTIVE_BOTS.forEach(bot => {
+          const hist = bot.travelHistory || [];
+          if (hist.length === 0) return;
+          const isFocused = this.focusBotId && this.focusBotId === bot.id;
+          ctx.save();
+          ctx.strokeStyle = bot.color || '#ffd875';
+          ctx.globalAlpha = this.focusBotId ? (isFocused ? 0.95 : 0.25) : 0.65;
+          ctx.lineWidth = isFocused ? 3.0 : 1.8;
+          ctx.setLineDash(isFocused ? [7, 4] : [4, 4]);
+          hist.forEach(leg => {
+            const c1 = window.GT_WORLD.cities[leg.from];
+            const c2 = window.GT_WORLD.cities[leg.to];
+            if (!c1 || !c2) return;
+            const v1 = latLonToVector(c1.lat, c1.lon);
+            const v2 = latLonToVector(c2.lat, c2.lon);
+            ctx.beginPath();
+            let drawing = false;
+            const steps = 28;
+            for (let s = 0; s <= steps; s++) {
+              const ll = vectorToLatLon(slerp(v1, v2, s / steps));
+              const pt = this.project(ll[0], ll[1]);
+              if (pt.visible) {
+                if (!drawing) { ctx.moveTo(pt.x, pt.y); drawing = true; }
+                else ctx.lineTo(pt.x, pt.y);
+              } else {
+                drawing = false;
+              }
+            }
+            ctx.stroke();
+          });
+          ctx.setLineDash([]);
+          ctx.restore();
+        });
+
+        // 2) Rita varje bots nuvarande stadsmarkör & namnbricka
         const cityStackCount = {};
         window.GT_ACTIVE_BOTS.forEach(bot => {
           const bCity = window.GT_WORLD.cities[bot.city];
@@ -1150,10 +1186,19 @@
           const oy = -10 - Math.floor(idx / 3) * 14;
           const px = proj.x + ox;
           const py = proj.y + oy;
+          const isFocused = this.focusBotId && this.focusBotId === bot.id;
 
           ctx.save();
+          if (isFocused) {
+            const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 240);
+            ctx.beginPath();
+            ctx.arc(px, py, (9 + pulse * 4) * zoomScale, 0, Math.PI * 2);
+            ctx.strokeStyle = bot.color || '#ffd875';
+            ctx.lineWidth = 2.2;
+            ctx.stroke();
+          }
           ctx.beginPath();
-          ctx.arc(px, py, 5.2 * zoomScale, 0, Math.PI * 2);
+          ctx.arc(px, py, (isFocused ? 6.4 : 5.2) * zoomScale, 0, Math.PI * 2);
           ctx.fillStyle = bot.color || '#ffd875';
           ctx.strokeStyle = '#120c07';
           ctx.lineWidth = 1.6;
@@ -1165,10 +1210,10 @@
           const tw = ctx.measureText(tag).width;
           const bx = px - tw / 2 - 4;
           const by = py - 21;
-          ctx.fillStyle = 'rgba(15, 11, 7, 0.88)';
+          ctx.fillStyle = 'rgba(15, 11, 7, 0.90)';
           ctx.fillRect(bx, by, tw + 8, 14);
           ctx.strokeStyle = bot.color || '#ffd875';
-          ctx.lineWidth = 1;
+          ctx.lineWidth = isFocused ? 1.8 : 1;
           ctx.strokeRect(bx, by, tw + 8, 14);
           ctx.fillStyle = '#fff5df';
           ctx.fillText(tag, bx + 4, by + 10.5);

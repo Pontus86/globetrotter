@@ -389,54 +389,54 @@
 
   let lastPickedWasGlobe = false;
 
-  // Plocka obesvarade svårare BackPacker-frågor (svårighetsgrad 3, trovärdiga svarsalternativ)
+  function normReg(r) {
+    return String(r || '').trim().toLowerCase();
+  }
+
+  // Plocka obesvarade svårare BackPacker-frågor (strikt matchade på stadens världsdel!)
   function pickHardQuestions(count, region = '') {
     const pool = window.GT_HARD_QUESTIONS || [];
     if (pool.length === 0 || count <= 0) return [];
-    const unused = pool.filter(q => !q.id || !state.usedQuestionIds.has(q.id));
-    const src = unused.length >= count ? unused : pool;
-    const sameReg = src.filter(q => region && q.region === region);
-    const otherReg = src.filter(q => !region || q.region !== region);
-    const combined = [
-      ...sameReg.slice().sort(() => Math.random() - 0.5),
-      ...otherReg.slice().sort(() => Math.random() - 0.5)
-    ];
-    return combined.slice(0, count).map(q => ({ ...q }));
+    const rNorm = normReg(region);
+    const regPool = rNorm ? pool.filter(q => normReg(q.region) === rNorm) : pool;
+    const basePool = regPool.length > 0 ? regPool : pool;
+    const unused = basePool.filter(q => !q.id || !state.usedQuestionIds.has(q.id));
+    const src = unused.length >= count ? unused : basePool;
+    return src.slice().sort(() => Math.random() - 0.5).slice(0, count).map(q => ({ ...q }));
   }
 
-  // Plocka obesvarade interaktiva BackPacker-frågor (para ihop, ordna, bild/flagga, samt mer sällsynt peka på kartan)
+  // Plocka obesvarade interaktiva BackPacker-frågor (strikt matchade på stadens världsdel så man t.ex. aldrig får Puerto Rico i Italien!)
   function pickInteractiveQuestions(count, region = '') {
     const pool = window.GT_INTERACTIVE_POOL || [];
     if (pool.length === 0 || count <= 0) return [];
-    const unused = pool.filter(q => !q.id || !state.usedQuestionIds.has(q.id));
-    const src = unused.length >= count ? unused : pool;
+    const rNorm = normReg(region);
+
+    // Filtrera strikt på världsdel om angiven (kartfrågor måste ALLTID tillhöra rätt världsdel!)
+    const regPool = rNorm ? pool.filter(q => normReg(q.region) === rNorm) : pool;
+    const nonGlobeFallback = pool.filter(q => q.t !== 'globe');
+    const basePool = regPool.length > 0 ? regPool : nonGlobeFallback;
+    const unused = basePool.filter(q => !q.id || !state.usedQuestionIds.has(q.id));
+    const src = unused.length >= count ? unused : basePool;
 
     // Begränsa kartfrågor rejält: aldrig två gånger i rad och bara ca 25 % chans att en kartfråga ingår
     const allowGlobe = !lastPickedWasGlobe && Math.random() < 0.25;
     const filtered = allowGlobe ? src : src.filter(q => q.t !== 'globe');
-    const baseSrc = filtered.length >= count ? filtered : src;
+    const finalSrc = (filtered.length >= count ? filtered : src).slice().sort(() => Math.random() - 0.5);
 
-    const sameReg = baseSrc.filter(q => region && q.region === region);
-    const otherReg = baseSrc.filter(q => !region || q.region !== region);
-    const combined = [
-      ...sameReg.slice().sort(() => Math.random() - 0.5),
-      ...otherReg.slice().sort(() => Math.random() - 0.5)
-    ];
-    // Sprid frågetyperna och tillåt max 1 kartfråga per anrop
     const picked = [];
     const usedTypes = new Set();
     let globePicked = false;
-    for (const q of combined) {
+    for (const q of finalSrc) {
       if (picked.length >= count) break;
       if (q.t === 'globe' && globePicked) continue;
-      if (!usedTypes.has(q.t) || combined.length - picked.length <= count - picked.length) {
+      if (!usedTypes.has(q.t) || finalSrc.length - picked.length <= count - picked.length) {
         picked.push({ ...q });
         usedTypes.add(q.t);
         if (q.t === 'globe') globePicked = true;
       }
     }
-    while (picked.length < count && combined.length > picked.length) {
-      const next = combined.find(q => !picked.some(p => p.id === q.id) && (q.t !== 'globe' || !globePicked));
+    while (picked.length < count && finalSrc.length > picked.length) {
+      const next = finalSrc.find(q => !picked.some(p => p.id === q.id) && (q.t !== 'globe' || !globePicked));
       if (!next) break;
       picked.push({ ...next });
       if (next.t === 'globe') globePicked = true;
@@ -451,23 +451,18 @@
     const matching = bank.filter(q => q.place === placeKey && (!cityKey || q.city === cityKey));
     const pool = matching.length > 0 ? matching : fallbackList;
 
-    // Prioritera obesvarade frågor och välj ett varierat set (3 per sevärdhet, 6 per jobb som i BackPacker 1 & 2!)
+    // Prioritera obesvarade lokala frågor (3 per sevärdhet, 6 per jobb som i BackPacker 1 & 2!)
     const unused = pool.filter(q => !q.id || !state.usedQuestionIds.has(q.id));
     const source = unused.length > 0 ? unused : pool;
     const maxCount = placeKey === 'job' ? 6 : 3;
     let picked = source.slice().sort(() => Math.random() - 0.5).slice(0, maxCount).map(q => ({ ...q, t: q.type || q.t }));
 
-    // Blanda in svårare utmaningsfrågor & varierade interaktiva frågor i sevärdheter (utan att överdriva kartfrågor)
+    // På sevärdheter: behåll alltid stadens lokala frågor i centrum; blanda bara ibland (30 %) in 1 utmanande fråga från SAMMA världsdel
     const region = (cityKey && W.cities[cityKey] && W.cities[cityKey].region) || '';
-    const interactiveTypes = new Set(['globe', 'match', 'order', 'image']);
-    if (placeKey !== 'job' && picked.length >= 2) {
-      const roll = Math.random();
-      if (roll < 0.60) {
-        const hard = pickHardQuestions(1, region);
-        if (hard.length > 0) picked[picked.length - 1] = hard[0];
-      } else if (roll < 0.90 && !picked.some(q => interactiveTypes.has(q.t))) {
-        const bonus = pickInteractiveQuestions(1, region);
-        if (bonus.length > 0) picked[picked.length - 1] = bonus[0];
+    if (placeKey !== 'job' && picked.length >= 3 && Math.random() < 0.30) {
+      const regionalHard = pickHardQuestions(1, region);
+      if (regionalHard.length > 0) {
+        picked[picked.length - 1] = regionalHard[0];
       }
     }
     return picked;
@@ -1084,23 +1079,33 @@
   function openSignatureModal(city, sig) {
     const isOpen = state.hour >= sig.openFrom && state.hour < sig.openUntil;
     const doneToday = Boolean(state.signatureDoneToday[`${state.city}_${state.day}`]);
+    const sigPack = (window.GT_SIGNATURE_QUIZZES && window.GT_SIGNATURE_QUIZZES[state.city]) || null;
+    const rewardHint = sigPack
+      ? sigPack.rewardLabel
+      : `Klara minst 2 av 3 lokala frågor om ${city.name} för lokal bonus (+2 extra timmar & gratis hotellnatt i ${city.name})!`;
+
     const html = `
       <div class="scene-fullscreen scene-sight-full" style="background-image:url(${city.skyline})">
         <div class="sight-header-bar">
           <div class="sight-plaque" style="border-color:#ffd875;">
             <h3>${sig.name}</h3>
-            <div class="sight-meta">Unikt för ${city.name} · Öppettider: ${String(sig.openFrom).padStart(2, '0')}:00–${String(sig.openUntil).padStart(2, '0')}:00 · Kostnad: ${sig.cost} kr (${sig.hours} tim)</div>
+            <div class="sight-meta">Lokalt guldkorn i ${city.name} · Öppet ${String(sig.openFrom).padStart(2, '0')}:00–${String(sig.openUntil).padStart(2, '0')}:00 · Kostnad: ${sig.cost} kr (${sig.hours || 1} tim)</div>
           </div>
           ${exitIconBtn('Tillbaka till staden')}
         </div>
         <div class="sight-bottom-panel">
-          <div class="sight-fact-card">${sig.desc}</div>
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <span style="font-size:13px; color:#ffd875;">
-              ${doneToday ? 'Du har redan njutit av detta idag — kom tillbaka imorgon!' : (!isOpen ? `Just nu är klockan ${String(state.hour).padStart(2, '0')}:00. Stängt tills kl ${String(sig.openFrom).padStart(2, '0')}:00!` : 'Öppet just nu — kliv in!')}
-            </span>
-            <div>
-              ${(!doneToday && isOpen) ? `<button class="stamp-action-btn" onclick="window.GT.doSignatureActivity()">Upplev ${sig.name} (-${sig.cost} kr, ${sig.hours} tim)</button>` : ''}
+          <div id="sigQuizContainer">
+            <div class="sight-fact-card" style="margin-bottom:8px;">
+              ${sig.desc}
+              <div style="margin-top:6px; font-size:12px; color:#ffd875;"><b>Lokal utmaning (3 frågor):</b> ${rewardHint}</div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <span style="font-size:13px; color:#ffd875;">
+                ${doneToday ? 'Du har redan upplevt detta idag, kom tillbaka imorgon!' : (!isOpen ? `Just nu är klockan ${String(state.hour).padStart(2, '0')}:00. Stängt tills kl ${String(sig.openFrom).padStart(2, '0')}:00!` : 'Öppet just nu, kliv in och testa dina lokala kunskaper!')}
+              </span>
+              <div>
+                ${(!doneToday && isOpen) ? `<button class="stamp-action-btn" onclick="window.GT.doSignatureActivity()">Starta ${sig.name} (-${sig.cost} kr)</button>` : ''}
+              </div>
             </div>
           </div>
         </div>
@@ -1118,43 +1123,74 @@
       return;
     }
     changeCash(-sig.cost, sig.name);
-    addHours(sig.hours);
+    addHours(sig.hours || 1);
     state.signatureDoneToday[`${state.city}_${state.day}`] = true;
-    AudioMgr.play('right1');
 
-    if (sig.kind === 'deal') {
-      const pool = getCityRoutePool(state.city).map(r => r.to);
-      const others = pool.length > 0 ? pool : Object.keys(W.cities).filter(k => k !== state.city);
-      const target = others[Math.floor(Math.random() * others.length)];
-      state.deals[target] = Math.max(state.deals[target] || 0, 25);
-      // Tvinga omritning av dagens tavla så rabattflyget syns om man går direkt till flygplatsen
-      if (state.departureBoard && state.departureBoard.city === state.city && state.departureBoard.day === state.day) {
-        if (!state.departureBoard.flights.some(f => f.to === target)) {
-          state.departureBoard = null;
-        }
-      }
-      addJournal(`Besökte ${sig.name} i ${city.name} och fick tips om 25 % billigare flyg till ${W.cities[target].name}!`);
-      showToast(`Hett tips! 25 % rabatt på flyg till ${W.cities[target].name}!`, 3200);
-    } else if (sig.kind === 'spice') {
-      if (state.backpack.length < getMaxBackpackSlots()) {
-        const s = W.souvenirs.kryddor;
-        state.backpack.push({ id: 'kryddor', name: s.name, origin: 'delhi', buyPrice: sig.cost, buyDay: state.day });
-        updateHUD();
-        addJournal(`Ropade in en billig påse kryddor på ${sig.name}!`);
-        showToast('Fynd! Du ropade in en påse kryddor till ryggsäcken!', 3000);
-      } else {
-        changeCash(180, 'Auktionsvinst');
-        showToast('Ryggsäcken var full, men du sålde fyndet direkt (+180 kr)!', 3000);
-      }
-    } else {
-      const bonus = 240 + Math.floor(Math.random() * 180);
-      changeCash(bonus, `Bonus från ${sig.name}`);
-      addJournal(`Upplevde ${sig.name} i ${city.name} och gick därifrån +${bonus - sig.cost} kr rikare!`);
-      showToast(`Vilken upplevelse! Du fick +${bonus} kr!`, 3000);
+    const sigPack = (window.GT_SIGNATURE_QUIZZES && window.GT_SIGNATURE_QUIZZES[state.city]) || null;
+    let questions = sigPack ? sigPack.questions.map(q => ({ ...q })) : [];
+    if (questions.length < 3) {
+      const localJobQs = getQuestionsFor(state.city, 'job', (city.job && city.job.questions) || []);
+      const localExtra = localJobQs.slice(0, 3 - questions.length);
+      questions = [...questions, ...localExtra];
     }
-    closeModal();
-    renderCitySpots(city);
-    updateHUD();
+    if (questions.length < 3) {
+      questions = [...questions, ...pickHardQuestions(3 - questions.length, city.region)];
+    }
+
+    const container = document.getElementById('sigQuizContainer');
+    if (!container || questions.length === 0) {
+      closeModal();
+      renderCitySpots(city);
+      updateHUD();
+      return;
+    }
+
+    runQuiz(questions.slice(0, 3), ({ correct, total }) => {
+      const passed = correct >= Math.min(2, total);
+      let rewardHtml = '';
+      if (passed) {
+        AudioMgr.play('fanfar');
+        const rType = (sigPack && sigPack.rewardType) || (sig.kind === 'spice' ? 'local_spice_bonus' : (sig.kind === 'cash' ? 'local_cash_bonus' : 'local_energy_hotel'));
+
+        if (rType === 'local_spice_bonus') {
+          if (state.backpack.length < getMaxBackpackSlots() && W.souvenirs.kryddor) {
+            const s = W.souvenirs.kryddor;
+            state.backpack.push({ id: 'kryddor', name: s.name, origin: state.city, buyPrice: sig.cost, buyDay: state.day });
+          }
+          changeCash(250, `Lokal bonus på ${sig.name}`);
+          rewardHtml = `Du fick med dig en äkta kryddpåse + <b>250 kr</b> i lokal bonus!`;
+          addJournal(`Klarade lokalutmaningen på ${sig.name} i ${city.name} (${correct}/${total}) och kammade hem kryddor och +250 kr!`);
+        } else if (rType === 'local_cash_bonus') {
+          changeCash(350, `Lokal bonus på ${sig.name}`);
+          state.freeHotelCities.add(state.city);
+          rewardHtml = `Imponerande lokalkännedom! Du fick <b>+350 kr</b> i bonus samt en <b>gratis hotellnatt i ${city.name}</b>!`;
+          addJournal(`Glänste på ${sig.name} i ${city.name} (${correct}/${total}) och belönades med +350 kr och fri hotellnatt!`);
+        } else {
+          // Lokalt förankrad energi- & gästfrihetsbonus (t.ex. Falafel på Möllan i Malmö!)
+          state.hour = Math.max(8, state.hour - 2);
+          state.freeHotelCities.add(state.city);
+          rewardHtml = `Mätt, glad och full av energi! Du fick tillbaka <b>2 timmar på klockan</b> samt en <b>gratis hotellnatt i ${city.name}</b>!`;
+          addJournal(`Klarade lokalutmaningen på ${sig.name} i ${city.name} (${correct}/${total}) och belönades med ny energi (+2 tim) och gratis hotellnatt i ${city.name}!`);
+        }
+      } else {
+        rewardHtml = `Gott ändå, men det krävdes minst 2 rätt för den lokala bonusen. Prova igen imorgon!`;
+        addJournal(`Besökte ${sig.name} i ${city.name} (${correct}/${total} rätt).`);
+      }
+
+      saveGame();
+      updateHUD();
+      renderCitySpots(city);
+
+      container.innerHTML = `
+        <div class="sight-fact-card" style="text-align:center;">
+          <div style="font-size:16px; font-weight:bold; color:${passed ? '#78e08f' : '#ffd875'}; margin-bottom:6px;">
+            ${passed ? `✓ Bra jobbat på ${sig.name}! (${correct}/${total} rätt)` : `${sig.name} avklarat (${correct}/${total} rätt)`}
+          </div>
+          <div style="font-size:13px; color:#f4ead6; margin-bottom:12px;">${rewardHtml}</div>
+          <button class="stamp-action-btn" onclick="window.GT.closeModal()">Tillbaka till ${city.name} »</button>
+        </div>
+      `;
+    }, container, city.skyline);
   }
 
   // --- Modalhantering ---
@@ -3615,7 +3651,7 @@
   let activeGlobeRenderer = null;
   let globeAnimFrameId = null;
 
-  function openGlobeModal() {
+  function openGlobeModal(focusBotId = null) {
     const totalDist = state.travelHistory.reduce((sum, leg) => sum + (leg.dist || 0), 0);
     let routesSummary = '';
     if (state.travelHistory.length === 0) {
@@ -3636,6 +3672,14 @@
       ? `<div style="margin-top:4px; padding-top:4px; border-top:1px dashed rgba(212,166,74,0.45);">
            <b style="color:#ffd875;">Världshändelser (Dag ${state.day}):</b>
            ${activeEvs.map(ev => `<div style="font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">• <b style="color:${ev.color || '#ffd875'};">${W.cities[ev.city]?.name}: ${ev.title}</b> (${ev.effectText})</div>`).join('')}
+         </div>`
+      : '';
+
+    const botLegendHtml = (state.bots && state.bots.length > 0)
+      ? `<div style="margin-top:5px; padding-top:5px; border-top:1px dashed rgba(212,166,74,0.35); display:flex; flex-wrap:wrap; gap:5px; align-items:center;">
+           <span style="font-size:10.5px; color:#ffd875; font-weight:bold;">Medresenärer (klicka för rutt):</span>
+           <button type="button" class="globe-brass-btn" data-bot-focus="" style="padding:2px 7px; font-size:10px; ${!focusBotId ? 'border-color:#ffd875; color:#ffd875;' : ''}">Alla</button>
+           ${state.bots.map(b => `<button type="button" class="globe-brass-btn" data-bot-focus="${b.id}" style="padding:2px 7px; font-size:10px; border-color:${b.color}; ${focusBotId === b.id ? `background:${b.color}; color:#120c07; font-weight:bold;` : ''}"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${b.color};margin-right:4px;"></span>${b.name} (${W.cities[b.city]?.name || b.city})</button>`).join('')}
          </div>`
       : '';
 
@@ -3669,6 +3713,7 @@
         <div class="globe-overlay-bottom">
           <div class="globe-info-strip">
             <div><b style="color:#ffd875;">Avverkade etapper:</b> ${routesSummary}</div>
+            ${botLegendHtml}
             ${eventsHtml}
           </div>
         </div>
@@ -3683,14 +3728,18 @@
         doneWonders: state.doneWonders,
         onWonderClick: (wKey, w) => openWonderModal(wKey, w)
       });
-      const focusPt = (state.activeWonder && W.wonders[state.activeWonder]) || W.cities[state.city];
+      activeGlobeRenderer.focusBotId = focusBotId || null;
+      const focusBot = focusBotId ? (state.bots || []).find(b => b.id === focusBotId) : null;
+      const focusPt = (focusBot && W.cities[focusBot.city])
+        || (state.activeWonder && W.wonders[state.activeWonder])
+        || W.cities[state.city];
       if (focusPt) {
         activeGlobeRenderer.centerLon = focusPt.lon;
         activeGlobeRenderer.centerLat = focusPt.lat;
       }
 
       // Rotera mjukt centrerad över nuvarande plats tills spelaren klickar, drar eller zoomar
-      let autoSpin = true;
+      let autoSpin = !focusBot;
       let spinPhase = 0;
       const baseLon = focusPt ? focusPt.lon : 18;
       const baseLat = focusPt ? focusPt.lat : 30;
@@ -3698,6 +3747,21 @@
       canvas.addEventListener('mousedown', stopSpin);
       canvas.addEventListener('touchstart', stopSpin, { passive: true });
       canvas.addEventListener('wheel', stopSpin, { passive: true });
+
+      document.querySelectorAll('[data-bot-focus]').forEach(btn => {
+        btn.onclick = () => {
+          const bid = btn.dataset.botFocus || null;
+          stopSpin();
+          activeGlobeRenderer.showBots = true;
+          activeGlobeRenderer.focusBotId = bid;
+          const bObj = bid ? (state.bots || []).find(b => b.id === bid) : null;
+          if (bObj && W.cities[bObj.city]) {
+            const c = W.cities[bObj.city];
+            activeGlobeRenderer.focusOn(c.lat, c.lon, null, 285, 600);
+          }
+          AudioMgr.play('klick');
+        };
+      });
 
       const zoomInBtn = document.getElementById('globeZoomInBtn');
       const zoomOutBtn = document.getElementById('globeZoomOutBtn');
@@ -5184,6 +5248,17 @@
     const rowsHtml = standings.map(r => {
       const cName = W.cities[r.city]?.name || r.city;
       const canDuel = !r.isPlayer && r.city === state.city && !r.finished && !state.botDuelDoneToday[`${state.day}_${r.id}`];
+      const botObj = !r.isPlayer ? state.bots.find(b => b.id === r.id) : null;
+      const routeTrail = botObj && botObj.travelHistory && botObj.travelHistory.length > 0
+        ? [botObj.travelHistory[0].from, ...botObj.travelHistory.slice(-4).map(l => l.to)]
+            .map(ck => W.cities[ck]?.name || ck)
+            .join(' → ')
+        : (r.isPlayer && state.travelHistory.length > 0
+          ? [state.travelHistory[0].from, ...state.travelHistory.slice(-4).map(l => l.to)].map(ck => W.cities[ck]?.name || ck).join(' → ')
+          : `Start: ${cName}`);
+      const routeBtn = !r.isPlayer
+        ? ` <button class="globe-brass-btn" style="font-size:9.5px; padding:1px 6px; margin-left:3px;" onclick="window.GT.openGlobeModal('${r.id}')">🗺️ Rutt</button>`
+        : '';
       return `
         <tr class="${r.isPlayer ? 'is-player' : ''}">
           <td><b>#${r.rank}</b></td>
@@ -5191,8 +5266,9 @@
             <span class="setup-bot-dot" style="display:inline-block; background:${r.color}; vertical-align:middle; margin-right:5px;"></span>
             ${r.name}${r.finished ? ' 🏁' : ''}
             <div style="font-size:9.5px; color:#b8a586; font-weight:normal;">${r.difficultyLabel}${r.isPlayer ? '' : ` · ${r.style}`}</div>
+            <div style="font-size:9.5px; color:#9ec7a6; font-weight:normal; margin-top:1px;">${routeTrail}</div>
           </td>
-          <td>${cName}${canDuel ? ` <button class="mp-challenge-pill-btn" style="font-size:9.5px; padding:1px 6px; margin-left:4px;" onclick="window.GT.startBotDuel('${r.id}')">⚡ Duell</button>` : ''}</td>
+          <td>${cName}${routeBtn}${canDuel ? ` <button class="mp-challenge-pill-btn" style="font-size:9.5px; padding:1px 6px; margin-left:4px;" onclick="window.GT.startBotDuel('${r.id}')">⚡ Duell</button>` : ''}</td>
           <td class="hide-sm">${r.stamps}</td>
           <td class="hide-sm">${r.competencies}</td>
           <td class="hide-sm">${r.regions}</td>

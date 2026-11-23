@@ -391,4 +391,179 @@
   ];
 
   window.GT_HARD_QUESTIONS = HARD_QUESTIONS;
+
+  // =========================================================================
+  // LOKALA TEMAFRÅGOR FÖR SIGNATURPLATSER (t.ex. Falafel på Möllan i Malmö!)
+  // Klarar man minst 2 av 3 rätt får man en lokalt förankrad bonus i staden.
+  // =========================================================================
+  window.GT_SIGNATURE_QUIZZES = {
+    malmo: {
+      rewardType: 'local_energy_hotel',
+      rewardLabel: 'Mätt & laddad: +2 extra timmar på dagen & gratis natt på hotellet i Malmö!',
+      questions: [
+        {
+          id: 'sig_malmo_1', t: 'mc',
+          q: 'Vilken är huvudingrediensen i den klassiska falafeln som serveras runt Möllevångstorget i Malmö?',
+          a: ['Blötlagda kikärter (ibland blandade med bondbönor)', 'Kokt potatis och vetemjöl', 'Röda linser och ris', 'Friterad aubergine och halloumi'],
+          explain: 'Äkta falafel görs på okokta, blötlagda och malda kikärter (eller fava-/bondbönor i egyptisk stil) som kryddas och friteras krispiga.'
+        },
+        {
+          id: 'sig_malmo_2', t: 'mc',
+          q: 'Vilket frö är basen i den krämiga såsen tahini som ofta ringlas över falafel i rulle eller pita?',
+          a: ['Sesamfrön', 'Solrosfrön', 'Pumpafrön', 'Linfrön'],
+          explain: 'Tahini görs av rostade, finmalda sesamfrön och används både som sås till falafel och som nyckelingrediens i hummus.'
+        },
+        {
+          id: 'sig_malmo_3', t: 'mc',
+          q: 'Vilka två örter och kryddor ger falafeln sin karakteristiska gröna färg och aromatiska smak inuti?',
+          a: ['Persilja, koriander och spiskummin', 'Dill, gräslök och senapsfrö', 'Basilika, oregano och rosmarin', 'Salvia, timjan och fänkål'],
+          explain: 'Färsk persilja, färsk koriander, vitlök och mald spiskummin ger falafelsmeten dess friskhet och gröna insida.'
+        }
+      ]
+    },
+    stockholm: {
+      rewardType: 'local_energy_hotel',
+      rewardLabel: 'Fikapaus med energi: +2 extra timmar på dagen & gratis hotellnatt i Stockholm!',
+      questions: [
+        {
+          id: 'sig_sthlm_1', t: 'mc',
+          q: 'Vilken krydda stöts traditionellt i mortel för att ge svenska kanel- och kardemummabullar sin typiska arom?',
+          a: ['Grön kardemumma', 'Stjärnanis', 'Korianderfrö', 'Kryddnejlika'],
+          explain: 'Nystött grön kardemumma i vetedegen är själva kännetecknet för klassisk svensk konditorifika.'
+        },
+        {
+          id: 'sig_sthlm_2', t: 'mc',
+          q: 'Under vilket århundrade infördes flera kaffeförbud i Sverige av både ekonomiska och hälsomässiga skäl?',
+          a: ['1700-talet', '1500-talet', '1600-talet', '1900-talet'],
+          explain: 'Under 1700-talet förbjöds kaffe flera gånger i Sverige (bland annat under Gustav III), vilket bara ökade smugglingen och populariteten.'
+        },
+        {
+          id: 'sig_sthlm_3', t: 'mc',
+          q: 'Vad betyder det gamla svenska bakverksnamnet "semla" ursprungligen från latinets simila?',
+          a: ['Fint vetemjöl', 'Mandelmassa', 'Vispad grädde', 'Fastetid'],
+          explain: 'Ordet kommer från latinets simila (fint vetemjöl) och syftade ursprungligen på själva den ljusa vetebullen.'
+        }
+      ]
+    },
+    kairo: {
+      rewardType: 'local_energy_hotel',
+      rewardLabel: 'Vinden i ryggen: +2 extra timmar på dagen & gratis natt på Pension vid Nilen!',
+      questions: [
+        {
+          id: 'sig_kairo_1', t: 'mc',
+          q: 'I vilken väderstrecksriktning rinner Nilen genom Egypten och Kairo mot Medelhavet?',
+          a: ['Från söder till norr', 'Från norr till söder', 'Från väster till öster', 'Från öster till väster'],
+          explain: 'Nilen rinner norrut mot Medelhavet, medan den förhärskande vinden ofta blåser söderut, vilket gjorde det lätt för feluccor att segla uppför floden och driva nedför.'
+        },
+        {
+          id: 'sig_kairo_2', t: 'mc',
+          q: 'Vilken typ av stort trekantigt segel är typiskt för en traditionell egyptisk felucca?',
+          a: ['Latinsegel', 'Råsegel', 'Gaffelsegel', 'Spinnaker'],
+          explain: 'Det långa, lutande latinseglet låter feluccan kryssa smidigt även i svaga brisar mellan Nilens stränder.'
+        },
+        {
+          id: 'sig_kairo_3', t: 'mc',
+          q: 'Vilken vattenväxt längs Nilens stränder användes i forntida Egypten för att framställa skrivmaterial?',
+          a: ['Papyrus', 'Bambu', 'Sisal', 'Vasshampa'],
+          explain: 'Märgen i papyrusstjälkar skars i tunna remsor och pressades korsvis till ark som höll i tusentals år.'
+        }
+      ]
+    },
+    delhi: {
+      rewardType: 'local_spice_bonus',
+      rewardLabel: 'Kryddkännare: En äkta kryddpåse i ryggsäcken + 250 kr lokal handelsbonus!',
+      questions: [
+        {
+          id: 'sig_delhi_1', t: 'mc',
+          q: 'Vad betyder namnet på den klassiska nordindiska kryddblandningen "garam masala" bokstavligen?',
+          a: ['Varm kryddblandning', 'Gul curry', 'Sju heliga frön', 'Kunglig peppar'],
+          explain: 'Garam betyder varm och masala betyder kryddblandning, med värmande kryddor som kanel, kardemumma, nejlika, spiskummin och svartpeppar.'
+        },
+        {
+          id: 'sig_delhi_2', t: 'mc',
+          q: 'Vilken indisk krydda ger framför allt den starka gula färgen i många indiska curryrätter?',
+          a: ['Gurkmeja', 'Bockhornsklöver', 'Senapsfrö', 'Korianderfrö'],
+          explain: 'Gurkmeja (haldi) är släkt med ingefära och står för den intensiva gyllengula färgen i indisk matlagning.'
+        },
+        {
+          id: 'sig_delhi_3', t: 'mc',
+          q: 'I vilken nordindisk bergsregion odlas världens kanske mest berömda indiska saffran?',
+          a: ['Kashmir', 'Goa', 'Kerala', 'Rajasthan'],
+          explain: 'Pampore i Kashmirdalen är känt sedan antiken för sin aromatiska, djupröda saffran.'
+        }
+      ]
+    },
+    tokyo: {
+      rewardType: 'local_cash_bonus',
+      rewardLabel: 'Sushimästarens förtroende: +350 kr lokal bonus & gratis hotellnatt i Tokyo!',
+      questions: [
+        {
+          id: 'sig_tokyo_1', t: 'mc',
+          q: 'Vilken grundsmak upptäcktes och namngavs i Japan 1908 av kemisten Kikunae Ikeda utifrån tångbuljong?',
+          a: ['Umami', 'Dashi', 'Miso', 'Shoyu'],
+          explain: 'Ikeda isolerade glutamat ur kombu-tång och kallade den femte grundsmaken umami (ungefär "välsmakande").'
+        },
+        {
+          id: 'sig_tokyo_2', t: 'mc',
+          q: 'Vad består traditionell japansk dashi-buljong huvudsakligen av?',
+          a: ['Kombu-tång och torkad bonitofisk (katsuobushi)', 'Sojasås och sesamolja', 'Kycklingben och ingefära', 'Risvinäger och sjögrässalt'],
+          explain: 'Kombu och katsuobushi ger tillsammans en djup, ren umamibuljong som är grunden i misosoppa och många rätter.'
+        },
+        {
+          id: 'sig_tokyo_3', t: 'mc',
+          q: 'Vad betyder egentligen ordet "sushi" i det japanska köket?',
+          a: ['Syrat ris smaksatt med risvinäger', 'Rå skivad fisk', 'Inlindad sjögräsrulle', 'Färsk havsfångst'],
+          explain: 'Sushi syftar på det vinägerkryddade riset; rå fisk utan ris heter sashimi.'
+        }
+      ]
+    },
+    rom: {
+      rewardType: 'local_energy_hotel',
+      rewardLabel: 'La Dolce Vita: +2 extra timmar på dagen & gratis hotellnatt i Rom!',
+      questions: [
+        {
+          id: 'sig_rom_1', t: 'mc',
+          q: 'Vilket kött används i en traditionell romersk pasta alla carbonara?',
+          a: ['Guanciale (lufttorkad griskind)', 'Prosciutto crudo', 'Mortadella', 'Salami Milano'],
+          explain: 'Romerska klassiker som carbonara och amatriciana lagas traditionellt med guanciale, Pecorino Romano, äggula och rikligt med svartpeppar, utan grädde.'
+        },
+        {
+          id: 'sig_rom_2', t: 'mc',
+          q: 'Vilken lagrad fårost är ett måste i Roms klassiska pastarätt "cacio e pepe"?',
+          a: ['Pecorino Romano', 'Gorgonzola', 'Mozzarella di bufala', 'Mascarpone'],
+          explain: 'Cacio e pepe betyder helt enkelt "ost och peppar", där skarp Pecorino Romano smälts ihop med stärkelserikt pastavatten.'
+        },
+        {
+          id: 'sig_rom_3', t: 'mc',
+          q: 'Vilken tid på dagen anses det i Italien traditionellt lämpligt att dricka en mjölkig cappuccino?',
+          a: ['På morgonen till frukost', 'Direkt efter en tung middag', 'Bara sent på kvällen', 'Endast till skaldjur'],
+          explain: 'Italienare dricker nästan alltid cappuccino på morgonen; efter lunch och middag beställs istället en enkel espresso (un caffè).'
+        }
+      ]
+    },
+    paris: {
+      rewardType: 'local_energy_hotel',
+      rewardLabel: 'Bon Appétit: +2 extra timmar på dagen & gratis hotellnatt i Paris!',
+      questions: [
+        {
+          id: 'sig_paris_1', t: 'mc',
+          q: 'Vilka fyra ingredienser får en äkta "baguette de tradition française" innehålla enligt fransk lag från 1993?',
+          a: ['Vetemjöl, vatten, jäst/surdeg och salt', 'Vetemjöl, mjölk, smör och socker', 'Rågmjöl, olivolja, vatten och salt', 'Vetemjöl, ägg, vatten och honung'],
+          explain: 'Le Décret Pain från 1993 skyddar den traditionella baguetten: inga tillsatser och ingen frysning är tillåten.'
+        },
+        {
+          id: 'sig_paris_2', t: 'mc',
+          q: 'Vilken grönsak är huvudingrediensen i den franska grytan "ratatouille" från Provence?',
+          a: ['Sommargrönsaker som aubergine, zucchini, paprika och tomat', 'Potatis, purjolök och grädde', 'Gröna linser och morötter', 'Kronärtskocka och sparris'],
+          explain: 'Ratatouille är en klassisk sydfransk grönsaksragu smaksatt med vitlök och herbes de Provence.'
+        },
+        {
+          id: 'sig_paris_3', t: 'mc',
+          q: 'Vad innebär märkningen AOC / AOP på franska ostar och viner?',
+          a: ['Skyddad ursprungsbeteckning från en specifik region', 'Att produkten är ekologiskt certifierad', 'Att varan är lagrad i minst fem år', 'Att den är avsedd enbart för export'],
+          explain: 'Appellation d\'Origine Contrôlée (AOC) garanterar att vinet eller osten tillverkats enligt strikta regler i just sitt geografiska ursprungsområde.'
+        }
+      ]
+    }
+  };
 })();
