@@ -226,6 +226,7 @@
       this.ctx = canvas.getContext('2d');
       this.mini = Boolean(options.mini);
       this.quizMode = Boolean(options.quizMode);
+      this.showBots = options.showBots !== false;
       this.interactive = options.interactive !== undefined ? options.interactive : !this.mini;
       this.baseRadius = options.radius || Math.round(Math.min(canvas.width, canvas.height) * 0.43);
       this.radius = this.baseRadius;
@@ -1133,6 +1134,46 @@
             ctx.restore();
           }
         }
+      }
+
+      // 6d. AI-Bottar på jordgloben (upp till 6 färgade medresenärer, kan slås av/på)
+      if (!this.mini && !this.quizMode && this.showBots && Array.isArray(window.GT_ACTIVE_BOTS) && window.GT_ACTIVE_BOTS.length > 0 && window.GT_WORLD && window.GT_WORLD.cities) {
+        const cityStackCount = {};
+        window.GT_ACTIVE_BOTS.forEach(bot => {
+          const bCity = window.GT_WORLD.cities[bot.city];
+          if (!bCity) return;
+          const proj = this.project(bCity.lat, bCity.lon);
+          if (!proj.visible) return;
+          const idx = cityStackCount[bot.city] || 0;
+          cityStackCount[bot.city] = idx + 1;
+          const ox = (idx % 3 - 1) * 11;
+          const oy = -10 - Math.floor(idx / 3) * 14;
+          const px = proj.x + ox;
+          const py = proj.y + oy;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(px, py, 5.2 * zoomScale, 0, Math.PI * 2);
+          ctx.fillStyle = bot.color || '#ffd875';
+          ctx.strokeStyle = '#120c07';
+          ctx.lineWidth = 1.6;
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.font = 'bold 9.5px Georgia, serif';
+          const tag = bot.name || 'Bot';
+          const tw = ctx.measureText(tag).width;
+          const bx = px - tw / 2 - 4;
+          const by = py - 21;
+          ctx.fillStyle = 'rgba(15, 11, 7, 0.88)';
+          ctx.fillRect(bx, by, tw + 8, 14);
+          ctx.strokeStyle = bot.color || '#ffd875';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(bx, by, tw + 8, 14);
+          ctx.fillStyle = '#fff5df';
+          ctx.fillText(tag, bx + 4, by + 10.5);
+          ctx.restore();
+        });
       }
 
       // 7. Quiz-nålar (spelarens gissning + rätt mål med avståndsbåge!)

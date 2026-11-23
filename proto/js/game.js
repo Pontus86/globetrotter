@@ -272,7 +272,13 @@
     discoveredPlaces: new Set(), // Avslöjade sevärdheter på stadskartan (BP2-utforskningskänsla!)
     backpackLevel: 1, // 1 = Liten gul ryggsäck (5), 2 = Duffelbag (7), 3 = Stor vandringsryggsäck (9)
     mailedHome: [], // Array av { id, name, origin, mailedDay } — souvenirer postade hem!
-    callsHomeUsed: 0 // Nödlån via hotelltelefonen (max 2 per resa)
+    callsHomeUsed: 0, // Nödlån via hotelltelefonen (max 2 per resa)
+    startCity: W.startCity,
+    dayLimit: W.dayLimit,
+    bots: [],
+    botNews: [],
+    botJobRecords: {},
+    botDuelDoneToday: {}
   };
 
   const BACKPACK_TIERS = [
@@ -504,7 +510,13 @@
         discoveredPlaces: Array.from(state.discoveredPlaces),
         backpackLevel: state.backpackLevel,
         mailedHome: state.mailedHome,
-        callsHomeUsed: state.callsHomeUsed
+        callsHomeUsed: state.callsHomeUsed,
+        startCity: state.startCity || W.startCity,
+        dayLimit: state.dayLimit || W.dayLimit,
+        bots: state.bots || [],
+        botNews: state.botNews || [],
+        botJobRecords: state.botJobRecords || {},
+        botDuelDoneToday: state.botDuelDoneToday || {}
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
     } catch (e) {}
@@ -554,8 +566,28 @@
     state.backpackLevel = d.backpackLevel || 1;
     state.mailedHome = Array.isArray(d.mailedHome) ? d.mailedHome : [];
     state.callsHomeUsed = d.callsHomeUsed || 0;
+    if (d.startCity && W.cities[d.startCity]) {
+      W.startCity = d.startCity;
+      state.startCity = d.startCity;
+    }
+    if (d.dayLimit && Number(d.dayLimit) >= 10) {
+      W.dayLimit = Number(d.dayLimit);
+      state.dayLimit = Number(d.dayLimit);
+    }
+    state.bots = Array.isArray(d.bots) ? d.bots : [];
+    state.botNews = Array.isArray(d.botNews) ? d.botNews : [];
+    state.botJobRecords = d.botJobRecords || {};
+    state.botDuelDoneToday = d.botDuelDoneToday || {};
+    window.GT_ACTIVE_BOTS = state.bots;
     ensureJourneyGoals();
     return true;
+  }
+
+  function syncBotsToCurrentDay() {
+    window.GT_ACTIVE_BOTS = state.bots || [];
+    if (!window.GT_BOTS || !Array.isArray(state.bots) || state.bots.length === 0) return;
+    window.GT_BOTS.advanceBotsToDay(state.bots, state.day, W, state.botNews, state.botJobRecords);
+    updateOpponentHUD();
   }
 
   function addJournal(text) {
@@ -737,9 +769,10 @@
       }
     }
 
-    // Automatisk sparning i webbläsaren + realtidssynk i 2-spelarläge
+    // Automatisk sparning i webbläsaren + realtidssynk i 2-spelarläge / bot-topplista
     saveGame();
     syncMultiplayerState();
+    updateOpponentHUD();
   }
 
   function renderCity() {
@@ -2211,9 +2244,11 @@
       ? `${leadEv.effectText} Resenärer från hela världen strömmar till staden under veckan, och lokala arbetsgivare söker extra personal.`
       : `Stadens gator, marknader och kaféer vaknar till liv. Flera lokala verksamheter annonserar idag efter tillfällig hjälp med kontant betalning.`;
     const dealCityKey = Object.keys(state.deals).find(k => k !== state.city && state.deals[k] > 0);
-    const dealNotis = dealCityKey
+    const latestBotNews = (state.botNews && state.botNews.length > 0) ? state.botNews[state.botNews.length - 1] : null;
+    const botNewsLine = latestBotNews ? ` · RESENYTT (Dag ${latestBotNews.day}): ${latestBotNews.text}` : '';
+    const dealNotis = (dealCityKey
       ? `Sista-minuten: -${state.deals[dealCityKey]} % på flyg mot ${W.cities[dealCityKey].name} idag.`
-      : `Kolla avgångstavlan på flygplatsen för dagens Stand by-biljetter (-25 %).`;
+      : `Kolla avgångstavlan på flygplatsen för dagens Stand by-biljetter (-25 %).`) + botNewsLine;
 
     const cityMg = window.GT_MINIGAMES ? window.GT_MINIGAMES.getForCity(state.city, state.day) : null;
     const classifiedAdsHtml = cityJobs.slice(0, 3).map((job, idx) => {
@@ -2229,11 +2264,14 @@
         : (job.adText || `${job.employer} söker en pålitlig resenär för dagens pass med kontant lön direkt i handen.`);
 
       const recKey = `${state.city}_${idx}`;
-      const rec = (window.GT_MP && window.GT_MP.active && window.GT_MP.jobRecords[recKey]) || null;
+      const mpRec = (window.GT_MP && window.GT_MP.active && window.GT_MP.jobRecords[recKey]) || null;
+      const botRec = (!mpRec && state.botJobRecords && state.botJobRecords[recKey]) || null;
+      const rec = mpRec || botRec;
+      const recBonusAmt = mpRec ? 400 : 350;
       const recBadge = rec
         ? (rec.holder === state.playerFirstName
           ? `<div class="bp-ad-bonus" style="color:#1c5c26;">★ Ditt rekord här: ${rec.score}/${rec.max}</div>`
-          : `<div class="bp-ad-bonus" style="color:#9e1f1f; background:rgba(184,35,35,0.1); padding:2px 5px; border-radius:3px;">🏆 ${rec.holder.toUpperCase()}S REKORD: ${rec.score}/${rec.max} · Slå det (+400 kr)!</div>`)
+          : `<div class="bp-ad-bonus" style="color:#9e1f1f; background:rgba(184,35,35,0.1); padding:2px 5px; border-radius:3px;">🏆 ${rec.holder.toUpperCase()}S REKORD: ${rec.score}/${rec.max} · Slå det (+${recBonusAmt} kr)!</div>`)
         : '';
 
       return `
@@ -2429,6 +2467,14 @@
         if (resRec.beatOpponent) {
           changeCash(400, `Slog ${resRec.prev.holder}s jobbrekord`);
           recordBanner = `<div style="margin:8px 0; padding:6px 10px; background:#fff4d2; border:2px solid #c99a45; color:#7a4f12; font-size:12.5px;"><b>🏆 NYTT REKORD!</b> Du slog ${resRec.prev.holder} (${resRec.prev.score}/${total}) och fick <b>+400 kr duellbonus</b>!</div>`;
+        }
+      } else if (state.botJobRecords) {
+        const bKey = `${state.city}_${jobIdx}`;
+        const prevBotRec = state.botJobRecords[bKey];
+        if (prevBotRec && prevBotRec.isBot && correctInJob > prevBotRec.score) {
+          changeCash(350, `Slog ${prevBotRec.holder}s jobbrekord`);
+          state.botJobRecords[bKey] = { holder: state.playerFirstName, isBot: false, score: correctInJob, max: total, city: city.name };
+          recordBanner = `<div style="margin:8px 0; padding:6px 10px; background:#fff4d2; border:2px solid #c99a45; color:#7a4f12; font-size:12.5px;"><b>🏆 NYTT REKORD!</b> Du slog ${prevBotRec.holder} (${prevBotRec.score}/${total}) och fick <b>+350 kr rekordbonus</b>!</div>`;
         }
       }
 
@@ -3604,6 +3650,7 @@
             <div class="globe-sub">AVVERKAD STRÄCKA: <b style="color:#8cf0a4;">${totalDist.toLocaleString('sv-SE')} KM</b> · <b style="color:#ffd875;">★ ${state.doneWonders.size}/${Object.keys(W.wonders).length} VÄRLDSARV</b> (KLICKA PÅ ★)</div>
           </div>
           <div class="globe-top-actions">
+            ${(state.bots && state.bots.length > 0) ? `<button class="globe-brass-btn" id="globeToggleBotsBtn" style="padding:6px 10px; font-size:11px; white-space:nowrap;">🤖 Bottar: PÅ</button>` : ''}
             <button class="bp-icon-close-btn zoom-btn" id="globeZoomInBtn" title="Zooma in" aria-label="Zooma in">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">
                 <line x1="12" y1="5" x2="12" y2="19"/>
@@ -3654,6 +3701,14 @@
 
       const zoomInBtn = document.getElementById('globeZoomInBtn');
       const zoomOutBtn = document.getElementById('globeZoomOutBtn');
+      const toggleBotsBtn = document.getElementById('globeToggleBotsBtn');
+      if (toggleBotsBtn) {
+        toggleBotsBtn.onclick = () => {
+          activeGlobeRenderer.showBots = !activeGlobeRenderer.showBots;
+          toggleBotsBtn.textContent = activeGlobeRenderer.showBots ? '🤖 Bottar: PÅ' : '🤖 Bottar: AV';
+          AudioMgr.play('klick');
+        };
+      }
       if (zoomInBtn) {
         zoomInBtn.onclick = () => {
           stopSpin();
@@ -3749,6 +3804,7 @@
       if (isBoat) {
         state.day += timeValue;
         state.hour = 8;
+        syncBotsToCurrentDay();
       } else {
         addHours(timeValue);
       }
@@ -4172,6 +4228,7 @@
     state.day++;
     state.hour = 8;
     state.dayLog.activities = [];
+    syncBotsToCurrentDay();
 
     if (state.day > W.dayLimit) {
       triggerGameOver(false);
@@ -4182,8 +4239,9 @@
     renderCitySpots(W.cities[state.city]);
     updateHUD();
     const daysLeft = W.dayLimit - state.day;
+    const homeName = W.cities[W.startCity]?.name || 'startstaden';
     if (daysLeft <= 5 && state.city !== W.startCity) {
-      showToast(`SLUTSPURT! Endast ${daysLeft} dagar kvar — dags att ta dig hem till Stockholm!`, 4000);
+      showToast(`SLUTSPURT! Endast ${daysLeft} dagar kvar, dags att ta dig hem till ${homeName}!`, 4000);
     } else {
       showToast(`Dag ${state.day} har grytt! Klockan är 08:00.`, 2500);
     }
@@ -4729,9 +4787,9 @@
 
             <div class="bp90-menu-buttons">
               ${continueBtn}
-              <button class="bp90-menu-btn primary" onclick="window.GT.startNewJourney()">
+              <button class="bp90-menu-btn primary" onclick="window.GT.openNewGameSetup()">
                 <span class="bp90-btn-title">STARTA NY RESA (1 SPELARE)</span>
-                <span class="bp90-btn-sub">STÄMPLA PASS &amp; AVRESA FRÅN ${(W.cities[W.startCity]?.name || 'MALMÖ').toUpperCase()} »</span>
+                <span class="bp90-btn-sub">VÄLJ STARTSTAD, RESLÄNGD &amp; UPP TILL 6 BOTTAR »</span>
               </button>
               <button class="bp90-menu-btn continue" style="border-color:#38b6ff;" onclick="window.GT.openMultiplayerLobby()">
                 <span class="bp90-btn-title" style="color:#8cd7ff;">ONLINE DUELL (2 SPELARE)</span>
@@ -4764,31 +4822,239 @@
     }
   }
 
-  function startNewJourney() {
-    const fn = (document.getElementById('inpFirstName')?.value || 'RESENÄR').trim() || 'RESENÄR';
-    const ln = (document.getElementById('inpLastName')?.value || 'GLOBETROTTER').trim() || 'GLOBETROTTER';
+  function openNewGameSetup() {
+    AudioMgr.play('klick');
+    const savedFn = (document.getElementById('inpFirstName')?.value || state.playerFirstName || 'ALEX').trim() || 'ALEX';
+    const savedLn = (document.getElementById('inpLastName')?.value || state.playerLastName || 'GLOBETROTTER').trim() || 'GLOBETROTTER';
+    state.playerFirstName = savedFn;
+    state.playerLastName = savedLn;
+
+    const sortedCities = Object.keys(W.cities).sort((a, b) =>
+      (W.cities[a].name || a).localeCompare(W.cities[b].name || b, 'sv')
+    );
+    const defaultStart = W.cities[state.startCity] ? state.startCity : W.startCity;
+    const quickCities = ['malmo', 'stockholm', 'london', 'paris', 'newyork', 'tokyo', 'sydney'].filter(k => W.cities[k]);
+
+    let selectedStartCity = defaultStart;
+    let selectedDays = 30;
+    let selectedBotCount = 3;
+    let selectedDifficulty = 'mixed';
+
+    const cityOptionsHtml = sortedCities.map(k => {
+      const c = W.cities[k];
+      return `<option value="${k}" ${k === selectedStartCity ? 'selected' : ''}>${c.name} (${c.country})</option>`;
+    }).join('');
+
+    const html = `
+      <div class="scene-fullscreen" style="background:rgba(10,7,4,0.88); align-items:center; justify-content:center; padding:12px;">
+        <div class="setup-modal-card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+            <div>
+              <div class="setup-kicker">GLOBETROTTER · NY RESA</div>
+              <h2 class="setup-title">Reseinställningar</h2>
+            </div>
+            <button class="globe-brass-btn" style="padding:5px 10px; font-size:11px;" onclick="window.GT.openStartScreen()">« Tillbaka</button>
+          </div>
+
+          <div class="setup-section">
+            <div class="setup-label">1. Välj startstad &amp; hemort (${sortedCities.length} städer)</div>
+            <div class="setup-city-row">
+              <select id="setupStartCity" class="setup-select">${cityOptionsHtml}</select>
+              <button type="button" class="globe-brass-btn" id="setupRandomCity" style="padding:7px 11px; font-size:12px;">🎲 Slumpa</button>
+            </div>
+            <div class="setup-pill-row" style="margin-top:7px;" id="setupQuickCities">
+              ${quickCities.map(k => `<button type="button" class="setup-pill-btn ${k === selectedStartCity ? 'active' : ''}" data-city="${k}">${W.cities[k].name}</button>`).join('')}
+            </div>
+          </div>
+
+          <div class="setup-section">
+            <div class="setup-label">2. Resans längd</div>
+            <div class="setup-pill-row" id="setupDaysRow">
+              <button type="button" class="setup-pill-btn" data-days="20">20 dagar (Snabbresa)</button>
+              <button type="button" class="setup-pill-btn active" data-days="30">30 dagar (Klassisk)</button>
+              <button type="button" class="setup-pill-btn" data-days="45">45 dagar (Jorden runt)</button>
+            </div>
+          </div>
+
+          <div class="setup-section">
+            <div class="setup-label">3. Antal datormotståndare (0 till 6 bottar)</div>
+            <div class="setup-pill-row" id="setupBotCountRow">
+              ${[0, 1, 2, 3, 4, 5, 6].map(n => `<button type="button" class="setup-pill-btn ${n === selectedBotCount ? 'active' : ''}" data-bots="${n}">${n === 0 ? '0 (Solo)' : `${n} ${n === 1 ? 'bot' : 'bottar'}`}</button>`).join('')}
+            </div>
+          </div>
+
+          <div class="setup-section" id="setupDiffSection">
+            <div class="setup-label">4. Botarnas svårighetsgrad</div>
+            <div class="setup-pill-row" id="setupDiffRow">
+              <button type="button" class="setup-pill-btn active" data-diff="mixed">Blandat fält (Rek.)</button>
+              <button type="button" class="setup-pill-btn" data-diff="easy">Turist (Lätt)</button>
+              <button type="button" class="setup-pill-btn" data-diff="medium">Globetrotter (Medel)</button>
+              <button type="button" class="setup-pill-btn" data-diff="hard">Mästerresenär (Svår)</button>
+            </div>
+            <div class="setup-bot-preview" id="setupBotPreview"></div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px; flex-wrap:wrap;">
+            <button type="button" class="stamp-action-btn" id="setupLaunchBtn" style="padding:11px 22px; font-size:14px; width:100%;">
+              STÄMPLA PASS &amp; STARTA RESAN »
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    showModal(html);
+
+    const citySel = document.getElementById('setupStartCity');
+    const previewEl = document.getElementById('setupBotPreview');
+    const diffSection = document.getElementById('setupDiffSection');
+
+    const refreshPreview = () => {
+      if (diffSection) diffSection.style.display = selectedBotCount > 0 ? '' : 'none';
+      if (!previewEl || !window.GT_BOTS) return;
+      if (selectedBotCount === 0) {
+        previewEl.innerHTML = '';
+        return;
+      }
+      const sample = window.GT_BOTS.createBots(selectedBotCount, selectedDifficulty, selectedStartCity, W);
+      previewEl.innerHTML = sample.map(b => `
+        <div class="setup-bot-chip">
+          <span class="setup-bot-dot" style="background:${b.color};"></span>
+          <div style="min-width:0;">
+            <div style="font-weight:bold; color:#fff5df;">${b.name}</div>
+            <div style="font-size:10px; color:#cbb997;">${b.difficultyLabel} · ${b.style}</div>
+          </div>
+        </div>
+      `).join('');
+    };
+
+    const syncQuickBtns = () => {
+      document.querySelectorAll('#setupQuickCities .setup-pill-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.city === selectedStartCity);
+      });
+    };
+
+    if (citySel) {
+      citySel.onchange = () => {
+        selectedStartCity = citySel.value;
+        syncQuickBtns();
+      };
+    }
+    const rndBtn = document.getElementById('setupRandomCity');
+    if (rndBtn) {
+      rndBtn.onclick = () => {
+        selectedStartCity = sortedCities[Math.floor(Math.random() * sortedCities.length)];
+        if (citySel) citySel.value = selectedStartCity;
+        syncQuickBtns();
+        AudioMgr.play('klick');
+      };
+    }
+    document.querySelectorAll('#setupQuickCities .setup-pill-btn').forEach(btn => {
+      btn.onclick = () => {
+        selectedStartCity = btn.dataset.city;
+        if (citySel) citySel.value = selectedStartCity;
+        syncQuickBtns();
+        AudioMgr.play('klick');
+      };
+    });
+    document.querySelectorAll('#setupDaysRow .setup-pill-btn').forEach(btn => {
+      btn.onclick = () => {
+        selectedDays = Number(btn.dataset.days) || 30;
+        document.querySelectorAll('#setupDaysRow .setup-pill-btn').forEach(b => b.classList.toggle('active', b === btn));
+        AudioMgr.play('klick');
+      };
+    });
+    document.querySelectorAll('#setupBotCountRow .setup-pill-btn').forEach(btn => {
+      btn.onclick = () => {
+        selectedBotCount = Number(btn.dataset.bots) || 0;
+        document.querySelectorAll('#setupBotCountRow .setup-pill-btn').forEach(b => b.classList.toggle('active', b === btn));
+        refreshPreview();
+        AudioMgr.play('klick');
+      };
+    });
+    document.querySelectorAll('#setupDiffRow .setup-pill-btn').forEach(btn => {
+      btn.onclick = () => {
+        selectedDifficulty = btn.dataset.diff || 'mixed';
+        document.querySelectorAll('#setupDiffRow .setup-pill-btn').forEach(b => b.classList.toggle('active', b === btn));
+        refreshPreview();
+        AudioMgr.play('klick');
+      };
+    });
+
+    refreshPreview();
+
+    const launchBtn = document.getElementById('setupLaunchBtn');
+    if (launchBtn) {
+      launchBtn.onclick = () => {
+        startNewJourney({
+          startCity: selectedStartCity,
+          dayLimit: selectedDays,
+          botCount: selectedBotCount,
+          botDifficulty: selectedDifficulty
+        });
+      };
+    }
+  }
+
+  function startNewJourney(opts = {}) {
+    const fn = (document.getElementById('inpFirstName')?.value || state.playerFirstName || 'RESENÄR').trim() || 'RESENÄR';
+    const ln = (document.getElementById('inpLastName')?.value || state.playerLastName || 'GLOBETROTTER').trim() || 'GLOBETROTTER';
+    const chosenStart = (opts.startCity && W.cities[opts.startCity]) ? opts.startCity : W.startCity;
+    const chosenDays = Number(opts.dayLimit) >= 10 ? Number(opts.dayLimit) : 30;
+    const chosenBotCount = Math.max(0, Math.min(6, Number(opts.botCount) || 0));
+    const chosenBotDiff = opts.botDifficulty || 'mixed';
+
+    W.startCity = chosenStart;
+    W.dayLimit = chosenDays;
+
     try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+    state.startCity = chosenStart;
+    state.dayLimit = chosenDays;
+    state.city = chosenStart;
+    state.day = 1;
+    state.hour = 8;
+    state.cash = W.startCash;
+    state.backpack = [];
+    state.donePlaces = new Set();
+    state.doneWonders = new Set();
+    state.doneWonderSpots = new Set();
+    state.activeWonder = null;
+    state.visitedCities = new Set([chosenStart]);
+    state.stamps = [];
+    state.travelHistory = [];
+    state.questionsTotal = 0;
+    state.questionsCorrect = 0;
+    state.dayLog = { activities: [], moneyStart: W.startCash };
     state.playerFirstName = fn;
     state.playerLastName = ln;
+    state.signatureDoneToday = {};
+    state.jobsDoneToday = {};
+    state.usedQuestionIds = new Set();
+    state.departureBoard = null;
     state.competencies = [];
     state.discoveredPlaces = new Set();
     state.backpackLevel = 1;
     state.mailedHome = [];
     state.callsHomeUsed = 0;
+    state.botNews = [];
+    state.botJobRecords = {};
+    state.botDuelDoneToday = {};
+    state.bots = (window.GT_BOTS && chosenBotCount > 0)
+      ? window.GT_BOTS.createBots(chosenBotCount, chosenBotDiff, chosenStart, W)
+      : [];
+    window.GT_ACTIVE_BOTS = state.bots;
+
     state.goals = generateJourneyGoals();
     const goalNames = state.goals.souvenirCities.map(ck => W.cities[ck]?.name || ck).join(', ');
-    const startName = W.cities[W.startCity]?.name || 'Malmö';
-    state.city = W.startCity;
-    state.activeWonder = null;
-    state.doneWonderSpots = new Set();
-    state.visitedCities = new Set([W.startCity]);
-    state.journal = [{ day: 1, text: `${fn} ${ln} påbörjade jorden-runt-resan från ${startName}! Mål i passet: ${state.goals.requiredCompetencies} yrkeskompetenser samt souvenirer från ${goalNames}.` }];
+    const startName = W.cities[chosenStart]?.name || chosenStart;
+    const botSuffix = state.bots.length > 0 ? ` Tävlar mot ${state.bots.length} medresenärer.` : '';
+    state.journal = [{ day: 1, text: `${fn} ${ln} påbörjade jorden-runt-resan från ${startName} (${chosenDays} dagar)! Mål i passet: ${state.goals.requiredCompetencies} yrkeskompetenser samt souvenirer från ${goalNames}.${botSuffix}` }];
     gameSessionStarted = true;
     saveGame();
     AudioMgr.play('fanfar');
     closeModal();
     renderCity();
-    showToast(`Trevlig resa, ${fn}! Se dina slumpade resmål i passet.`, 3400);
+    updateOpponentHUD();
+    showToast(`Trevlig resa från ${startName}, ${fn}! Se dina resmål i passet.`, 3400);
   }
 
   // --- 2-Spelare Online Duell (WebRTC / PeerJS med 4-siffrig rumskod, Live Poängmätare & Jobbdueller!) ---
@@ -4846,29 +5112,216 @@
     updateOpponentHUD();
   }
 
+  function getPlayerBotEntry() {
+    const goals = ensureJourneyGoals();
+    const souvDone = goals.souvenirCities.filter(ck => Boolean(hasGoalSouvenirFrom(ck))).length;
+    return {
+      name: state.playerFirstName || 'Du',
+      city: state.city,
+      stamps: state.stamps.length,
+      competencies: state.competencies.length,
+      regions: getVisitedRegions().size,
+      goalSouvenirsDone: souvDone,
+      wonders: state.doneWonders.size,
+      cash: state.cash,
+      finished: false
+    };
+  }
+
   function updateOpponentHUD() {
     const bar = document.getElementById('mpOpponentBar');
     if (!bar) return;
-    if (!window.GT_MP || !window.GT_MP.active || !window.GT_MP.opponent) {
-      bar.classList.add('hidden');
+
+    // 1. Online 2-spelare har förtur om aktiv
+    if (window.GT_MP && window.GT_MP.active && window.GT_MP.opponent) {
+      const opp = window.GT_MP.opponent;
+      const me = buildMySnapshot(false);
+      const locName = (opp.activeWonder && W.wonders[opp.activeWonder]?.name)
+        || (W.cities[opp.city]?.name)
+        || opp.city;
+      const challengeBtn = window.GT_MP.pendingChallenge
+        ? `<button class="mp-challenge-pill-btn" onclick="window.GT.openIncomingChallenge()">⚡ DUELLFRÅGA!</button>`
+        : '';
+      bar.innerHTML = `
+        <span class="mp-dot"></span>
+        <span><b style="color:#ffd875;">DU: ${me.goalsDone}/${me.goalsTotal}</b> (${me.accuracy}%)</span>
+        <span style="opacity:0.55;">VS</span>
+        <span><b style="color:#8cd7ff;">${opp.name}: ${opp.goalsDone || 0}/${opp.goalsTotal || me.goalsTotal}</b> (${opp.accuracy ?? 100}%) · ${locName}</span>
+        ${challengeBtn}
+      `;
+      bar.classList.remove('hidden');
       return;
     }
-    const opp = window.GT_MP.opponent;
-    const me = buildMySnapshot(false);
-    const locName = (opp.activeWonder && W.wonders[opp.activeWonder]?.name)
-      || (W.cities[opp.city]?.name)
-      || opp.city;
-    const challengeBtn = window.GT_MP.pendingChallenge
-      ? `<button class="mp-challenge-pill-btn" onclick="window.GT.openIncomingChallenge()">⚡ DUELLFRÅGA!</button>`
+
+    // 2. AI-Bot-tävling (1 till 6 bottar)
+    if (window.GT_BOTS && Array.isArray(state.bots) && state.bots.length > 0) {
+      const standings = window.GT_BOTS.getStandings(getPlayerBotEntry(), state.bots);
+      const myRow = standings.find(r => r.isPlayer) || standings[0];
+      const leader = standings[0];
+      const localBots = window.GT_BOTS.getBotsInCity(state.bots, state.city);
+      const duelBot = localBots.find(b => !state.botDuelDoneToday[`${state.day}_${b.id}`]);
+      const duelBtn = duelBot
+        ? `<button class="mp-challenge-pill-btn" onclick="window.GT.startBotDuel('${duelBot.id}')">⚡ Utmana ${duelBot.name} (300 kr)</button>`
+        : '';
+      bar.innerHTML = `
+        <span><b style="color:#ffd875;">🏆 Plats ${myRow.rank}/${standings.length}</b> (${myRow.score} p)</span>
+        <span style="opacity:0.65;">· Ledare: <b style="color:${leader.color};">${leader.isPlayer ? 'Du' : leader.name}</b> (${leader.score} p)</span>
+        <button class="globe-brass-btn" style="padding:2px 8px; font-size:10px; margin-left:4px;" onclick="window.GT.openBotStandingsModal()">Topplista</button>
+        ${duelBtn}
+      `;
+      bar.classList.remove('hidden');
+      return;
+    }
+
+    bar.classList.add('hidden');
+  }
+
+  function openBotStandingsModal() {
+    if (!window.GT_BOTS || !Array.isArray(state.bots) || state.bots.length === 0) return;
+    AudioMgr.play('klick');
+    const standings = window.GT_BOTS.getStandings(getPlayerBotEntry(), state.bots);
+    const localBots = window.GT_BOTS.getBotsInCity(state.bots, state.city);
+    const rowsHtml = standings.map(r => {
+      const cName = W.cities[r.city]?.name || r.city;
+      const canDuel = !r.isPlayer && r.city === state.city && !r.finished && !state.botDuelDoneToday[`${state.day}_${r.id}`];
+      return `
+        <tr class="${r.isPlayer ? 'is-player' : ''}">
+          <td><b>#${r.rank}</b></td>
+          <td>
+            <span class="setup-bot-dot" style="display:inline-block; background:${r.color}; vertical-align:middle; margin-right:5px;"></span>
+            ${r.name}${r.finished ? ' 🏁' : ''}
+            <div style="font-size:9.5px; color:#b8a586; font-weight:normal;">${r.difficultyLabel}${r.isPlayer ? '' : ` · ${r.style}`}</div>
+          </td>
+          <td>${cName}${canDuel ? ` <button class="mp-challenge-pill-btn" style="font-size:9.5px; padding:1px 6px; margin-left:4px;" onclick="window.GT.startBotDuel('${r.id}')">⚡ Duell</button>` : ''}</td>
+          <td class="hide-sm">${r.stamps}</td>
+          <td class="hide-sm">${r.competencies}</td>
+          <td class="hide-sm">${r.regions}</td>
+          <td><b style="color:#ffd875;">${r.score} p</b></td>
+        </tr>
+      `;
+    }).join('');
+
+    const recentNews = (state.botNews || []).slice(-6).reverse();
+    const newsHtml = recentNews.length > 0
+      ? recentNews.map(n => `<div style="font-size:11.5px; padding:3px 0; border-bottom:1px dotted rgba(201,154,69,0.22);"><b style="color:#ffd875;">Dag ${n.day}:</b> ${n.text}</div>`).join('')
+      : '<div style="font-size:11.5px; color:#a89678; font-style:italic;">Resan har nyss börjat. Nyheter från dina medresenärer dyker upp här allt eftersom dagarna går!</div>';
+
+    const localBanner = localBots.length > 0
+      ? `<div style="margin:8px 0; padding:7px 10px; background:rgba(56,182,255,0.12); border:1px solid #38b6ff; border-radius:6px; font-size:12px; color:#bfe8ff;">
+           <b>Just nu i ${W.cities[state.city]?.name}:</b> ${localBots.map(b => b.name).join(', ')} är i samma stad som du! Klicka på <b>⚡ Duell</b> för en snabb 3-frågorsduell om 300 kr.
+         </div>`
       : '';
-    bar.innerHTML = `
-      <span class="mp-dot"></span>
-      <span><b style="color:#ffd875;">DU: ${me.goalsDone}/${me.goalsTotal}</b> (${me.accuracy}%)</span>
-      <span style="opacity:0.55;">VS</span>
-      <span><b style="color:#8cd7ff;">${opp.name}: ${opp.goalsDone || 0}/${opp.goalsTotal || me.goalsTotal}</b> (${opp.accuracy ?? 100}%) · ${locName}</span>
-      ${challengeBtn}
+
+    const html = `
+      <div class="scene-fullscreen" style="background:rgba(10,7,4,0.86); align-items:center; justify-content:center; padding:12px;">
+        <div class="setup-modal-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <div>
+              <div class="setup-kicker">GLOBETROTTER · TÄVLINGSTABELL</div>
+              <h2 class="setup-title" style="margin-bottom:4px;">Topplista (Dag ${state.day} av ${W.dayLimit})</h2>
+            </div>
+            ${exitIconBtn('Stäng topplistan')}
+          </div>
+          ${localBanner}
+          <table class="bot-standings-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Resenär</th>
+                <th>Stad</th>
+                <th class="hide-sm">Stämplar</th>
+                <th class="hide-sm">Yrken</th>
+                <th class="hide-sm">Världsdelar</th>
+                <th>Poäng</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+
+          <div class="setup-section" style="margin-top:12px; margin-bottom:0;">
+            <div class="setup-label">Senaste nytt från medresenärerna</div>
+            ${newsHtml}
+          </div>
+        </div>
+      </div>
     `;
-    bar.classList.remove('hidden');
+    showModal(html);
+  }
+
+  function startBotDuel(botId) {
+    const bot = (state.bots || []).find(b => b.id === botId);
+    if (!bot) return;
+    if (state.botDuelDoneToday[`${state.day}_${bot.id}`]) {
+      showToast(`Du har redan duellerat mot ${bot.name} idag!`, 2200);
+      return;
+    }
+    state.botDuelDoneToday[`${state.day}_${bot.id}`] = true;
+    AudioMgr.play('bell');
+
+    const city = W.cities[state.city];
+    const diff = (window.GT_BOTS && window.GT_BOTS.DIFFICULTY_PROFILES[bot.difficulty]) || { accuracy: 0.72 };
+    let botScore = 0;
+    for (let i = 0; i < 3; i++) {
+      if (Math.random() < diff.accuracy) botScore++;
+    }
+
+    const duelQuestions = pickHardQuestions(3, city ? city.region : '');
+    if (duelQuestions.length < 3) {
+      const extra = pickInteractiveQuestions(3 - duelQuestions.length, city ? city.region : '');
+      duelQuestions.push(...extra);
+    }
+
+    const html = `
+      <div class="scene-fullscreen" style="background:rgba(10,7,4,0.90); align-items:center; justify-content:center; padding:12px;">
+        <div class="setup-modal-card" style="max-width:660px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div>
+              <div class="setup-kicker" style="color:${bot.color};">⚡ KUNSKAPSDUELL I ${(city?.name || '').toUpperCase()}</div>
+              <h2 class="setup-title" style="margin:2px 0;">Du mot ${bot.fullName} (${bot.difficultyLabel})</h2>
+            </div>
+            <span style="font-size:12px; color:#ffd875; font-weight:bold;">Pott: 300 kr</span>
+          </div>
+          <div id="botDuelQuizContainer"></div>
+        </div>
+      </div>
+    `;
+    showModal(html);
+
+    const container = document.getElementById('botDuelQuizContainer');
+    runQuiz(duelQuestions.slice(0, 3), ({ correct, total }) => {
+      const myScore = Math.round(correct * 10) / 10;
+      let headline = '';
+      let sub = '';
+      if (myScore > botScore) {
+        changeCash(300, `Vann kunskapsduell mot ${bot.name}`);
+        bot.cash = Math.max(0, bot.cash - 150);
+        AudioMgr.play('fanfar');
+        headline = `🏆 DU VANN DUELLEN! (${myScore}/${total} mot ${bot.name}s ${botScore}/${total})`;
+        sub = `+300 kr rakt ner i din reskassa!`;
+        addJournal(`Besegrade ${bot.name} i en kunskapsduell i ${city?.name || state.city} (${myScore}-${botScore}) och vann 300 kr.`);
+      } else if (myScore === botScore) {
+        changeCash(100, `Oavgjord duell mot ${bot.name}`);
+        AudioMgr.play('right1');
+        headline = `🤝 OAVGJORT! (${myScore}/${total} mot ${bot.name}s ${botScore}/${total})`;
+        sub = `Ni delar på äran och du får +100 kr i tröstpris.`;
+      } else {
+        AudioMgr.play('wrong1');
+        bot.cash += 200;
+        headline = `${bot.name} drog längsta strået (${botScore}/${total} mot dina ${myScore}/${total})`;
+        sub = `Revanschlust! Plugga in fakta och möt ${bot.name} nästa gång ni korsar väg.`;
+      }
+      saveGame();
+      updateOpponentHUD();
+      if (container) {
+        container.innerHTML = `
+          <div style="text-align:center; padding:16px 8px;">
+            <div style="font-size:17px; font-weight:bold; color:#ffd875; margin-bottom:8px;">${headline}</div>
+            <div style="font-size:13px; color:#e6d9bf; margin-bottom:16px;">${sub}</div>
+            <button class="stamp-action-btn" onclick="window.GT.closeModal()">Tillbaka till ${city?.name || 'staden'} »</button>
+          </div>
+        `;
+      }
+    }, container, city?.skyline);
   }
 
   function openIncomingChallenge() {
@@ -5273,6 +5726,9 @@
     startNewJourney,
     continueSavedGame,
     openStartScreen,
+    openNewGameSetup,
+    openBotStandingsModal,
+    startBotDuel,
     openMultiplayerLobby,
     mpCreateRoom,
     mpJoinRoom,
