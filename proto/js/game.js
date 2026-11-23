@@ -5403,20 +5403,17 @@
       return;
     }
 
-    // 2. AI-Bot-tävling (1 till 6 bottar)
+    // 2. AI-Bot-tävling: bara en kompakt, ren knapp (tar minimalt med plats!)
     if (window.GT_BOTS && Array.isArray(state.bots) && state.bots.length > 0) {
       const standings = window.GT_BOTS.getStandings(getPlayerBotEntry(), state.bots);
       const myRow = standings.find(r => r.isPlayer) || standings[0];
-      const leader = standings[0];
       const localBots = window.GT_BOTS.getBotsInCity(state.bots, state.city);
       const duelBot = localBots.find(b => !state.botDuelDoneToday[`${state.day}_${b.id}`]);
       const duelBtn = duelBot
-        ? `<button class="mp-challenge-pill-btn" onclick="window.GT.startBotDuel('${duelBot.id}')">⚡ Utmana ${duelBot.name} (300 kr)</button>`
+        ? `<button class="mp-challenge-pill-btn" onclick="window.GT.startBotDuel('${duelBot.id}')">⚡ ${duelBot.name}</button>`
         : '';
       bar.innerHTML = `
-        <span><b style="color:#ffd875;">🏆 Plats ${myRow.rank}/${standings.length}</b> (${myRow.score} p)</span>
-        <span style="opacity:0.65;">· Ledare: <b style="color:${leader.color};">${leader.isPlayer ? 'Du' : leader.name}</b> (${leader.score} p)</span>
-        <button class="globe-brass-btn" style="padding:2px 8px; font-size:10px; margin-left:4px;" onclick="window.GT.openBotStandingsModal()">Topplista</button>
+        <button class="globe-brass-btn" style="padding:3px 10px; font-size:11px; border-color:#ffd875; color:#ffd875;" onclick="window.GT.openBotStandingsModal()" title="Öppna topplista &amp; bonuskontrakt">🏆 #${myRow.rank}/${standings.length} · Topplista</button>
         ${duelBtn}
       `;
       bar.classList.remove('hidden');

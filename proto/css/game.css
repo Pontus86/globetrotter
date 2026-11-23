@@ -6549,19 +6549,20 @@ h1, h2, h3, h4,
     white-space: nowrap !important;
   }
 
-  /* Rad 3: Online-duell-bricka (i flöde om aktiv — noll krock!) */
+  /* Rad 3: Kompakt tävlingsknapp (tar nästan ingen plats!) */
   .mp-opponent-pill {
     position: relative !important;
     top: auto !important;
     left: auto !important;
     transform: none !important;
-    margin: 0 8px 6px !important;
-    width: calc(100% - 16px) !important;
+    margin: 0 auto 4px !important;
+    width: auto !important;
+    max-width: calc(100% - 16px) !important;
     box-sizing: border-box !important;
     justify-content: center !important;
     flex-wrap: wrap !important;
     font-size: 10.5px !important;
-    padding: 4px 8px !important;
+    padding: 2px 6px !important;
   }
 
   /* Mittzon: Ren 3-kolumners grid med textfria ikoner — NOLL överlapp någonsin! */
