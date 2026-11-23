@@ -3793,8 +3793,15 @@
 
     const canvas = document.getElementById('globeCanvas');
     if (canvas && window.GlobeRenderer) {
+      const cw = Math.max(320, Math.min(1200, Math.round(window.innerWidth || 1120)));
+      const ch = Math.max(320, Math.min(1200, Math.round(window.innerHeight || 630)));
+      canvas.width = cw;
+      canvas.height = ch;
+      const isPortrait = ch > cw;
+      const autoRadius = Math.round(Math.min(cw, ch) * (isPortrait ? 0.43 : 0.42));
+
       activeGlobeRenderer = new window.GlobeRenderer(canvas, {
-        radius: 278,
+        radius: autoRadius,
         doneWonders: state.doneWonders,
         onWonderClick: (wKey, w) => openWonderModal(wKey, w)
       });

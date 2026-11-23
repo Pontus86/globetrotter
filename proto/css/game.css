@@ -6115,25 +6115,26 @@ h1, h2, h3, h4,
     padding: 8px 4px !important;
   }
 
-  /* Passet på mobil: autentiskt svenskt vinrött pass med läsbara krämvita sidor & snygga flikar */
+  /* Passet på mobil: rent block-flöde så inget kläms ihop eller överlappar! */
   .scene-passport-full {
-    align-items: flex-start !important;
-    justify-content: flex-start !important;
+    display: block !important;
     background: #2b0c10 !important;
     overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
     padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
   }
   .passport-book-shell {
+    display: block !important;
     background-image: none !important;
     background: linear-gradient(180deg, #56131a 0%, #370a0f 100%) !important;
     height: auto !important;
     min-height: 100% !important;
     width: 100% !important;
     box-sizing: border-box !important;
-    padding: 10px 10px max(18px, env(safe-area-inset-bottom)) !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 10px !important;
+    padding: 10px 10px max(22px, env(safe-area-inset-bottom)) !important;
     overflow: visible !important;
   }
   .passport-book-shell > .passport-nav-bar:first-child,
@@ -6141,13 +6142,14 @@ h1, h2, h3, h4,
     position: static !important;
     inset: auto !important;
     margin: 0 !important;
-    padding: 4px 2px !important;
+    padding: 6px 2px !important;
     width: 100% !important;
     box-sizing: border-box !important;
   }
   .passport-book-shell > .passport-nav-bar:first-child {
     border-bottom: 1px solid rgba(255, 216, 117, 0.28);
     padding-bottom: 8px !important;
+    margin-bottom: 10px !important;
     gap: 8px !important;
   }
   .passport-book-shell > .passport-nav-bar:first-child > div {
@@ -6160,6 +6162,7 @@ h1, h2, h3, h4,
     gap: 7px !important;
     border-top: 1px solid rgba(255, 216, 117, 0.28);
     padding-top: 10px !important;
+    margin-top: 10px !important;
   }
   .passport-book-shell > .passport-nav-bar:last-child > div {
     order: -1;
@@ -6181,6 +6184,7 @@ h1, h2, h3, h4,
     right: auto !important;
     display: flex !important;
     flex-direction: column !important;
+    flex: none !important;
     gap: 12px !important;
     padding: 0 !important;
     width: 100% !important;
@@ -6190,13 +6194,17 @@ h1, h2, h3, h4,
   .passport-page.left,
   .passport-page.right,
   .passport-page.polycarbonate-id {
+    display: block !important;
+    flex: none !important;
+    position: relative !important;
     background: linear-gradient(180deg, #faf4e6 0%, #f1e6cf 100%) !important;
     border-radius: 8px !important;
     border: 1.5px solid #bfa274 !important;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), inset 0 0 18px rgba(180, 146, 92, 0.14) !important;
-    padding: 14px 14px 10px !important;
+    padding: 14px 14px 12px !important;
     overflow: visible !important;
     min-height: 0 !important;
+    height: auto !important;
     width: 100% !important;
     box-sizing: border-box !important;
     color: #241b12 !important;
@@ -6205,30 +6213,40 @@ h1, h2, h3, h4,
     background: linear-gradient(135deg, #f9f4ea 0%, #efe6d5 52%, #e8eff3 100%) !important;
     border-color: #a69072 !important;
   }
+  .passport-page.polycarbonate-id::after {
+    display: none !important;
+  }
   .passport-id-header {
     padding-bottom: 6px !important;
     margin-bottom: 10px !important;
     border-bottom: 1px solid rgba(110, 40, 46, 0.25) !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
   }
   .passport-id-header span {
     font-size: 9.5px !important;
-    letter-spacing: 0.6px !important;
+    letter-spacing: 0.5px !important;
     color: #5c1920 !important;
     font-weight: 700 !important;
   }
   .passport-id-grid {
-    grid-template-columns: 76px minmax(0, 1fr) !important;
+    grid-template-columns: 74px minmax(0, 1fr) !important;
     gap: 12px !important;
     align-items: start !important;
   }
   .passport-photo-frame {
-    width: 76px !important;
-    height: 96px !important;
+    width: 74px !important;
+    height: 94px !important;
     padding: 3px !important;
     border: 1.5px solid #9e8767 !important;
     background: #fffdf8 !important;
   }
   .passport-fields {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+  .passport-page.right .passport-fields {
+    grid-template-columns: 1fr 1fr !important;
     gap: 8px 10px !important;
   }
   .pp-field-lbl {
@@ -6237,15 +6255,16 @@ h1, h2, h3, h4,
     margin-bottom: 1px !important;
   }
   .pp-field-val {
-    font-size: 11.5px !important;
+    font-size: 12px !important;
     color: #1f160e !important;
   }
   .passport-mrz {
-    font-size: 8.5px !important;
-    letter-spacing: 0.35px !important;
+    font-size: 8px !important;
+    letter-spacing: 0.25px !important;
     line-height: 1.4 !important;
     margin-top: 10px !important;
     padding-top: 6px !important;
+    white-space: normal !important;
     word-break: break-all !important;
     overflow-wrap: anywhere !important;
   }
@@ -6621,14 +6640,18 @@ h1, h2, h3, h4,
     white-space: nowrap !important;
   }
 
-  /* Dockan (jordglob, ryggsäck, pass) centrerad allra nederst på mobilen! */
+  /* Dockan (jordglob, ryggsäck, pass) BREDVID VARANDRA allra nederst på mobilen! */
   .travel-dock {
     position: absolute !important;
     bottom: max(8px, env(safe-area-inset-bottom)) !important;
     left: 50% !important;
     right: auto !important;
     transform: translateX(-50%) !important;
-    gap: 14px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
     padding: 5px 14px !important;
     background: rgba(16, 11, 7, 0.92) !important;
     border: 1.5px solid #b88b43 !important;
@@ -6636,8 +6659,53 @@ h1, h2, h3, h4,
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.82) !important;
     z-index: 20 !important;
   }
+  .travel-dock .dock-badge {
+    min-width: 50px !important;
+    padding: 4px 6px !important;
+  }
   .travel-dock .dock-sub {
     display: none !important;
+  }
+
+  /* 3D-jordgloben i porträtt: minimala, luftiga menyer så hela jordgloben syns fritt! */
+  .scene-globe-full {
+    overflow: hidden !important;
+    box-shadow: none !important;
+  }
+  .scene-globe-full .globe-overlay-top {
+    padding: max(8px, env(safe-area-inset-top)) 8px 0 !important;
+    gap: 6px !important;
+    align-items: center !important;
+  }
+  .scene-globe-full .globe-title-plate {
+    padding: 4px 9px !important;
+    border-width: 1.5px !important;
+    max-width: 48% !important;
+  }
+  .scene-globe-full .globe-plate-kicker,
+  .scene-globe-full .globe-title-plate .globe-sub {
+    display: none !important;
+  }
+  .scene-globe-full .globe-title-plate h3 {
+    font-size: 13px !important;
+    letter-spacing: 1px !important;
+  }
+  .scene-globe-full .globe-top-actions {
+    padding: 3px 5px !important;
+    border-width: 1.5px !important;
+    gap: 4px !important;
+  }
+  .scene-globe-full .globe-overlay-bottom {
+    padding: 0 8px max(8px, env(safe-area-inset-bottom)) !important;
+  }
+  .scene-globe-full .globe-info-strip {
+    padding: 5px 8px !important;
+    border-width: 1.5px !important;
+    font-size: 10px !important;
+    max-height: 66px !important;
+    overflow-y: auto !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 }
 
@@ -6759,6 +6827,10 @@ h1, h2, h3, h4,
     bottom: max(5px, env(safe-area-inset-bottom)) !important;
     left: 50% !important;
     right: auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
     transform: translateX(-50%) scale(0.84) !important;
     transform-origin: bottom center !important;
   }
