@@ -6060,21 +6060,26 @@ h1, h2, h3, h4,
   color: #1c140c;
 }
 
-@media (max-width: 820px) {
-  body, .app-container.cdrom-desk {
+@media (max-width: 820px), (max-width: 960px) and (pointer: coarse) {
+  html, body, .app-container.cdrom-desk {
     padding: 0 !important;
     margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
     height: 100dvh !important;
     overflow: hidden !important;
+    box-sizing: border-box !important;
   }
   .stage {
-    width: 100vw !important;
+    width: 100% !important;
     height: 100dvh !important;
-    max-width: none !important;
-    max-height: none !important;
+    max-width: 100% !important;
+    max-height: 100dvh !important;
     aspect-ratio: auto !important;
     border-radius: 0 !important;
     border: none !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
   }
 
   /* Modaler: fyll skärmen snyggt och tillåt vertikal scroll på liten mobilskärm */
@@ -6511,64 +6516,75 @@ h1, h2, h3, h4,
     padding: 4px 8px !important;
   }
 
-  /* Mittzon: Fritt, slumpmässigt utspridda BackPacker-ikoner (strikt mellan toppmenyn och bottendockan!) */
+  /* Mittzon: Ren 3-kolumners grid med textfria ikoner — NOLL överlapp någonsin! */
   .spots-container {
     position: relative !important;
     inset: auto !important;
     flex: 1 !important;
     min-height: 0 !important;
     width: 100% !important;
-    margin-bottom: 78px !important;
-    overflow: hidden !important;
+    box-sizing: border-box !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    align-content: space-evenly !important;
+    justify-items: center !important;
+    align-items: center !important;
+    gap: 10px 6px !important;
+    padding: 8px 10px 84px !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
     z-index: 8 !important;
   }
   .spots-container .spot {
-    position: absolute !important;
-    transform: translate(-50%, -50%) !important;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
     padding: 0 !important;
+    margin: 0 !important;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
     text-align: center !important;
   }
+  .spot .spot-badge,
   .spot .spot-photo,
+  .spot .spot-compass-badge,
   .spot .spot-service-img,
   .spot .spot-undiscovered-badge,
   .spot.signature .spot-badge {
-    width: 50px !important;
-    height: 50px !important;
-    min-width: 50px !important;
+    width: 54px !important;
+    height: 54px !important;
+    min-width: 54px !important;
+    min-height: 54px !important;
     margin: 0 !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.78) !important;
   }
-  /* Dölj textetiketter på serviceikoner (Hotell, Marknad, Bibliotek, Flygplats, Tidning) & outforskade ?-platser! */
-  .spot.service .spot-label,
-  .spot.undiscovered .spot-label {
+  .spot .spot-model-img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+  .spot .spot-compass-badge span {
+    font-size: 24px !important;
+  }
+  /* Dölj ALLA textetiketter på stadsikoner i mobilvy så inget överlappar eller kladdar! */
+  .spot .spot-label {
     display: none !important;
   }
-  .spot .spot-label {
-    margin-top: 3px !important;
-    padding: 1px 5px !important;
-    max-width: 82px !important;
-    font-size: 9px !important;
-    line-height: 1.15 !important;
-    background: rgba(14, 10, 6, 0.84) !important;
-    color: #f7ebd2 !important;
-    border-radius: 3px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
 
-  /* Dockan nere i högra hörnet (precis som på datorn — inte i mitten!) */
+  /* Dockan nere i högra hörnet (precis som på datorn, inte i mitten!) */
   .travel-dock {
     position: absolute !important;
     bottom: max(10px, env(safe-area-inset-bottom)) !important;
-    right: 10px !important;
+    right: max(10px, env(safe-area-inset-right)) !important;
     left: auto !important;
     transform: none !important;
     gap: 8px !important;
@@ -6581,32 +6597,111 @@ h1, h2, h3, h4,
   }
 }
 
-/* Liggande mobil (Landscape): behåll den klassiska breda stadskartan i helskärm! */
-@media (max-height: 500px) and (orientation: landscape) {
-  .stage {
-    width: 100vw !important;
+/* Liggande mobil (Landscape): helskärm utan höger-överflöd, textfria ikoner i rent rutnät! */
+@media (max-height: 540px) and (orientation: landscape), (max-width: 960px) and (pointer: coarse) and (orientation: landscape) {
+  html, body, .app-container.cdrom-desk {
+    width: 100% !important;
+    max-width: 100% !important;
     height: 100dvh !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+  .stage {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
     aspect-ratio: auto !important;
     border-radius: 0 !important;
     border: none !important;
-  }
-  .hud {
-    transform: scale(0.8);
-    transform-origin: top right;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
   }
   .city-plate {
-    transform: scale(0.85);
-    transform-origin: top left;
+    top: 6px !important;
+    left: max(8px, env(safe-area-inset-left)) !important;
+    max-width: 210px !important;
+    padding: 4px 9px !important;
+    transform: none !important;
   }
+  .city-plate .city-name {
+    font-size: 16px !important;
+    line-height: 1.1 !important;
+  }
+  .city-plate .city-region {
+    font-size: 8.5px !important;
+  }
+  .hud {
+    top: 6px !important;
+    right: max(8px, env(safe-area-inset-right)) !important;
+    left: auto !important;
+    transform: scale(0.76) !important;
+    transform-origin: top right !important;
+  }
+  .mp-opponent-pill {
+    top: 46px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    max-width: calc(100% - 24px) !important;
+    font-size: 10px !important;
+    padding: 3px 8px !important;
+  }
+  .spots-container {
+    position: absolute !important;
+    top: 72px !important;
+    bottom: 58px !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    width: auto !important;
+    height: auto !important;
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    align-content: space-evenly !important;
+    justify-items: center !important;
+    align-items: center !important;
+    gap: 8px 6px !important;
+    overflow: hidden !important;
+    z-index: 8 !important;
+  }
+  .spots-container .spot {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .spot .spot-badge,
   .spot .spot-photo,
+  .spot .spot-compass-badge,
   .spot .spot-service-img,
-  .spot .spot-undiscovered-badge {
-    width: 46px !important;
-    height: 46px !important;
+  .spot .spot-undiscovered-badge,
+  .spot.signature .spot-badge {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+  }
+  .spot .spot-model-img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
   }
   .spot .spot-label {
-    font-size: 9.5px !important;
-    max-width: 110px !important;
+    display: none !important;
+  }
+  .travel-dock {
+    position: absolute !important;
+    bottom: max(6px, env(safe-area-inset-bottom)) !important;
+    right: max(8px, env(safe-area-inset-right)) !important;
+    left: auto !important;
+    transform: scale(0.82) !important;
+    transform-origin: bottom right !important;
   }
 }
 
