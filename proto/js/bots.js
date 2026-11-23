@@ -18,6 +18,90 @@
     hard:   { key: 'hard',   label: 'Mästerresenär',  accuracy: 0.88, actionsPerDay: 1.95, smartRouting: 0.94 }
   };
 
+  // Öppna bonuskontrakt (Destination Tickets i Ticket to Ride-stil — först till kvarn!)
+  const CONTRACT_CATALOG = [
+    { id: 'c_silkroad', title: 'Sidenvägen', desc: 'Besök Istanbul, Delhi & Peking', kind: 'cities', targets: ['istanbul', 'delhi', 'peking'], rewardCash: 750, rewardPoints: 300 },
+    { id: 'c_mediterranean', title: 'Medelhavets Pärlor', desc: 'Besök Rom, Aten & Kairo', kind: 'cities', targets: ['rom', 'aten', 'kairo'], rewardCash: 650, rewardPoints: 260 },
+    { id: 'c_pacific', title: 'Stillahavsexpressen', desc: 'Besök Tokyo, Sydney & San Francisco', kind: 'cities', targets: ['tokyo', 'sydney', 'sanfrancisco'], rewardCash: 800, rewardPoints: 320 },
+    { id: 'c_atlantic', title: 'Transatlantisk Pionjär', desc: 'Besök London, New York & Rio de Janeiro', kind: 'cities', targets: ['london', 'newyork', 'rio'], rewardCash: 750, rewardPoints: 300 },
+    { id: 'c_nordic', title: 'Nordiska Rundan', desc: 'Besök Stockholm, Oslo & Köpenhamn', kind: 'cities', targets: ['stockholm', 'oslo', 'kopenhamn'], rewardCash: 550, rewardPoints: 220 },
+    { id: 'c_africa3', title: 'Afrikas Hörn', desc: 'Besök minst 3 städer i Afrika', kind: 'region_cities', region: 'afrika', count: 3, rewardCash: 650, rewardPoints: 260 },
+    { id: 'c_asia4', title: 'Asiens Metropoler', desc: 'Besök minst 4 städer i Asien', kind: 'region_cities', region: 'asien', count: 4, rewardCash: 700, rewardPoints: 280 },
+    { id: 'c_wonders2', title: 'Världsarvsjägaren', desc: 'Klara 2 olika världsunderverk', kind: 'wonders', count: 2, rewardCash: 750, rewardPoints: 300 },
+    { id: 'c_jobs3', title: 'Mångsysslaren', desc: 'Samla 3 yrkeskompetenser', kind: 'competencies', count: 3, rewardCash: 600, rewardPoints: 240 },
+    { id: 'c_stamps4', title: 'Stämpeljägaren', desc: 'Samla 4 officiella stadsstämplar', kind: 'stamps', count: 4, rewardCash: 650, rewardPoints: 260 }
+  ];
+
+  function routeKey(a, b) {
+    return [String(a || ''), String(b || '')].sort().join('__');
+  }
+
+  function isRouteBlocked(blockedRoutes, from, to, currentDay, travelerId) {
+    if (!blockedRoutes) return null;
+    const b = blockedRoutes[routeKey(from, to)];
+    if (!b) return null;
+    if (currentDay > b.untilDay) return null;
+    if (travelerId && b.byId === travelerId) return null;
+    return b;
+  }
+
+  function blockRoute(blockedRoutes, from, to, currentDay, byId, byName, color) {
+    if (!blockedRoutes || !from || !to || from === to) return;
+    blockedRoutes[routeKey(from, to)] = {
+      from,
+      to,
+      untilDay: currentDay + 3,
+      byId,
+      byName,
+      color: color || '#ff6b6b'
+    };
+  }
+
+  function initOpenContracts() {
+    const shuffled = CONTRACT_CATALOG.slice().sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 3).map(c => ({ ...c }));
+  }
+
+  function getContractProgress(contract, entry, world) {
+    const visited = new Set(entry.visitedCities || []);
+    if (contract.kind === 'cities') {
+      const done = (contract.targets || []).filter(k => visited.has(k)).length;
+      return { done, total: (contract.targets || []).length };
+    }
+    if (contract.kind === 'region_cities') {
+      const rNorm = String(contract.region || '').toLowerCase();
+      let done = 0;
+      visited.forEach(k => {
+        const c = world && world.cities && world.cities[k];
+        if (c && String(c.region || '').toLowerCase() === rNorm) done++;
+      });
+      return { done: Math.min(contract.count, done), total: contract.count };
+    }
+    if (contract.kind === 'wonders') {
+      const n = Array.isArray(entry.doneWonders) ? entry.doneWonders.length : (entry.wonders || 0);
+      return { done: Math.min(contract.count, n), total: contract.count };
+    }
+    if (contract.kind === 'competencies') {
+      const n = Array.isArray(entry.competencies) ? entry.competencies.length : (entry.competencies || 0);
+      return { done: Math.min(contract.count, n), total: contract.count };
+    }
+    if (contract.kind === 'stamps') {
+      const n = Array.isArray(entry.stamps) ? entry.stamps.length : (entry.stamps || 0);
+      return { done: Math.min(contract.count, n), total: contract.count };
+    }
+    return { done: 0, total: 1 };
+  }
+
+  function drawReplacementContract(openContracts, claimedContracts) {
+    const usedIds = new Set([
+      ...(openContracts || []).map(c => c.id),
+      ...(claimedContracts || []).map(c => c.id)
+    ]);
+    const remaining = CONTRACT_CATALOG.filter(c => !usedIds.has(c.id));
+    if (remaining.length === 0) return null;
+    return { ...remaining[Math.floor(Math.random() * remaining.length)] };
+  }
+
   function distKm(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -82,7 +166,9 @@
         requiredCompetencies: 4,
         travelHistory: [],
         finished: false,
-        finishedDay: null
+        finishedDay: null,
+        contractBonusPoints: 0,
+        claimedCitiesCount: 0
       };
     });
   }
@@ -102,7 +188,9 @@
     const wonders = Array.isArray(entry.doneWonders) ? entry.doneWonders.length : (entry.wonders || 0);
     const cash = Math.max(0, Number(entry.cash) || 0);
     const finishedBonus = entry.finished ? 600 : 0;
-    return stamps * 120 + comps * 180 + regs * 150 + souvs * 160 + wonders * 140 + Math.floor(cash / 250) + finishedBonus;
+    const contractPts = Number(entry.contractBonusPoints) || 0;
+    const claimPts = (Number(entry.claimedCitiesCount) || 0) * 100;
+    return stamps * 120 + comps * 180 + regs * 150 + souvs * 160 + wonders * 140 + Math.floor(cash / 250) + finishedBonus + contractPts + claimPts;
   }
 
   function pushNews(newsLog, day, text) {
@@ -111,9 +199,13 @@
     if (newsLog.length > 24) newsLog.shift();
   }
 
-  function chooseNextCity(bot, diff, world) {
+  function chooseNextCity(bot, diff, world, blockedRoutes, currentDay) {
     const allKeys = Object.keys(world.cities || {}).filter(k => k !== bot.city);
     if (allKeys.length === 0) return null;
+
+    // Filtrera bort rutter som är blockerade av spelaren/andra bottar (om det finns fria vägar!)
+    const freeKeys = allKeys.filter(k => !isRouteBlocked(blockedRoutes, bot.city, k, currentDay, bot.id));
+    const usableKeys = freeKeys.length > 0 ? freeKeys : allKeys;
 
     // Alla mål klara? Flyg hem till startstaden!
     if (hasMetAllGoals(bot)) {
@@ -124,8 +216,8 @@
     const smart = Math.random() < diff.smartRouting;
 
     if (smart) {
-      // 1. Prioritera stad med saknad målsouvenir
-      const missingSouv = (bot.goalSouvenirs || []).filter(ck => !(bot.collectedSouvenirs || []).includes(ck) && ck !== bot.city);
+      // 1. Prioritera stad med saknad målsouvenir (om rutten inte är blockerad)
+      const missingSouv = (bot.goalSouvenirs || []).filter(ck => !(bot.collectedSouvenirs || []).includes(ck) && ck !== bot.city && usableKeys.includes(ck));
       if (missingSouv.length > 0 && (bot.styleKey === 'souvenirs' || Math.random() < 0.65)) {
         missingSouv.sort((a, b) => {
           const ca = world.cities[a], cb = world.cities[b];
@@ -136,15 +228,15 @@
 
       // 2. Prioritera obesökt världsdel om boten fortfarande behöver fler världsdelar
       if ((bot.visitedRegions || []).length < (bot.requiredRegions || 4)) {
-        const newRegCities = allKeys.filter(k => !bot.visitedRegions.includes(world.cities[k].region));
+        const newRegCities = usableKeys.filter(k => !bot.visitedRegions.includes(world.cities[k].region));
         if (newRegCities.length > 0) {
           return newRegCities[Math.floor(Math.random() * newRegCities.length)];
         }
       }
 
       // 3. Obesökt stad relativt nära (smarta rutter)
-      const unvisited = allKeys.filter(k => !(bot.visitedCities || []).includes(k));
-      const pool = unvisited.length > 0 ? unvisited : allKeys;
+      const unvisited = usableKeys.filter(k => !(bot.visitedCities || []).includes(k));
+      const pool = unvisited.length > 0 ? unvisited : usableKeys;
       pool.sort((a, b) => {
         const ca = world.cities[a], cb = world.cities[b];
         return distKm(cur.lat, cur.lon, ca.lat, ca.lon) - distKm(cur.lat, cur.lon, cb.lat, cb.lon);
@@ -153,13 +245,17 @@
       return topSlice[Math.floor(Math.random() * topSlice.length)];
     }
 
-    // Mindre optimal (Turist): slumpmässig stad
-    return allKeys[Math.floor(Math.random() * allKeys.length)];
+    // Mindre optimal (Turist): slumpmässig fri stad
+    return usableKeys[Math.floor(Math.random() * usableKeys.length)];
   }
 
-  function simulateOneAction(bot, diff, world, currentDay, newsLog, jobRecords) {
+  function simulateOneAction(bot, diff, world, currentDay, newsLog, jobRecords, extraCtx) {
     const city = world.cities[bot.city];
     if (!city) return;
+    const blockedRoutes = extraCtx && extraCtx.blockedRoutes;
+    const cityClaims = extraCtx && extraCtx.cityClaims;
+    const openContracts = extraCtx && extraCtx.openContracts;
+    const claimedContracts = extraCtx && extraCtx.claimedContracts;
 
     // 0. Klar med resan?
     if (hasMetAllGoals(bot) && bot.city === bot.homeCity && (bot.travelHistory || []).length > 0) {
@@ -189,7 +285,6 @@
         pushNews(newsLog, currentDay, `${bot.name} tog yrkeskompetens i ${city.name} (${score}/6 rätt).`);
       }
 
-      // Sätt bot-jobbrekord i staden om det är starkt (minst 4/6)
       if (jobRecords && score >= 4) {
         const recKey = `${bot.city}_0`;
         const prev = jobRecords[recKey];
@@ -219,11 +314,11 @@
       }
     }
 
-    // 3. Besök närliggande världsarv ibland (särskilt Marco / Mästerresenär)
+    // 3. Besök närliggande världsarv ibland
     if (world.wonders && (bot.styleKey === 'wonders' ? Math.random() < 0.35 : Math.random() < 0.14)) {
       const nearbyW = Object.keys(world.wonders).find(wk => {
         const w = world.wonders[wk];
-        return w && w.nearestCity === bot.city && !bot.doneWonders.includes(wk);
+        return w && w.from === bot.city && !bot.doneWonders.includes(wk);
       });
       if (nearbyW && bot.cash >= 600) {
         bot.cash -= 350;
@@ -235,7 +330,7 @@
       }
     }
 
-    // 4. Samla stadsstämpel (sevärdheter)
+    // 4. Samla stadsstämpel (och muta in staden om den är ledig!)
     const alreadyStamped = bot.stamps.includes(bot.city);
     const wantsStamp = !alreadyStamped && (bot.styleKey === 'stamps' ? Math.random() < 0.78 : Math.random() < 0.55);
     if (wantsStamp) {
@@ -243,25 +338,34 @@
       bot.cityProgress[bot.city] = prog;
       if (prog >= 3) {
         bot.stamps.push(bot.city);
-        pushNews(newsLog, currentDay, `${bot.name} säkrade ny pass-stämpel i ${city.name} (${bot.stamps.length} st).`);
+        if (cityClaims && !cityClaims[bot.city]) {
+          cityClaims[bot.city] = { holder: bot.name, holderId: bot.id, color: bot.color, isPlayer: false, day: currentDay };
+          bot.claimedCitiesCount = (bot.claimedCitiesCount || 0) + 1;
+          bot.cash += 400;
+          pushNews(newsLog, currentDay, `🚩 ${bot.name} var först att stämpla & muta in ${city.name} (+400 kr)!`);
+        } else {
+          pushNews(newsLog, currentDay, `${bot.name} säkrade ny pass-stämpel i ${city.name} (${bot.stamps.length} st).`);
+        }
       }
       return;
     }
 
-    // 5. Res vidare till nästa stad!
-    const nextKey = chooseNextCity(bot, diff, world);
+    // 5. Res vidare till nästa stad (och blockera sträckan i 3 dagar!)
+    const nextKey = chooseNextCity(bot, diff, world, blockedRoutes, currentDay);
     if (!nextKey || !world.cities[nextKey]) return;
     const nextCity = world.cities[nextKey];
     const km = distKm(city.lat, city.lon, nextCity.lat, nextCity.lon);
-    const ticketCost = Math.min(2400, Math.max(380, Math.round(km * (bot.styleKey === 'budget' ? 0.19 : 0.24))));
+    const blocked = isRouteBlocked(blockedRoutes, bot.city, nextKey, currentDay, bot.id);
+    let ticketCost = Math.min(2400, Math.max(380, Math.round(km * (bot.styleKey === 'budget' ? 0.19 : 0.24))));
+    if (blocked) ticketCost = Math.round(ticketCost * 1.6);
 
     if (bot.cash < ticketCost + 250) {
-      // För lite pengar för resan -> ta ett snabbjobb nästa drag
       bot.cash += 500;
       return;
     }
 
     bot.cash -= ticketCost;
+    blockRoute(blockedRoutes, bot.city, nextKey, currentDay, bot.id, bot.name, bot.color);
     bot.travelHistory.push({ from: bot.city, to: nextKey, dist: km, day: currentDay });
     if (bot.travelHistory.length > 16) bot.travelHistory.shift();
     bot.city = nextKey;
@@ -270,9 +374,28 @@
       bot.visitedRegions.push(nextCity.region);
       pushNews(newsLog, currentDay, `${bot.name} nådde en ny världsdel (${nextCity.region}) via ${nextCity.name}!`);
     }
+
+    // 6. Kolla om boten just knep ett öppet bonuskontrakt!
+    if (Array.isArray(openContracts) && openContracts.length > 0) {
+      for (let i = openContracts.length - 1; i >= 0; i--) {
+        const c = openContracts[i];
+        const prog = getContractProgress(c, bot, world);
+        if (prog.done >= prog.total) {
+          bot.cash += c.rewardCash;
+          bot.contractBonusPoints = (bot.contractBonusPoints || 0) + c.rewardPoints;
+          if (Array.isArray(claimedContracts)) {
+            claimedContracts.push({ ...c, winner: bot.name, color: bot.color, isPlayer: false, day: currentDay });
+          }
+          pushNews(newsLog, currentDay, `📜 ${bot.name} knep bonuskontraktet "${c.title}" (+${c.rewardCash} kr & +${c.rewardPoints} p)!`);
+          openContracts.splice(i, 1);
+          const rep = drawReplacementContract(openContracts, claimedContracts);
+          if (rep) openContracts.push(rep);
+        }
+      }
+    }
   }
 
-  function advanceBotsToDay(bots, targetDay, world, newsLog, jobRecords) {
+  function advanceBotsToDay(bots, targetDay, world, newsLog, jobRecords, extraCtx) {
     if (!Array.isArray(bots) || bots.length === 0 || !world) return;
     bots.forEach(bot => {
       if (bot.finished) return;
@@ -281,13 +404,12 @@
       for (let d = startD + 1; d <= targetDay; d++) {
         if (bot.finished) break;
         bot.day = d;
-        // Liten daglig hotellkostnad så bottarna lever under samma ekonomi
         bot.cash = Math.max(0, bot.cash - 180);
         bot.actionBudget = (bot.actionBudget || 0) + diff.actionsPerDay;
         let safety = 0;
         while (bot.actionBudget >= 1 && !bot.finished && safety < 4) {
           bot.actionBudget -= 1;
-          simulateOneAction(bot, diff, world, d, newsLog, jobRecords);
+          simulateOneAction(bot, diff, world, d, newsLog, jobRecords, extraCtx);
           safety++;
         }
       }
@@ -349,10 +471,17 @@
   window.GT_BOTS = {
     BOT_PROFILES,
     DIFFICULTY_PROFILES,
+    CONTRACT_CATALOG,
     createBots,
     advanceBotsToDay,
     computeScore,
     getStandings,
-    getBotsInCity
+    getBotsInCity,
+    routeKey,
+    isRouteBlocked,
+    blockRoute,
+    initOpenContracts,
+    getContractProgress,
+    drawReplacementContract
   };
 })();

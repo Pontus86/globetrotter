@@ -278,7 +278,13 @@
     bots: [],
     botNews: [],
     botJobRecords: {},
-    botDuelDoneToday: {}
+    botDuelDoneToday: {},
+    blockedRoutes: {},
+    cityClaims: {},
+    openContracts: [],
+    claimedContracts: [],
+    contractBonusPoints: 0,
+    claimedCitiesCount: 0
   };
 
   const BACKPACK_TIERS = [
@@ -511,7 +517,13 @@
         bots: state.bots || [],
         botNews: state.botNews || [],
         botJobRecords: state.botJobRecords || {},
-        botDuelDoneToday: state.botDuelDoneToday || {}
+        botDuelDoneToday: state.botDuelDoneToday || {},
+        blockedRoutes: state.blockedRoutes || {},
+        cityClaims: state.cityClaims || {},
+        openContracts: state.openContracts || [],
+        claimedContracts: state.claimedContracts || [],
+        contractBonusPoints: state.contractBonusPoints || 0,
+        claimedCitiesCount: state.claimedCitiesCount || 0
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
     } catch (e) {}
@@ -573,15 +585,67 @@
     state.botNews = Array.isArray(d.botNews) ? d.botNews : [];
     state.botJobRecords = d.botJobRecords || {};
     state.botDuelDoneToday = d.botDuelDoneToday || {};
+    state.blockedRoutes = d.blockedRoutes || {};
+    state.cityClaims = d.cityClaims || {};
+    state.openContracts = Array.isArray(d.openContracts) && d.openContracts.length > 0
+      ? d.openContracts
+      : (window.GT_BOTS ? window.GT_BOTS.initOpenContracts() : []);
+    state.claimedContracts = Array.isArray(d.claimedContracts) ? d.claimedContracts : [];
+    state.contractBonusPoints = d.contractBonusPoints || 0;
+    state.claimedCitiesCount = d.claimedCitiesCount || 0;
     window.GT_ACTIVE_BOTS = state.bots;
+    window.GT_CITY_CLAIMS = state.cityClaims;
     ensureJourneyGoals();
     return true;
   }
 
+  function checkPlayerOpenContracts() {
+    if (!window.GT_BOTS) return;
+    if (!Array.isArray(state.openContracts) || state.openContracts.length === 0) {
+      state.openContracts = window.GT_BOTS.initOpenContracts();
+    }
+    const pEntry = {
+      visitedCities: Array.from(state.visitedCities || []),
+      doneWonders: Array.from(state.doneWonders || []),
+      competencies: state.competencies || [],
+      stamps: state.stamps || []
+    };
+    let wonAny = false;
+    for (let i = state.openContracts.length - 1; i >= 0; i--) {
+      const c = state.openContracts[i];
+      const prog = window.GT_BOTS.getContractProgress(c, pEntry, W);
+      if (prog.done >= prog.total) {
+        wonAny = true;
+        changeCash(c.rewardCash, `Bonuskontrakt: ${c.title}`);
+        state.contractBonusPoints = (state.contractBonusPoints || 0) + c.rewardPoints;
+        state.claimedContracts.push({ ...c, winner: state.playerFirstName || 'Du', color: '#ffd875', isPlayer: true, day: state.day });
+        addJournal(`Knep bonuskontraktet "${c.title}" först av alla (+${c.rewardCash} kr & +${c.rewardPoints} p)!`);
+        AudioMgr.play('fanfar');
+        showToast(`📜 KONTRAKT KNIPET: ${c.title}! +${c.rewardCash} kr & +${c.rewardPoints} p!`, 4200);
+        state.openContracts.splice(i, 1);
+        const rep = window.GT_BOTS.drawReplacementContract(state.openContracts, state.claimedContracts);
+        if (rep) state.openContracts.push(rep);
+      }
+    }
+    if (wonAny) {
+      saveGame();
+      updateOpponentHUD();
+    }
+  }
+
   function syncBotsToCurrentDay() {
     window.GT_ACTIVE_BOTS = state.bots || [];
+    window.GT_CITY_CLAIMS = state.cityClaims || {};
     if (!window.GT_BOTS || !Array.isArray(state.bots) || state.bots.length === 0) return;
-    window.GT_BOTS.advanceBotsToDay(state.bots, state.day, W, state.botNews, state.botJobRecords);
+    if (!Array.isArray(state.openContracts) || state.openContracts.length === 0) {
+      state.openContracts = window.GT_BOTS.initOpenContracts();
+    }
+    window.GT_BOTS.advanceBotsToDay(state.bots, state.day, W, state.botNews, state.botJobRecords, {
+      blockedRoutes: state.blockedRoutes,
+      cityClaims: state.cityClaims,
+      openContracts: state.openContracts,
+      claimedContracts: state.claimedContracts
+    });
     updateOpponentHUD();
   }
 
@@ -676,21 +740,41 @@
     return state.backpack.some(item => item.id === itemId);
   }
 
-  // Kontrollera om staden blev gjord (visas INTE på meny i förväg – belönas med stämpel!)
+  // Kontrollera om staden blev gjord (visas INTE på meny i förväg – belönas med stämpel & först-på-plats-inmutning!)
   function checkCityCompletion() {
     const current = W.cities[state.city];
     if (!current) return;
     const allDone = current.highlights.every(h => state.donePlaces.has(h));
     if (allDone && !state.stamps.includes(state.city)) {
       state.stamps.push(state.city);
-      triggerStampCelebration(current);
+      let firstClaimBonus = false;
+      if (!state.cityClaims) state.cityClaims = {};
+      if (!state.cityClaims[state.city]) {
+        state.cityClaims[state.city] = {
+          holder: state.playerFirstName || 'Du',
+          holderId: 'player',
+          color: '#ffd875',
+          isPlayer: true,
+          day: state.day
+        };
+        window.GT_CITY_CLAIMS = state.cityClaims;
+        state.claimedCitiesCount = (state.claimedCitiesCount || 0) + 1;
+        changeCash(400, `Först-på-plats-bonus i ${current.name}`);
+        addJournal(`Mutade in ${current.name} som första resenär (+400 kr & egen flagga på jordgloben)!`);
+        firstClaimBonus = true;
+      }
+      checkPlayerOpenContracts();
+      triggerStampCelebration(current, firstClaimBonus);
     }
   }
 
-  function triggerStampCelebration(city) {
+  function triggerStampCelebration(city, firstClaimBonus = false) {
     AudioMgr.play('stamp');
     AudioMgr.play('fanfar');
     const cityKey = Object.keys(W.cities).find(k => W.cities[k] === city) || state.city;
+    const claimHtml = firstClaimBonus
+      ? `<div style="margin:8px auto; padding:6px 12px; background:#fff4d2; border:2px solid #c99a45; border-radius:6px; color:#7a4f12; font-size:12.5px; max-width:420px;"><b>🚩 FÖRST PÅ PLATS!</b> Du mutade in ${city.name} före alla andra (+400 kr &amp; gul flagga på jordgloben)!</div>`
+      : '';
 
     const html = `
       <div class="card-modal" style="text-align:center;">
@@ -700,6 +784,7 @@
           <p style="font-size:16px; font-weight:600; color:#2f7d43; margin:0;">
             Du har gjort alla höjdpunkter i ${city.name}!
           </p>
+          ${claimHtml}
           <p style="font-size:13px; color:#5b3b1c; max-width:440px;">
             Staden räknas nu som officiellt gjord. Stämpeln har förts in i ditt officiella pass.
           </p>
@@ -3499,14 +3584,16 @@
           const dest = W.cities[tr.to];
           if (!dest) return;
           const dist = getDistanceBetweenCities(state.city, tr.to);
+          const block = window.GT_BOTS && window.GT_BOTS.isRouteBlocked(state.blockedRoutes, state.city, tr.to, state.day, 'player');
+          const effPrice = block ? Math.round(tr.price * 1.6) : tr.price;
           trainsHtml += `
-            <div class="flap-row" style="border-color:rgba(110, 210, 145, 0.35); background:rgba(14, 38, 24, 0.65);">
+            <div class="flap-row" style="border-color:${block ? 'rgba(255,107,107,0.55)' : 'rgba(110, 210, 145, 0.35)'}; background:${block ? 'rgba(54, 18, 18, 0.65)' : 'rgba(14, 38, 24, 0.65)'};">
               <div>
-                <div class="flap-dest" style="color:#a7f3c0;">🚂 ${tr.name.toUpperCase()}</div>
-                <div class="flap-meta">TÅGLINJE TILL ${dest.name.toUpperCase()} (${dist.toLocaleString('sv-SE')} KM) · RESTID: ${tr.hours} TIM · PRIS: ${tr.price} KR</div>
+                <div class="flap-dest" style="color:${block ? '#ffb3b3' : '#a7f3c0'};">🚂 ${tr.name.toUpperCase()} ${block ? `<span style="font-size:10px; background:#a82828; color:#fff; padding:1px 6px; border-radius:3px; margin-left:4px;">🚫 FULLBOKAT (${block.by} t.o.m. Dag ${block.untilDay})</span>` : ''}</div>
+                <div class="flap-meta">TÅGLINJE TILL ${dest.name.toUpperCase()} (${dist.toLocaleString('sv-SE')} KM) · RESTID: ${tr.hours} TIM · ${block ? `NÖDPLATS +60 %: ${effPrice} KR` : `PRIS: ${tr.price} KR`}</div>
               </div>
               <div>
-                <button class="ticket-btn" style="background:linear-gradient(180deg,#3b8d56 0%,#235c36 100%); color:#f7fff9;" onclick="window.GT.startTravel('${tr.to}', ${tr.price}, ${tr.hours}, false, true)">Köp tågbiljett<br>${tr.price} kr</button>
+                <button class="ticket-btn" style="background:${block ? 'linear-gradient(180deg,#8c2d2d 0%,#521616 100%)' : 'linear-gradient(180deg,#3b8d56 0%,#235c36 100%)'}; color:#f7fff9;" onclick="window.GT.startTravel('${tr.to}', ${effPrice}, ${tr.hours}, false, true)">${block ? 'Nödplats (+60%)' : 'Köp tågbiljett'}<br>${effPrice} kr</button>
               </div>
             </div>
           `;
@@ -3627,6 +3714,8 @@
         price = Math.round(price * destEv.flightMult);
       }
 
+      const routeBlock = window.GT_BOTS && window.GT_BOTS.isRouteBlocked(state.blockedRoutes, state.city, destKey, state.day, 'player');
+      const finalPrice = routeBlock ? Math.round(price * 1.6) : price;
       const isClosed = entry.status !== 'open';
       const closedLabel = entry.status === 'cancelled' ? 'INSTÄLLD' : 'FULLBOKAD';
 
@@ -3639,14 +3728,15 @@
               ${dest.name.toUpperCase()} (${dest.country.toUpperCase()})
               ${entry.standby ? `<span class="flight-standby">STAND BY -25%</span>` : ''}
               ${dealPercent > 0 ? `<span class="flight-deal">SISTA MINUTEN -${dealPercent}%</span>` : ''}
+              ${routeBlock ? `<span style="font-size:9.5px; background:#a82828; color:#fff; padding:1px 6px; border-radius:3px; margin-left:4px;">🚫 SPÅR UPPTAGET AV ${routeBlock.by.toUpperCase()} (t.o.m. Dag ${routeBlock.untilDay})</span>` : ''}
             </div>
-            <div class="flap-meta">STRÄCKA: ${dist.toLocaleString('sv-SE')} KM · FLYGTID: ${hours} TIM · PRIS: ${price} KR</div>
+            <div class="flap-meta">STRÄCKA: ${dist.toLocaleString('sv-SE')} KM · FLYGTID: ${hours} TIM · ${routeBlock ? `NÖDBILJETT +60 %: ${finalPrice} KR` : `PRIS: ${price} KR`}</div>
             ${destEv ? `<div class="flap-event-note">* ${destEv.title}: ${destEv.effectText}</div>` : ''}
           </div>
           <div>
             ${isClosed
               ? `<span class="flap-status-closed">${closedLabel}</span>`
-              : `<button class="ticket-btn" onclick="window.GT.startTravel('${destKey}', ${price}, ${hours}, false)">Köp biljett<br>${price} kr</button>`}
+              : `<button class="ticket-btn" style="${routeBlock ? 'background:linear-gradient(180deg,#8c2d2d 0%,#521616 100%); color:#fff;' : ''}" onclick="window.GT.startTravel('${destKey}', ${finalPrice}, ${hours}, false)">${routeBlock ? 'Nödbiljett (+60%)' : 'Köp biljett'}<br>${finalPrice} kr</button>`}
           </div>
         </div>
       `;
@@ -3950,7 +4040,11 @@
         addHours(timeValue);
       }
 
-      // Spara resrutten i reshistoriken så den röda linjen syns permanent på globen!
+      // Spara resrutten i reshistoriken & blockera sträckan i 3 dagar för övriga resenärer (Ticket to Ride-effekt!)
+      if (window.GT_BOTS) {
+        if (!state.blockedRoutes) state.blockedRoutes = {};
+        window.GT_BOTS.blockRoute(state.blockedRoutes, state.city, destKey, state.day, 'player', state.playerFirstName || 'Du', '#ffd875');
+      }
       state.travelHistory.push({
         from: state.city,
         to: destKey,
@@ -3960,6 +4054,8 @@
       addJournal(`${isBoat ? 'Seglade med oceanångare' : 'Flög'} från ${origin.name} till ${dest.name} (${dist.toLocaleString('sv-SE')} km).`);
 
       state.city = destKey;
+      state.visitedCities.add(destKey);
+      checkPlayerOpenContracts();
       AudioMgr.play('bell');
       renderCity();
       showToast(`Välkommen till ${dest.name}!`, 3000);
@@ -5183,10 +5279,17 @@
     state.botNews = [];
     state.botJobRecords = {};
     state.botDuelDoneToday = {};
+    state.blockedRoutes = {};
+    state.cityClaims = {};
+    state.openContracts = window.GT_BOTS ? window.GT_BOTS.initOpenContracts() : [];
+    state.claimedContracts = [];
+    state.contractBonusPoints = 0;
+    state.claimedCitiesCount = 0;
     state.bots = (window.GT_BOTS && chosenBotCount > 0)
       ? window.GT_BOTS.createBots(chosenBotCount, chosenBotDiff, chosenStart, W)
       : [];
     window.GT_ACTIVE_BOTS = state.bots;
+    window.GT_CITY_CLAIMS = state.cityClaims;
 
     state.goals = generateJourneyGoals();
     const goalNames = state.goals.souvenirCities.map(ck => W.cities[ck]?.name || ck).join(', ');
@@ -5269,7 +5372,9 @@
       goalSouvenirsDone: souvDone,
       wonders: state.doneWonders.size,
       cash: state.cash,
-      finished: false
+      finished: false,
+      contractBonusPoints: state.contractBonusPoints || 0,
+      claimedCitiesCount: state.claimedCitiesCount || 0
     };
   }
 
@@ -5369,12 +5474,36 @@
          </div>`
       : '';
 
+    const openContracts = (Array.isArray(state.openContracts) && state.openContracts.length > 0)
+      ? state.openContracts
+      : (window.GT_BOTS ? window.GT_BOTS.initOpenContracts() : []);
+    const pContractEntry = {
+      visitedCities: Array.from(state.visitedCities || []),
+      doneWonders: Array.from(state.doneWonders || []),
+      competencies: state.competencies || [],
+      stamps: state.stamps || []
+    };
+    const contractsHtml = openContracts.map(c => {
+      const pr = window.GT_BOTS ? window.GT_BOTS.getContractProgress(c, pContractEntry, W) : { done: 0, total: 1 };
+      return `
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:5px 0; border-bottom:1px dotted rgba(201,154,69,0.28); font-size:11.5px;">
+          <div>
+            <b style="color:#ffd875;">📜 ${c.title}</b> <span style="color:#cbb997;">(${pr.done}/${pr.total})</span>
+            <div style="font-size:10.5px; color:#d8cbb2;">${c.desc}</div>
+          </div>
+          <div style="text-align:right; white-space:nowrap; font-size:10.5px; color:#8cf0a4; font-weight:bold;">
+            +${c.rewardCash} kr<br>+${c.rewardPoints} p
+          </div>
+        </div>
+      `;
+    }).join('');
+
     const html = `
       <div class="scene-fullscreen" style="background:rgba(10,7,4,0.86); align-items:center; justify-content:center; padding:12px;">
         <div class="setup-modal-card">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
             <div>
-              <div class="setup-kicker">GLOBETROTTER · TÄVLINGSTABELL</div>
+              <div class="setup-kicker">GLOBETROTTER · TÄVLINGSTABELL &amp; KONTRAKT</div>
               <h2 class="setup-title" style="margin-bottom:4px;">Topplista (Dag ${state.day} av ${W.dayLimit})</h2>
             </div>
             ${exitIconBtn('Stäng topplistan')}
@@ -5395,9 +5524,51 @@
             <tbody>${rowsHtml}</tbody>
           </table>
 
-          <div class="setup-section" style="margin-top:12px; margin-bottom:0;">
+          <div class="setup-section" style="margin-top:10px;">
+            <div class="setup-label">Öppna bonuskontrakt (Först till kvarn!)</div>
+            ${contractsHtml}
+          </div>
+
+          <div class="setup-section" style="margin-top:10px; margin-bottom:0;">
             <div class="setup-label">Senaste nytt från medresenärerna</div>
             ${newsHtml}
+          </div>
+        </div>
+      </div>
+    `;
+    showModal(html);
+  }
+
+  function openMenuModal() {
+    AudioMgr.play('klick');
+    const soundOn = AudioMgr.enabled !== false;
+    const html = `
+      <div class="scene-fullscreen" style="background:rgba(10,7,4,0.88); align-items:center; justify-content:center; padding:12px;">
+        <div class="setup-modal-card" style="max-width:440px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px;">
+            <div>
+              <div class="setup-kicker">GLOBETROTTER</div>
+              <h2 class="setup-title" style="margin:2px 0 0;">Meny &amp; Inställningar</h2>
+            </div>
+            ${exitIconBtn('Stäng menyn')}
+          </div>
+
+          <div class="setup-section">
+            <div class="setup-label">Inställningar</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+              <span style="font-size:13px;">Ljud &amp; bakgrundsmusik</span>
+              <button type="button" class="setup-pill-btn ${soundOn ? 'active' : ''}" id="menuSoundToggleBtn" onclick="window.GT.toggleSound()">
+                ${soundOn ? '🔊 LJUD: PÅ' : '🔇 LJUD: AV'}
+              </button>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
+            ${(state.bots && state.bots.length > 0) ? `<button class="globe-brass-btn" style="padding:10px 14px; font-size:13px; text-align:left;" onclick="window.GT.openBotStandingsModal()">🏆 Topplista &amp; Öppna bonuskontrakt</button>` : ''}
+            <button class="globe-brass-btn" style="padding:10px 14px; font-size:13px; text-align:left;" onclick="window.GT.openNewGameSetup()">🗺️ Starta nytt spel (välj stad &amp; bottar)</button>
+            <button class="globe-brass-btn" style="padding:10px 14px; font-size:13px; text-align:left; border-color:#38b6ff; color:#8cd7ff;" onclick="window.GT.openMultiplayerLobby()">⚡ Online Duell (2 spelare)</button>
+            <button class="globe-brass-btn" style="padding:10px 14px; font-size:13px; text-align:left;" onclick="window.GT.openStartScreen()">🏠 Till startskärmen</button>
+            <button class="stamp-action-btn" style="padding:10px 14px; font-size:13px; margin-top:4px;" onclick="window.GT.closeModal()">Fortsätt spela »</button>
           </div>
         </div>
       </div>
@@ -5884,6 +6055,7 @@
     continueSavedGame,
     openStartScreen,
     openNewGameSetup,
+    openMenuModal,
     openBotStandingsModal,
     startBotDuel,
     openMultiplayerLobby,
@@ -5894,12 +6066,19 @@
     toggleSound() {
       const active = AudioMgr.toggle();
       if (window.AmbientMgr) window.AmbientMgr.setEnabled(active);
-      el.btnSound.textContent = active ? 'LJUD: PÅ' : 'LJUD: AV';
+      if (el.btnSound) el.btnSound.textContent = active ? 'LJUD: PÅ' : 'LJUD: AV';
+      const mBtn = document.getElementById('menuSoundToggleBtn');
+      if (mBtn) {
+        mBtn.textContent = active ? '🔊 LJUD: PÅ' : '🔇 LJUD: AV';
+        mBtn.classList.toggle('active', active);
+      }
       showToast(active ? "Ljud & musik påslaget" : "Ljud & musik avstängt", 1200);
     }
   };
 
-  el.btnSound.onclick = () => { window.GT.toggleSound(); };
+  if (el.btnSound) {
+    el.btnSound.onclick = () => { window.GT.toggleSound(); };
+  }
 
   // Starta en ständigt snurrande 3D-miniglob i dockan (BackPacker 2 Landsnurr-känsla!)
   function initDockMiniGlobe() {

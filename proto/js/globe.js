@@ -1221,6 +1221,41 @@
         });
       }
 
+      // 6e. Inmutade städer (färgade flaggor/ringar för den spelare eller bot som var först i staden!)
+      if (!this.mini && !this.quizMode && window.GT_CITY_CLAIMS && window.GT_WORLD && window.GT_WORLD.cities) {
+        Object.entries(window.GT_CITY_CLAIMS).forEach(([cityKey, claim]) => {
+          const c = window.GT_WORLD.cities[cityKey];
+          if (!c || !claim) return;
+          const proj = this.project(c.lat, c.lon);
+          if (!proj.visible) return;
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(proj.x, proj.y, 7.2 * zoomScale, 0, Math.PI * 2);
+          ctx.strokeStyle = claim.color || '#ffd875';
+          ctx.lineWidth = 2.2;
+          ctx.stroke();
+
+          // Liten flaggvimpel på höger sida om stadspricken
+          const fx = proj.x + 6 * zoomScale;
+          const fy = proj.y - 10 * zoomScale;
+          ctx.beginPath();
+          ctx.moveTo(fx, proj.y);
+          ctx.lineTo(fx, fy);
+          ctx.strokeStyle = '#f5e6c8';
+          ctx.lineWidth = 1.3;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(fx, fy);
+          ctx.lineTo(fx + 9 * zoomScale, fy + 3 * zoomScale);
+          ctx.lineTo(fx, fy + 6 * zoomScale);
+          ctx.closePath();
+          ctx.fillStyle = claim.color || '#ffd875';
+          ctx.fill();
+          ctx.restore();
+        });
+      }
+
       // 7. Quiz-nålar (spelarens gissning + rätt mål med avståndsbåge!)
       if (!this.mini && (this.pinMarker || this.targetMarker)) {
         ctx.save();
