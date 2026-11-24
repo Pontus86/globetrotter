@@ -439,6 +439,19 @@ Bygg A först och B sedan.
 7. **Skydd mot fusk:** avgifter vid byte och spärr mot att samma föremål
    byts fram och tillbaka mellan samma spelare.
 
+## 10b. Alternativa spellägen: Jaktlägen (Polis & Förbrytare)
+
+Utöver det klassiska reseäventyret passar 3D-jordgloben, de 67 städerna och ruttnätet (`proto/js/routes.js`) utmärkt för fristående jaktlägen med dold information, spårning och taktik:
+
+1. **Interpol-jakten (Smitta-jakt — implementerad som prototyp i `proto/js/interpol.js`):**
+   - 1 **Interpol-agent** jagar 5 **Mästertjuvar** över jordgloben (spelaren väljer roll: *Agent* eller *Rymling*).
+   - Tjuvarnas exakta position är dold utom var 3:e dag eller när de tar flyg; tåg och båt döljer spåret.
+   - Varje gripen tjuv **omvänds till Interpol-agent** och börjar aktivt jaga de återstående tills alla är fångade eller sista rymlingen överlever tidsgränsen.
+2. **Mästertjuven (1 mot alla — *Scotland Yard* jorden runt):**
+   - 1 hemlig mästertjuv försöker stjäla 3 föremål i olika världsdelar med begränsat antal dolda biljetter (båt/nattåg), medan 4 agenter (spelare eller bottar) samarbetar på 3D-jordgloben för att ringa in och skära av flyktvägarna.
+3. **Skuggan bland turister (Hemlig sabotör / lönnmördare):**
+   - Alla 6 resenärer jagar vanliga passmål samtidigt, men 1 spelare är hemlig **Sabotör/Lönnmördare** som kan slå ut eller omvända andra resenärer i samma stad. På hotellbarer, bibliotek och i tidningen samlar övriga resenärer ledtrådar om vem som var i staden dagen innan för att avslöja sabotören.
+
 ## 11. Teknisk arkitektur (förslag)
 
 - **Klient:** vanilla JS/HTML/CSS till att börja med.
