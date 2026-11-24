@@ -833,14 +833,19 @@
     );
     el.spotsContainer.appendChild(shopSpot);
 
-    // 3b. Bibliotek på kartan (med stadens eget bibliotek på knappen! Öppnar landets uppslagsbok)
+    // 3b. Bibliotek på kartan (med cirkelmätare som visar lokalkännedom % för aktuell världsdel!)
     const cf = (window.GT_COUNTRY_FACTS && window.GT_COUNTRY_FACTS[state.city]) || null;
     if (cf && posMap.library) {
+      const libKb = getCurrentKnowledgeBonuses(state.city);
+      const ringColor = libKb.tier === 2 ? '#66e38c' : (libKb.tier === 1 ? '#ffd875' : '#c99a45');
       const libSpot = createSpot(
         posMap.library[0], posMap.library[1],
         'service library',
-        `<div class="spot-badge"><img class="spot-model-img" src="${cf.libraryPhoto}" onerror="this.src='assets/photos/libraries/lib_stockholm.jpg'" alt="Bibliotek"></div>`,
-        `Bibliotek`,
+        `<div class="spot-badge lib-progress-ring" style="--lib-pct:${libKb.pct}%; --lib-color:${ringColor};" title="Bibliotek · Lokalkännedom i ${city.region}: ${libKb.pct}%">
+           <img class="spot-model-img" src="${cf.libraryPhoto}" onerror="this.src='assets/photos/libraries/lib_stockholm.jpg'" alt="Bibliotek">
+           <span class="lib-pct-pill" style="border-color:${ringColor}; color:${ringColor};">${libKb.pct}%</span>
+         </div>`,
+        `Bibliotek · ${libKb.pct}%`,
         () => openLibraryModal()
       );
       el.spotsContainer.appendChild(libSpot);
@@ -1654,7 +1659,10 @@
 
     const html = `
       <div class="scene-fullscreen scene-newspaper-full">
-        <div class="broadsheet-paper">
+        <div class="broadsheet-paper" style="position:relative;">
+          <div style="position:absolute; top:8px; right:8px; z-index:10;">
+            ${exitIconBtn('Vik ihop tidningen')}
+          </div>
           <div class="broadsheet-masthead">
             <div class="masthead-top-row">
               <div class="masthead-ear">
@@ -1701,7 +1709,6 @@
 
             <div class="broadsheet-footer">
               <span>Tryckt i ${city.name} · Globetrotter Press · Kontant lön vid godkänt arbetsprov</span>
-              ${exitIconBtn('Vik ihop tidningen')}
             </div>
           </div>
         </div>
@@ -1895,7 +1902,73 @@
     }
 
     let bodyHtml = '';
-    if (activeTab === 'history' && ch && Array.isArray(ch.timeline) && ch.timeline.length > 0) {
+    if (activeTab === 'knowledge') {
+      const curRegNorm = ROUTES.normRegion(city.region);
+      const kbNow = getCurrentKnowledgeBonuses(state.city);
+      const knownRegions = new Set();
+      Object.values(W.cities || {}).forEach(c => {
+        if (c && c.region) knownRegions.add(ROUTES.normRegion(c.region));
+      });
+      const regionOrder = ['europa', 'afrika', 'asien', 'oceanien', 'nordamerika', 'sydamerika', 'amerika']
+        .filter(r => knownRegions.has(r));
+      const regionLabel = (r) => ({
+        europa: 'Europa', afrika: 'Afrika', asien: 'Asien', oceanien: 'Oceanien',
+        nordamerika: 'Nordamerika', sydamerika: 'Sydamerika', amerika: 'Amerika'
+      }[r] || (r.charAt(0).toUpperCase() + r.slice(1)));
+
+      const barsHtml = regionOrder.map(rKey => {
+        const pct = (state.regionKnowledge && state.regionKnowledge[rKey]) || 0;
+        const rKb = ECON.getKnowledgeBonuses(pct, 0);
+        const barColor = rKb.tier === 2 ? '#2f7d43' : (rKb.tier === 1 ? '#c98a1c' : '#8c6832');
+        const statusTxt = rKb.tier === 2
+          ? 'Nivå 2 · +30% lön, +15% prutning, -10% resa'
+          : (rKb.tier === 1 ? 'Nivå 1 · +15% lön, +8% prutning' : 'Nybörjare · Nå 30% för Nivå 1');
+        const isCurrent = rKey === curRegNorm;
+        return `
+          <div class="encyc-know-row ${isCurrent ? 'current' : ''}">
+            <div class="encyc-know-head">
+              <span><b>${regionLabel(rKey)}</b> ${isCurrent ? '<small>(Här är du nu)</small>' : ''}</span>
+              <span style="font-weight:bold; color:${barColor};">${pct} %</span>
+            </div>
+            <div class="encyc-know-bar-bg">
+              <div class="encyc-know-bar-fill" style="width:${pct}%; background:${barColor};"></div>
+              <span class="encyc-know-mark" style="left:30%;" title="Nivå 1 (30%)"></span>
+              <span class="encyc-know-mark" style="left:60%;" title="Nivå 2 (60%)"></span>
+            </div>
+            <div class="encyc-know-sub">${statusTxt}</div>
+          </div>
+        `;
+      }).join('');
+
+      bodyHtml = `
+        <div class="encyc-know-grid">
+          <div class="encyc-know-guide">
+            <div class="encyc-section-title">SÅ FUNGERAR LOKALKÄNNEDOM &amp; RESEFLYT</div>
+            <p class="encyc-know-intro">
+              Varje gång du svarar rätt på frågor i en världsdel (på <b>sevärdheter</b>, <b>jobbpass</b> eller <b>världsarv</b>) stiger din lokalkännedom i den världsdelen med <b>+${BAL.KNOWLEDGE_GAIN_PER_CORRECT || 12} %</b> (+${Math.round((BAL.KNOWLEDGE_GAIN_PER_CORRECT || 12) / 2)} % vid delpoäng).
+            </p>
+            <div class="encyc-know-tier-list">
+              <div class="encyc-know-tier">
+                <b>Nivå 1 (≥ 30 % lokalkännedom)</b>
+                <span>+15 % högre lön på alla jobbpass och +8 % bättre chans när du prutar i världsdelen.</span>
+              </div>
+              <div class="encyc-know-tier gold">
+                <b>Nivå 2 (≥ 60 % lokalkännedom)</b>
+                <span>+30 % högre jobblön, +15 % bättre prutchans <b>och -10 % rabatt på alla flyg-, tåg- och båtbiljetter</b> härifrån!</span>
+              </div>
+              <div class="encyc-know-tier streak">
+                <b>🔥 Reseflyt (3+ rätt i rad) · Nu: ${state.streak || 0} i rad</b>
+                <span>Ger ytterligare <b>+10 % extra jobblön</b> så länge du inte svarar fel (${kbNow.streakActive ? 'AKTIVT JUST NU!' : `svara rätt på ${Math.max(1, 3 - (state.streak || 0))} fråga/frågor till`}).</span>
+              </div>
+            </div>
+          </div>
+          <div class="encyc-know-regions">
+            <div class="encyc-section-title">DIN LOKALKÄNNEDOM PER VÄRLDSDEL</div>
+            <div class="encyc-know-list">${barsHtml}</div>
+          </div>
+        </div>
+      `;
+    } else if (activeTab === 'history' && ch && Array.isArray(ch.timeline) && ch.timeline.length > 0) {
       const safeIdx = Math.max(0, Math.min(ch.timeline.length - 1, timelineIdx));
       const item = ch.timeline[safeIdx];
       const itemImg = `assets/history/${item.id}.jpg`;
@@ -1988,6 +2061,7 @@
               <div class="encyc-tabs">
                 <button class="encyc-tab-btn ${activeTab === 'facts' ? 'active' : ''}" onclick="window.GT.openLibraryModal('facts', 0)">Fakta &amp; Karta</button>
                 <button class="encyc-tab-btn ${activeTab === 'history' ? 'active' : ''}" onclick="window.GT.openLibraryModal('history', 0)">Historia &amp; Tidslinje</button>
+                <button class="encyc-tab-btn ${activeTab === 'knowledge' ? 'active' : ''}" onclick="window.GT.openLibraryModal('knowledge', 0)">Lokalkännedom (${getCurrentKnowledgeBonuses(state.city).pct}%)</button>
               </div>
             </div>
 
@@ -3652,8 +3726,8 @@
             ${exitIconBtn('Stäng packningen')}
           </div>
 
-          <div style="flex:1; min-height:0; display:grid; grid-template-columns: 320px 1fr; gap:16px; align-items:center;">
-            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; background:radial-gradient(circle at center, rgba(60,42,24,0.55) 0%, rgba(12,8,5,0.85) 75%); border:2px solid #9e7537; border-radius:6px; box-shadow:inset 0 0 28px rgba(0,0,0,0.8);">
+          <div class="backpack-modal-grid">
+            <div class="backpack-3d-pane">
               <canvas id="backpackModalCanvas" width="300" height="360" style="width:100%; height:100%; max-height:360px; object-fit:contain;"></canvas>
             </div>
             <div class="room-dark-panel" style="height:100%; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
@@ -4713,10 +4787,16 @@
 
           <div class="setup-section">
             <div class="setup-label">Inställningar</div>
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px;">
               <span style="font-size:13px;">Ljud &amp; bakgrundsmusik</span>
               <button type="button" class="setup-pill-btn ${soundOn ? 'active' : ''}" id="menuSoundToggleBtn" onclick="window.GT.toggleSound()">
                 ${soundOn ? '🔊 LJUD: PÅ' : '🔇 LJUD: AV'}
+              </button>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+              <span style="font-size:13px;">Helskärmsläge (dölj adressfält)</span>
+              <button type="button" class="setup-pill-btn ${document.fullscreenElement ? 'active' : ''}" id="menuFullscreenBtn" onclick="window.GT.toggleFullscreen()">
+                ${document.fullscreenElement ? '⛶ HELSKÄRM: PÅ' : '⛶ HELSKÄRM'}
               </button>
             </div>
           </div>
@@ -5268,6 +5348,29 @@
         mBtn.classList.toggle('active', active);
       }
       showToast(active ? "Ljud & musik påslaget" : "Ljud & musik avstängt", 1200);
+    },
+    toggleFullscreen() {
+      const rootEl = document.documentElement;
+      const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+      if (isFs) {
+        const exitFn = document.exitFullscreen || document.webkitExitFullscreen;
+        if (exitFn) exitFn.call(document).catch?.(() => {});
+        const btn = document.getElementById('menuFullscreenBtn');
+        if (btn) { btn.textContent = '⛶ HELSKÄRM'; btn.classList.remove('active'); }
+        return;
+      }
+      const reqFn = rootEl.requestFullscreen || rootEl.webkitRequestFullscreen;
+      if (reqFn) {
+        Promise.resolve(reqFn.call(rootEl)).then(() => {
+          const btn = document.getElementById('menuFullscreenBtn');
+          if (btn) { btn.textContent = '⛶ HELSKÄRM: PÅ'; btn.classList.add('active'); }
+          showToast('Helskärmsläge aktiverat!', 1800);
+        }).catch(() => {
+          showToast('På iPhone/iPad: tryck Dela (↑) → "Lägg till på hemskärmen" för 100 % helskärm utan adressfält!', 4800);
+        });
+      } else {
+        showToast('På iPhone/iPad: tryck Dela (↑) → "Lägg till på hemskärmen" för 100 % helskärm utan adressfält!', 4800);
+      }
     }
   };
 
