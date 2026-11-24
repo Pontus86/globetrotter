@@ -303,7 +303,7 @@
     copacabana: { name: 'Copacabana', city: 'rio', photo: 'assets/photos/copacabana.jpg', hours: 2, fee: 0, fact: 'Den fyra kilometer långa strandpromenaden med sitt berömda svartvita vågmönster i kalksten sjuder av strandfotboll, musik och folkliv.' },
     maracana: { name: 'Maracanã', city: 'rio', photo: 'assets/photos/maracana.jpg', hours: 2, fee: 130, fact: 'En av världens mest legendariska fotbollsarenor, byggd inför VM 1950 och skådeplats för både VM-finalen 2014 och OS-invigningen 2016.' },
     // Mexico City
-    zocalo: { name: 'Zócalo & Templo Mayor', city: 'mexicocity', photo: 'assets/photos/zocalo.jpg', hours: 2, fee: 90, fact: 'Under det väldiga centrala torget vilar ruinerna av aztekernas huvudstad Tenochtitlán, precis intill katedralen och Nationalpalatset.' },
+    zocalo: { name: 'Zócalo & Templo Mayor', city: 'mexicocity', photo: 'assets/photos/zocalo.jpg', hours: 2, fee: 90, fact: 'Under det väldiga centrala torget vilar ruinerna av en forntida huvudstad som en gång byggdes på en ö i en sjö, precis intill katedralen och Nationalpalatset.' },
     fridakahlo: { name: 'Frida Kahlo-museet', city: 'mexicocity', photo: 'assets/photos/fridakahlo.jpg', hours: 2, fee: 150, fact: 'Det koboltblå huset "La Casa Azul" i stadsdelen Coyoacán var konstnärinnan Frida Kahlos födelsehem och ateljé, fyllt av färgstark mexikansk folkkonst.' },
     chapultepec: { name: 'Chapultepec-slottet', city: 'mexicocity', photo: 'assets/photos/chapultepec.jpg', hours: 2, fee: 80, fact: 'På en grön kulle mitt i stadens jättepark ligger det enda riktiga kungliga slottet på den nordamerikanska kontinenten.' },
     xochimilco: { name: 'Xochimilco-kanalerna', city: 'mexicocity', photo: 'assets/photos/xochimilco.jpg', hours: 3, fee: 110, fact: 'De sista resterna av aztekernas urgamla flytande trädgårdar (chinampas), där färgglada träbåtar (trajineras) glider fram ackompanjerade av mariachimusik.' }
@@ -573,9 +573,9 @@
   };
 
   Object.assign(W.places, {
-    turningtorso: { name: 'Turning Torso', city: 'malmo', photo: 'assets/photos/turningtorso.jpg', hours: 2, fee: 0, fact: 'Den 190 meter höga skruvade skyskrapan i Västra hamnen ritades av Santiago Calatrava och invigdes 2005.' },
+    turningtorso: { name: 'Turning Torso', city: 'malmo', photo: 'assets/photos/turningtorso.jpg', hours: 2, fee: 0, fact: 'Den 190 meter höga skruvade skyskrapan i Västra hamnen ritades av en spansk arkitekt som tog idén från en av sina egna skulpturer, och invigdes 2005.' },
     malmohus:     { name: 'Malmöhus slott', city: 'malmo', photo: 'assets/photos/malmohus.jpg', hours: 2, fee: 90, fact: 'Nordens äldsta bevarade renässansslott, omgiven av vallgrav och slottspark mitt i staden.' },
-    lillatorg:    { name: 'Lilla torg', city: 'malmo', photo: 'assets/photos/lillatorg.jpg', hours: 1, fee: 0, fact: 'Ett kullerstensbelagt renässanstorg från 1590-talet kantat av korsvirkeshus och uteserveringar.' },
+    lillatorg:    { name: 'Lilla torg', city: 'malmo', photo: 'assets/photos/lillatorg.jpg', hours: 1, fee: 0, fact: 'Ett kullerstensbelagt renässanstorg från 1590-talet kantat av gamla borgarhus från dansktiden och uteserveringar.' },
     ribersborg:   { name: 'Ribersborgs kallbadhus', city: 'malmo', photo: 'assets/photos/ribersborg.jpg', hours: 2, fee: 85, fact: 'Det klassiska kallbadhuset i trä ute på bryggan i Öresund, med utsikt direkt mot Öresundsbron.' }
   });
 

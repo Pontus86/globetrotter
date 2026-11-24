@@ -75,15 +75,39 @@ Ingen av punkterna i avsnitt 9 (speltest med nya spelare) är påbörjad. Det ä
 
 ### Nya småbuggar
 
-- [ ] Dag 1-genomgången visar regioner med gemener och fel namn: "Kairo (Egypten, afrika)", "New York (USA, amerika)". Den normaliserade regionnyckeln från `GT_ROUTES.normRegion` läcker ut i texten. Visa stadens riktiga `region` i stället.
-- [ ] Gör regeltestet deterministiskt.
+- [x] Dag 1-genomgången visade regioner med gemener och fel namn: "Kairo (Egypten, afrika)", "New York (USA, amerika)". *(Åtgärdat: ny `GT_ROUTES.regionLabel` används i alla texter. Det var också ett regelfel: New York, San Francisco och Mexico City hade regionen "amerika" och Toronto, Chicago m.fl. "Nordamerika", så de räknades som två olika världsdelar. `normRegion` slår nu ihop dem.)*
+- [x] Gör regeltestet deterministiskt. *(Åtgärdat: fast slumpfrö.)*
+
+### Åtgärdat samma kväll
+
+- [x] **De 25 frågorna** där svaret stod i faktatexten. Faktatexterna är omskrivna så att de ger sammanhang men inte svaret, även i `scratch/build_50_cities.js`. Hanoi-texten sa 1070 men frågan 1076; texten nämner nu båda åren rätt. Ett nytt regeltest (test 11) fäller bygget om ett svar står ordagrant i faktatexten.
+- [x] **Alla bonusbelopp ligger i `balance.js`.** `game.js` har inga hårdkodade `changeCash(<siffra>)` kvar. Två belopp ändrades till det `balance.js` redan angav: jobbrekord mot bot 350 → 250 kr, mot onlinemotståndare 400 → 300 kr. "Först på världsarvet" ger samma 250 kr som för en stad i stället för 400.
+- [x] **Bottarnas gratispengar.** När en bot är pank tar den nu ett jobbpass i staden: stadens jobblön gånger botens träffsäkerhet, i stället för fasta 500 kr. Bottarna räknar också världsdelar med samma regler som spelaren (förut räknades "europa" och "Europa" som två).
+- [x] **Simuleringen följer nu spelarens regler:**
+  - passmål en per världsdel
+  - en avgångstavla med högst 5 avgångar per dag
+  - riktiga jobbtimmar och löner, och varje jobb en gång per stad och dag
+  - lokalkännedom +4 % per rätt svar
+  - kravet på 3 världsdelar
+
+  Den körs för 60, 75 och 90 % rätt.
+- [x] Versionsnumren i `index.html` är höjda för de ändrade filerna, så att besökare inte får gamla filer från cachen.
+
+### Vad den ärliga simuleringen visar
+
+| Andel rätt | Klarade resor | Snitt dagar |
+|---|---|---|
+| 60 % | 170 av 200 | 21,6 av 30 |
+| 75 % | 196 av 200 | 18,0 av 30 |
+| 90 % | 199 av 200 | 15,9 av 30 |
+
+Den gamla simuleringen var alltså inte för snäll i resultatet; den var bara fel byggd. Spelet är **för lätt**: med 4 500 kr och 30 dagar klarar nästan alla resan med god marginal. Det beror främst på att man kan stanna i en stad och ta samma jobb igen nästa dag, så pengar och yrken aldrig tar slut. Se förslaget *En chans per jobb och sevärdhet* i DESIGN.md.
 
 ### Prioritet framåt
 
-1. **Speltesta det som finns** innan något nytt byggs (avsnitt 9). Göm Interpol-jakten och multiplayer under tiden.
-2. **Rätta de 25 frågorna** där svaret står i texten. Det tar några timmar och är det enda som ändrar upplevelsen av varje sevärdhetsbesök.
-3. **Gör simuleringen ärlig**, så att balansändringar kan bedömas med siffror.
-4. **För in de återstående bonusbeloppen i `balance.js`**, och rensa bort de flesta enligt avsnitt 1.
+1. **Speltesta det som finns** (avsnitt 9). Interpol-jakten, zoomen och tappkorten behålls enligt beslut.
+2. **Pröva förslaget om en chans per jobb och sevärdhet** (DESIGN.md), så att pengar och tid blir knappa på riktigt.
+3. **Rensa bort de flesta småbonusar** enligt avsnitt 1; nu går det att göra i `balance.js`.
 
 ---
 
@@ -123,7 +147,7 @@ Den oberoende granskningen omfattade början av två enspelarresor i webbläsare
 - **Ändligt innehåll ger inget omspelsvärde.** Efter två eller tre resor känner man igen frågorna.
 
 **Åtgärder**
-- [ ] Gå igenom alla sevärdhetsfrågor: svaret får aldrig stå ordagrant i faktakortet.
+- [x] Gå igenom alla sevärdhetsfrågor: svaret får aldrig stå ordagrant i faktakortet. *(25 faktatexter omskrivna 2026-11-24; test 11 i `test_rules.js` vaktar regeln.)*
 - [ ] Varje fråga ska handla om just den plats man besöker.
 - [x] Gör kunskap till ett verktyg: regional lokalkännedom (0–100 % per världsdel) + Reseflyt ger nu konkret högre jobblön (+15/+30/+10 %), bättre prutchans (+8/+15 %) och billigare biljetter (-10 % vid ≥60 %).
 - [ ] Låt frågor testa det spelet faktiskt har lärt ut, med repetition av samma fakta i nya sammanhang.
@@ -198,7 +222,7 @@ Den oberoende granskningen omfattade början av två enspelarresor i webbläsare
 - Inga tester och ingen simulering av ekonomin.
 
 **Åtgärder**
-- [ ] Samla alla balanssiffror i en balansfil (`proto/js/balance.js`). *(Påbörjat. 12 bonusbelopp är fortfarande hårdkodade i `game.js`, och två konstanter i `balance.js` används inte; se Uppföljning 2026-11-24.)*
+- [x] Samla alla balanssiffror i en balansfil (`proto/js/balance.js`). *(Klart 2026-11-24: inga hårdkodade bonusbelopp kvar i `game.js`.)*
 - [ ] Dela upp `game.js` i moduler (`balance.js`, `audio.js`, `routes.js`, `economy.js`, `quiz.js` — över 1 030 rader utbrutna ur `game.js`). *(Påbörjat. `game.js` har fortfarande 5 470 rader.)*
 - [ ] Använd de befintliga bottarna för att simulera 1 000 resor och kontrollera att ekonomin håller (automatiserade regeltester för rutter, priser, regioner och prutning tillagda i `proto/tools/test_rules.js`).
 

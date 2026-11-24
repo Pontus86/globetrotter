@@ -154,86 +154,167 @@ assert(kb0.tier === 0 && kb0.totalJobBonus === 0 && kb0.ticketDiscount === 0, 'T
 assert(kb1.tier === 1 && Math.abs(kb1.totalJobBonus - 0.15) < 0.001 && kb1.haggleBonus > 0, 'Tier 1 fel');
 assert(kb2.tier === 2 && Math.abs(kb2.totalJobBonus - 0.40) < 0.001 && kb2.ticketDiscount === 0.10, 'Tier 2 + Reseflyt fel');
 
-// Test 10: Spelarsimulering av ekonomin (100 resor med 16-timmarsdag, spelarens riktiga flygpriser, startkassa & lokalkännedom)
-let simWins = 0;
-let simWorked = 0;
-for (let run = 0; run < 100; run++) {
-  let cash = BAL.START_CASH;
-  let day = 1;
-  let hour = 8;
-  let cur = 'malmo';
-  const reach = ROUTES.getRoundTripReachableCities(W, cur);
-  const targets = reach.slice().sort(() => Math.random() - 0.5).slice(0, 3);
-  const collected = new Set();
-  let comps = 0;
-  let knowledge = 0;
-  let didWork = false;
-
-  const sleepNight = () => {
-    const hPrice = W.cities[cur].hotel?.price || 400;
-    if (cash >= hPrice) { cash -= hPrice; hour = 8; }
-    else { hour = BAL.BROKE_SLEEP_WAKE_HOUR || 11; }
-    day += 1;
+// Test 10: Spelarsimulering av ekonomin med spelarens regler och fast slumpfrö (deterministisk).
+// Simuleringen följer reglerna i game.js så nära som möjligt:
+// - passmål lottas som i spelet: en souvenirstad per världsdel bland städer nåbara tur och retur
+// - dagens avgångstavla visar högst 5 slumpade avgångar; finns ingen som leder närmare målet får man jobba eller vänta
+// - jobbpass: riktiga timmar och löner, 6 frågor, lön efter andel rätt, yrkeskompetens vid minst 4 rätt i ett nytt yrke
+// - varje jobb kan bara tas en gång per stad och dag
+// - lokalkännedom ökar med KNOWLEDGE_GAIN_PER_CORRECT per rätt svar
+// - minst 3 världsdelar krävs
+// Sevärdheter, handel med vinst, resehändelser och prutning ingår inte.
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
 
-  const nextHop = (from, to) => {
-    if (from === to) return null;
-    const q = [[from]];
-    const seen = new Set([from]);
+function simulateJourneys({ runs, accuracy, seed, dayLimit = 30, home = 'malmo' }) {
+  const rng = mulberry32(seed);
+  const shuffle = arr => {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+  const reach = ROUTES.getRoundTripReachableCities(W, home);
+  const edgesCache = {};
+  const edgesOf = k => (edgesCache[k] = edgesCache[k] || ROUTES.getAllOutgoingEdges(W, k));
+  const allKeys = Object.keys(W.cities);
+  const distCache = {};
+  // Antal byten från varje stad till målet (BFS bakåt från målet)
+  const hops = goal => {
+    if (distCache[goal]) return distCache[goal];
+    const dist = { [goal]: 0 };
+    const q = [goal];
     while (q.length) {
-      const pathArr = q.shift();
-      const last = pathArr[pathArr.length - 1];
-      for (const nxt of ROUTES.getAllOutgoingEdges(W, last)) {
-        if (nxt === to) return pathArr[1] || nxt;
-        if (!seen.has(nxt)) { seen.add(nxt); q.push([...pathArr, nxt]); }
+      const cur = q.shift();
+      for (const k of allKeys) {
+        if (dist[k] === undefined && edgesOf(k).includes(cur)) { dist[k] = dist[cur] + 1; q.push(k); }
       }
     }
-    return null;
+    return (distCache[goal] = dist);
   };
 
-  let guard = 0;
-  while (day <= 30 && guard++ < 300) {
-    if (hour >= 24) { sleepNight(); continue; }
+  let wins = 0;
+  let daysUsedTotal = 0;
+  const failReasons = { tid: 0, fast: 0 };
 
-    // Köp målsouvenir om vi är i rätt stad
-    if (targets.includes(cur) && !collected.has(cur)) {
-      const sk = (W.cities[cur].souvenirs || [])[0];
-      const sp = sk ? ECON.getSouvenirBasePrice(W.souvenirs[sk]) : 300;
-      if (cash >= sp) { cash -= sp; collected.add(cur); }
+  for (let run = 0; run < runs; run++) {
+    // Passmål som i generateJourneyGoals
+    const byRegion = {};
+    reach.filter(k => (W.cities[k].souvenirs || []).length > 0).forEach(k => {
+      const r = ROUTES.normRegion(W.cities[k].region);
+      (byRegion[r] = byRegion[r] || []).push(k);
+    });
+    const targets = shuffle(Object.keys(byRegion)).slice(0, 3)
+      .map(r => byRegion[r][Math.floor(rng() * byRegion[r].length)]);
+
+    let cash = BAL.START_CASH;
+    let day = 1;
+    let hour = BAL.DAY_START_HOUR;
+    let cur = home;
+    let knowledge = 0;
+    const collected = new Set();
+    const comps = new Set();
+    const regions = new Set([ROUTES.normRegion(W.cities[home].region)]);
+    let jobsTaken = new Set();
+    let board = null;
+    let won = false;
+    let guard = 0;
+
+    const sleep = () => {
+      const price = W.cities[cur].hotel?.price || 400;
+      if (cash >= price) { cash -= price; hour = BAL.DAY_START_HOUR; } else { hour = BAL.BROKE_SLEEP_WAKE_HOUR; }
+      day++;
+      jobsTaken = new Set();
+      board = null;
+    };
+
+    while (day <= dayLimit && guard++ < 2000) {
+      if (hour >= BAL.DAY_END_HOUR) { sleep(); continue; }
+      if (!board) board = shuffle(edgesOf(cur)).slice(0, 5);
+
+      if (targets.includes(cur) && !collected.has(cur)) {
+        const sk = (W.cities[cur].souvenirs || [])[0];
+        const sp = sk ? ECON.getSouvenirBasePrice(W.souvenirs[sk]) : 300;
+        if (cash >= sp) { cash -= sp; collected.add(cur); }
+      }
+
+      const allGoalsDone = collected.size === targets.length && comps.size >= 3 && regions.size >= 3;
+      if (allGoalsDone && cur === home) { won = true; break; }
+      const goal = (collected.size === targets.length) ? home : targets.find(t => !collected.has(t));
+
+      // Dagens bästa avgång: en som leder närmare målet
+      const d = hops(goal);
+      const myDist = d[cur] ?? Infinity;
+      const hop = board.find(k => (d[k] ?? Infinity) < myDist) || null;
+      const km = hop ? ROUTES.getDistanceBetweenCities(W, cur, hop) : 0;
+      const kb = ECON.getKnowledgeBonuses(knowledge, 0);
+      const price = hop ? Math.round((BAL.FLIGHT_BASE_PRICE + km * BAL.FLIGHT_PRICE_PER_KM) * (1 - kb.ticketDiscount)) : 0;
+      const travelHours = hop ? Math.max(2, Math.round(1 + km / 800)) : 0;
+
+      // Jobba om det behövs pengar eller yrken och det finns ett ledigt jobb som hinns med idag
+      const needWork = comps.size < 3 || (hop && cash < price + 200) || (!hop && cash < 1500);
+      const jobs = W.cities[cur].jobs || [];
+      const jobIdx = jobs.findIndex((j, i) => !jobsTaken.has(i) && hour + (j.hours || 4) <= BAL.DAY_END_HOUR);
+      if (needWork && jobIdx >= 0) {
+        const job = jobs[jobIdx];
+        jobsTaken.add(jobIdx);
+        let correct = 0;
+        for (let i = 0; i < 6; i++) if (rng() < accuracy) correct++;
+        cash += Math.round((job.pay || 800) * (correct / 6) * (1 + kb.totalJobBonus));
+        knowledge = Math.min(100, knowledge + correct * BAL.KNOWLEDGE_GAIN_PER_CORRECT);
+        if (correct >= 4) comps.add(job.isSignature ? `${cur}_sig` : (job.role || job.title));
+        hour += job.hours || 4;
+        continue;
+      }
+
+      if (hop && cash >= price) {
+        cash -= price;
+        hour += travelHours;
+        cur = hop;
+        board = null;
+        jobsTaken = new Set();
+        regions.add(ROUTES.normRegion(W.cities[cur].region));
+        continue;
+      }
+      sleep();
     }
-
-    const nextGoal = targets.find(t => !collected.has(t)) || 'malmo';
-    if (nextGoal === 'malmo' && cur === 'malmo' && collected.size === 3 && comps >= 3) {
-      simWins++;
-      if (didWork) simWorked++;
-      break;
-    }
-
-    const hop = nextHop(cur, nextGoal);
-    if (!hop) break;
-    const dist = ROUTES.getDistanceBetweenCities(W, cur, hop);
-    const kb = ECON.getKnowledgeBonuses(knowledge, 3);
-    const flightHours = Math.max(2, Math.round(1 + dist / 800));
-    const price = Math.round((BAL.FLIGHT_BASE_PRICE + dist * BAL.FLIGHT_PRICE_PER_KM) * (1 - kb.ticketDiscount));
-
-    // Jobba om vi saknar pengar till biljetten ELLER saknar 3 yrkeskompetenser
-    if (cash < price + 200 || comps < 3) {
-      const basePay = (W.cities[cur].jobs && W.cities[cur].jobs[0] && W.cities[cur].jobs[0].pay) || 850;
-      cash += Math.round(basePay * 0.80 * (1 + kb.totalJobBonus));
-      knowledge = Math.min(100, knowledge + 36);
-      if (comps < 3) comps++;
-      didWork = true;
-      hour += 4;
-      continue;
-    }
-
-    cash -= price;
-    cur = hop;
-    hour += flightHours;
+    if (won) { wins++; daysUsedTotal += day; }
+    else if (day > dayLimit) failReasons.tid++;
+    else failReasons.fast++;
   }
+  return { wins, runs, avgDays: wins ? Math.round(daysUsedTotal / wins * 10) / 10 : null, failReasons };
 }
-console.log(`Ekonomisimulering (100 resor från Malmö, startkassa ${BAL.START_CASH} kr): ${simWins}/100 klarade inom 30 dagar (${simWorked} behövde jobba).`);
-assert(simWins >= 75, `För få resor gick att klara i ekonomisimuleringen: ${simWins}/100`);
+
+const simLevels = [0.6, 0.75, 0.9].map(acc => Object.assign({ acc }, simulateJourneys({ runs: 200, accuracy: acc, seed: 20261124 })));
+simLevels.forEach(r => {
+  console.log(`Ekonomisimulering (startkassa ${BAL.START_CASH} kr, ${Math.round(r.acc * 100)} % rätt): ${r.wins}/${r.runs} klarade inom 30 dagar` +
+    (r.avgDays ? `, snitt ${r.avgDays} dagar` : '') + ` (tiden tog slut: ${r.failReasons.tid}, fastnade: ${r.failReasons.fast}).`);
+});
+const sim75 = simLevels.find(r => r.acc === 0.75);
+const sim90 = simLevels.find(r => r.acc === 0.9);
+assert(sim75.wins / sim75.runs >= 0.85, `En spelare med 75 % rätt klarade för få resor: ${sim75.wins}/${sim75.runs}`);
+assert(sim90.wins >= sim75.wins, 'Fler rätt svar borde inte ge färre klarade resor');
+
+// Test 11: Svaret på en sevärdhetsfråga får inte stå ordagrant i sevärdhetens faktatext (DESIGN.md §5.2)
+const leaks = [];
+(sandbox.window.GT_QUESTIONS || []).forEach(q => {
+  const place = W.places[q.place];
+  const type = q.type || q.t;
+  if (!place || !place.fact || !Array.isArray(q.a) || !['mc', 'image'].includes(type)) return;
+  const ans = String(q.a[0]).toLowerCase().trim();
+  if (ans.length >= 4 && place.fact.toLowerCase().includes(ans)) leaks.push(`${place.name} → ${q.a[0]}`);
+});
+assert(leaks.length === 0, `Svaret står i faktatexten för ${leaks.length} frågor: ${leaks.join(', ')}`);
 
 if (failures > 0) {
   console.error(`\n${failures} test(er) misslyckades.`);

@@ -102,6 +102,14 @@
     return { ...remaining[Math.floor(Math.random() * remaining.length)] };
   }
 
+  // Samma regionregler som spelaren (europa/Europa och amerika/Nordamerika är samma världsdel).
+  function regKey(region) {
+    return window.GT_ROUTES ? window.GT_ROUTES.normRegion(region) : String(region || '').trim().toLowerCase();
+  }
+  function regName(region) {
+    return window.GT_ROUTES ? window.GT_ROUTES.regionLabel(region) : region;
+  }
+
   function distKm(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -139,7 +147,7 @@
         ? mixedOrder[idx % mixedOrder.length]
         : (DIFFICULTY_PROFILES[difficultyMode] ? difficultyMode : 'medium');
       const diff = DIFFICULTY_PROFILES[diffKey];
-      const homeReg = world.cities[startCity]?.region || 'Europa';
+      const homeReg = regKey(world.cities[startCity]?.region || 'Europa');
       return {
         id: p.id,
         name: p.name,
@@ -228,7 +236,7 @@
 
       // 2. Prioritera obesökt världsdel om boten fortfarande behöver fler världsdelar
       if ((bot.visitedRegions || []).length < (bot.requiredRegions || 4)) {
-        const newRegCities = usableKeys.filter(k => !bot.visitedRegions.includes(world.cities[k].region));
+        const newRegCities = usableKeys.filter(k => !bot.visitedRegions.includes(regKey(world.cities[k].region)));
         if (newRegCities.length > 0) {
           return newRegCities[Math.floor(Math.random() * newRegCities.length)];
         }
@@ -360,7 +368,10 @@
     if (blocked) ticketCost = Math.round(ticketCost * 1.6);
 
     if (bot.cash < ticketCost + 250) {
-      bot.cash += 500;
+      // Pank: boten stannar och tar ett jobbpass i staden i stället för att resa (samma lön som spelaren kan få).
+      const cityJob = (city.jobs && city.jobs[0]) || city.job;
+      const basePay = (cityJob && cityJob.pay) || 700;
+      bot.cash += Math.round(basePay * diff.accuracy);
       return;
     }
 
@@ -370,9 +381,10 @@
     if (bot.travelHistory.length > 16) bot.travelHistory.shift();
     bot.city = nextKey;
     if (!bot.visitedCities.includes(nextKey)) bot.visitedCities.push(nextKey);
-    if (nextCity.region && !bot.visitedRegions.includes(nextCity.region)) {
-      bot.visitedRegions.push(nextCity.region);
-      pushNews(newsLog, currentDay, `${bot.name} nådde en ny världsdel (${nextCity.region}) via ${nextCity.name}!`);
+    const nextReg = nextCity.region ? regKey(nextCity.region) : null;
+    if (nextReg && !bot.visitedRegions.includes(nextReg)) {
+      bot.visitedRegions.push(nextReg);
+      pushNews(newsLog, currentDay, `${bot.name} nådde en ny världsdel (${regName(nextCity.region)}) via ${nextCity.name}!`);
     }
 
     // 6. Kolla om boten just knep ett öppet bonuskontrakt!

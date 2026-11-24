@@ -497,8 +497,8 @@
         state.freeHotelCities.add(state.city);
         hotelRewardTxt = `1 gratis hotellnatt i ${current.name}`;
       } else {
-        changeCash(250, `Stämpelbonus i ${current.name}`);
-        hotelRewardTxt = `+250 kr i resenärsbonus`;
+        changeCash(BAL.STAMP_BONUS, `Stämpelbonus i ${current.name}`);
+        hotelRewardTxt = `+${BAL.STAMP_BONUS} kr i resenärsbonus`;
       }
       const outPool = getCityRoutePool(state.city).map(r => r.to);
       let dealCityName = '';
@@ -620,7 +620,7 @@
       const kb = getCurrentKnowledgeBonuses(state.city);
       const perkTag = kb.tier === 2 ? ' (+30% lön, -10% resa)' : (kb.tier === 1 ? ' (+15% lön)' : '');
       const streakTag = kb.streakActive ? ` · 🔥 Flyt ×${state.streak}` : '';
-      el.cityRegion.textContent = `${c.country} · ${c.region.toUpperCase()} · Kunskap ${kb.pct}%${perkTag}${streakTag}`;
+      el.cityRegion.textContent = `${c.country} · ${ROUTES.regionLabel(c.region).toUpperCase()} · Kunskap ${kb.pct}%${perkTag}${streakTag}`;
     }
     if (el.cityEventRibbon) {
       if (cityEv) {
@@ -654,7 +654,7 @@
 
     // Titlar
     el.cityName.textContent = city.name;
-    el.cityRegion.textContent = `${city.country} · ${city.region.toUpperCase()}`;
+    el.cityRegion.textContent = `${city.country} · ${ROUTES.regionLabel(city.region).toUpperCase()}`;
 
     // Unik landstypisk stil på stadsskylten uppe till vänster!
     const badgeEl = document.querySelector('.city-plate');
@@ -847,7 +847,7 @@
       const libSpot = createSpot(
         posMap.library[0], posMap.library[1],
         'service library',
-        `<div class="spot-badge lib-progress-ring" style="--lib-pct:${libKb.pct}%; --lib-color:${ringColor};" title="Bibliotek · Lokalkännedom i ${city.region}: ${libKb.pct}%${libKb.streakActive ? ` · Reseflyt ×${state.streak}` : ''}">
+        `<div class="spot-badge lib-progress-ring" style="--lib-pct:${libKb.pct}%; --lib-color:${ringColor};" title="Bibliotek · Lokalkännedom i ${ROUTES.regionLabel(city.region)}: ${libKb.pct}%${libKb.streakActive ? ` · Reseflyt ×${state.streak}` : ''}">
            <img class="spot-model-img" src="${cf.libraryPhoto}" onerror="this.src='assets/photos/libraries/lib_stockholm.jpg'" alt="Bibliotek">
            ${streakBadge}
            <span class="lib-pct-pill" style="border-color:${ringColor}; color:${ringColor};">${libKb.pct}%</span>
@@ -1035,14 +1035,14 @@
             const s = W.souvenirs.kryddor;
             state.backpack.push({ id: 'kryddor', name: s.name, origin: state.city, buyPrice: sig.cost, buyDay: state.day });
           }
-          changeCash(250, `Lokal bonus på ${sig.name}`);
-          rewardHtml = `Du fick med dig en äkta kryddpåse + <b>250 kr</b> i lokal bonus!`;
-          addJournal(`Klarade lokalutmaningen på ${sig.name} i ${city.name} (${correct}/${total}) och kammade hem kryddor och +250 kr!`);
+          changeCash(BAL.SIGNATURE_BONUS, `Lokal bonus på ${sig.name}`);
+          rewardHtml = `Du fick med dig en äkta kryddpåse + <b>${BAL.SIGNATURE_BONUS} kr</b> i lokal bonus!`;
+          addJournal(`Klarade lokalutmaningen på ${sig.name} i ${city.name} (${correct}/${total}) och kammade hem kryddor och +${BAL.SIGNATURE_BONUS} kr!`);
         } else if (rType === 'local_cash_bonus') {
-          changeCash(350, `Lokal bonus på ${sig.name}`);
+          changeCash(BAL.SIGNATURE_BONUS_HIGH, `Lokal bonus på ${sig.name}`);
           state.freeHotelCities.add(state.city);
-          rewardHtml = `Imponerande lokalkännedom! Du fick <b>+350 kr</b> i bonus samt en <b>gratis hotellnatt i ${city.name}</b>!`;
-          addJournal(`Glänste på ${sig.name} i ${city.name} (${correct}/${total}) och belönades med +350 kr och fri hotellnatt!`);
+          rewardHtml = `Imponerande lokalkännedom! Du fick <b>+${BAL.SIGNATURE_BONUS_HIGH} kr</b> i bonus samt en <b>gratis hotellnatt i ${city.name}</b>!`;
+          addJournal(`Glänste på ${sig.name} i ${city.name} (${correct}/${total}) och belönades med +${BAL.SIGNATURE_BONUS_HIGH} kr och fri hotellnatt!`);
         } else {
           state.hour = Math.max(8, state.hour - 2);
           state.freeHotelCities.add(state.city);
@@ -1431,8 +1431,8 @@
         if (window.GT_MP && window.GT_MP.active) {
           const firstClaim = window.GT_MP.claimWonder(wonder.id, wonder.name, state.playerFirstName);
           if (firstClaim) {
-            changeCash(400, `Först på världsarvet ${wonder.name}`);
-            showToast(`FÖRST PÅ PLATS! +400 kr duellbonus för ${wonder.name}!`, 4000);
+            changeCash(BAL.FIRST_CLAIM_BONUS, `Först på världsarvet ${wonder.name}`);
+            showToast(`FÖRST PÅ PLATS! +${BAL.FIRST_CLAIM_BONUS} kr för ${wonder.name}!`, 4000);
           }
         }
 
@@ -1761,8 +1761,8 @@
       if (window.GT_MP && window.GT_MP.active) {
         const resRec = window.GT_MP.postJobRecord(`${state.city}_${jobIdx}`, state.playerFirstName, score, max, mgInfo.title, city.name);
         if (resRec.beatOpponent) {
-          changeCash(400, `Slog ${resRec.prev.holder}s jobbrekord`);
-          recordBanner = `<div style="margin:8px 0; padding:6px 10px; background:#fff4d2; border:2px solid #c99a45; color:#7a4f12; font-size:12.5px;"><b>🏆 NYTT REKORD!</b> Du slog ${resRec.prev.holder} (${resRec.prev.score}/${max}) och fick <b>+400 kr duellbonus</b>!</div>`;
+          changeCash(BAL.MP_JOB_RECORD_BONUS, `Slog ${resRec.prev.holder}s jobbrekord`);
+          recordBanner = `<div style="margin:8px 0; padding:6px 10px; background:#fff4d2; border:2px solid #c99a45; color:#7a4f12; font-size:12.5px;"><b>🏆 NYTT REKORD!</b> Du slog ${resRec.prev.holder} (${resRec.prev.score}/${max}) och fick <b>+${BAL.MP_JOB_RECORD_BONUS} kr duellbonus</b>!</div>`;
         }
       }
 
@@ -1848,16 +1848,16 @@
       if (window.GT_MP && window.GT_MP.active) {
         const resRec = window.GT_MP.postJobRecord(`${state.city}_${jobIdx}`, state.playerFirstName, correctInJob, total, job.title, city.name);
         if (resRec.beatOpponent) {
-          changeCash(400, `Slog ${resRec.prev.holder}s jobbrekord`);
-          recordBanner = `<div style="margin:8px 0; padding:6px 10px; background:#fff4d2; border:2px solid #c99a45; color:#7a4f12; font-size:12.5px;"><b>🏆 NYTT REKORD!</b> Du slog ${resRec.prev.holder} (${resRec.prev.score}/${total}) och fick <b>+400 kr duellbonus</b>!</div>`;
+          changeCash(BAL.MP_JOB_RECORD_BONUS, `Slog ${resRec.prev.holder}s jobbrekord`);
+          recordBanner = `<div style="margin:8px 0; padding:6px 10px; background:#fff4d2; border:2px solid #c99a45; color:#7a4f12; font-size:12.5px;"><b>🏆 NYTT REKORD!</b> Du slog ${resRec.prev.holder} (${resRec.prev.score}/${total}) och fick <b>+${BAL.MP_JOB_RECORD_BONUS} kr duellbonus</b>!</div>`;
         }
       } else if (state.botJobRecords) {
         const bKey = `${state.city}_${jobIdx}`;
         const prevBotRec = state.botJobRecords[bKey];
         if (prevBotRec && prevBotRec.isBot && correctInJob > prevBotRec.score) {
-          changeCash(350, `Slog ${prevBotRec.holder}s jobbrekord`);
+          changeCash(BAL.BOT_JOB_RECORD_BONUS, `Slog ${prevBotRec.holder}s jobbrekord`);
           state.botJobRecords[bKey] = { holder: state.playerFirstName, isBot: false, score: correctInJob, max: total, city: city.name };
-          recordBanner = `<div style="margin:8px 0; padding:6px 10px; background:#fff4d2; border:2px solid #c99a45; color:#7a4f12; font-size:12.5px;"><b>🏆 NYTT REKORD!</b> Du slog ${prevBotRec.holder} (${prevBotRec.score}/${total}) och fick <b>+350 kr rekordbonus</b>!</div>`;
+          recordBanner = `<div style="margin:8px 0; padding:6px 10px; background:#fff4d2; border:2px solid #c99a45; color:#7a4f12; font-size:12.5px;"><b>🏆 NYTT REKORD!</b> Du slog ${prevBotRec.holder} (${prevBotRec.score}/${total}) och fick <b>+${BAL.BOT_JOB_RECORD_BONUS} kr rekordbonus</b>!</div>`;
         }
       }
 
@@ -1925,12 +1925,9 @@
       Object.values(W.cities || {}).forEach(c => {
         if (c && c.region) knownRegions.add(ROUTES.normRegion(c.region));
       });
-      const regionOrder = ['europa', 'afrika', 'asien', 'oceanien', 'nordamerika', 'sydamerika', 'amerika']
+      const regionOrder = ['europa', 'afrika', 'asien', 'oceanien', 'nordamerika', 'sydamerika']
         .filter(r => knownRegions.has(r));
-      const regionLabel = (r) => ({
-        europa: 'Europa', afrika: 'Afrika', asien: 'Asien', oceanien: 'Oceanien',
-        nordamerika: 'Nordamerika', sydamerika: 'Sydamerika', amerika: 'Amerika'
-      }[r] || (r.charAt(0).toUpperCase() + r.slice(1)));
+      const regionLabel = ROUTES.regionLabel;
 
       const barsHtml = regionOrder.map(rKey => {
         const pct = (state.regionKnowledge && state.regionKnowledge[rKey]) || 0;
@@ -2058,7 +2055,7 @@
               <div style="flex:1;">
                 <div class="encyc-kicker">VÄRLDSATLAS &amp; UPPSLAGSVERK</div>
                 <h2 class="encyc-country">${cf.country}</h2>
-                <div class="encyc-sub">${city.name} · ${city.region}</div>
+                <div class="encyc-sub">${city.name} · ${ROUTES.regionLabel(city.region)}</div>
               </div>
               <div class="encyc-tabs">
                 <button class="encyc-tab-btn ${activeTab === 'facts' ? 'active' : ''}" onclick="window.GT.openLibraryModal('facts', 0)">Fakta &amp; Karta</button>
@@ -3025,7 +3022,7 @@
           <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
             <div>
               <div style="font-family:Georgia,serif; font-size:14px; font-weight:bold; color:#ffd875;">
-                ${c.name} <span style="font-weight:normal; font-size:11.5px; color:#d8c4a0;">· ${c.country} (${c.region})</span>
+                ${c.name} <span style="font-weight:normal; font-size:11.5px; color:#d8c4a0;">· ${c.country} (${ROUTES.regionLabel(c.region)})</span>
                 ${goalItem ? `<span style="margin-left:5px; font-size:10px; padding:1px 6px; border-radius:3px; background:${goalItem.done ? '#1c542b' : '#7a3e0e'}; color:${goalItem.done ? '#8cf0a4' : '#ffd875'};">${goalItem.done ? '✓ MÅL KLART' : '★ PASSMÅL'}</span>` : ''}
                 ${isStamped ? `<span style="margin-left:4px; font-size:10px; color:#8cf0a4;">✓ Stämplad</span>` : ''}
               </div>
@@ -4556,7 +4553,7 @@
     const startName = W.cities[state.startCity]?.name || 'startstaden';
     const goalListHtml = goals.souvenirCities.map(ck => {
       const c = W.cities[ck];
-      return `<li><b>${c ? c.name : ck}</b>${c ? ` (${c.country}, ${c.region})` : ''}</li>`;
+      return `<li><b>${c ? c.name : ck}</b>${c ? ` (${c.country}, ${ROUTES.regionLabel(c.region)})` : ''}</li>`;
     }).join('');
     const html = `
       <div class="card-modal" style="max-width:560px; background:linear-gradient(180deg,#fdf7e8 0%,#f0e2c2 100%); border:3px ridge #9e7537;">
@@ -4624,10 +4621,10 @@
       const myQ = state.questionsCorrect || 0;
       const oppQ = window.GT_MP.opponent.questionsCorrect || 0;
       if (myQ > oppQ && myQ >= 3) {
-        changeCash(500, `Globetrotter-stipendium (Kunskapsduell Dag ${state.day})`);
+        changeCash(BAL.KNOWLEDGE_STIPEND, `Globetrotter-stipendium (Kunskapsduell Dag ${state.day})`);
         AudioMgr.play('fanfar');
-        addJournal(`Vann 5-dagars Kunskapsduellen mot ${window.GT_MP.opponent.name} (${Math.round(myQ)} mot ${Math.round(oppQ)} rätt) och fick +500 kr stipendium!`);
-        showToast(`🏆 KUNSKAPSDUELL DAG ${state.day}: Du leder (${Math.round(myQ)} vs ${Math.round(oppQ)} rätt) → +500 kr stipendium!`, 4600);
+        addJournal(`Vann 5-dagars Kunskapsduellen mot ${window.GT_MP.opponent.name} (${Math.round(myQ)} mot ${Math.round(oppQ)} rätt) och fick +${BAL.KNOWLEDGE_STIPEND} kr stipendium!`);
+        showToast(`🏆 KUNSKAPSDUELL DAG ${state.day}: Du leder (${Math.round(myQ)} vs ${Math.round(oppQ)} rätt) → +${BAL.KNOWLEDGE_STIPEND} kr stipendium!`, 4600);
       }
     }
   }
@@ -4746,7 +4743,7 @@
 
     const localBanner = localBots.length > 0
       ? `<div style="margin:8px 0; padding:7px 10px; background:rgba(56,182,255,0.12); border:1px solid #38b6ff; border-radius:6px; font-size:12px; color:#bfe8ff;">
-           <b>Just nu i ${W.cities[state.city]?.name}:</b> ${localBots.map(b => b.name).join(', ')} är i samma stad som du! Klicka på <b>⚡ Duell</b> för en snabb 3-frågorsduell om 300 kr.
+           <b>Just nu i ${W.cities[state.city]?.name}:</b> ${localBots.map(b => b.name).join(', ')} är i samma stad som du! Klicka på <b>⚡ Duell</b> för en snabb 3-frågorsduell om ${BAL.BOT_DUEL_WIN} kr.
          </div>`
       : '';
 
@@ -4890,7 +4887,7 @@
               <div class="setup-kicker" style="color:${bot.color};">⚡ KUNSKAPSDUELL I ${(city?.name || '').toUpperCase()}</div>
               <h2 class="setup-title" style="margin:2px 0;">Du mot ${bot.fullName} (${bot.difficultyLabel})</h2>
             </div>
-            <span style="font-size:12px; color:#ffd875; font-weight:bold;">Pott: 300 kr</span>
+            <span style="font-size:12px; color:#ffd875; font-weight:bold;">Pott: ${BAL.BOT_DUEL_WIN} kr</span>
           </div>
           <div id="quizContainer"></div>
         </div>
@@ -4903,17 +4900,17 @@
       let headline = '';
       let sub = '';
       if (myScore > botScore) {
-        changeCash(300, `Vann kunskapsduell mot ${bot.name}`);
+        changeCash(BAL.BOT_DUEL_WIN, `Vann kunskapsduell mot ${bot.name}`);
         bot.cash = Math.max(0, bot.cash - 150);
         AudioMgr.play('fanfar');
         headline = `🏆 DU VANN DUELLEN! (${myScore}/${total} mot ${bot.name}s ${botScore}/${total})`;
-        sub = `+300 kr rakt ner i din reskassa!`;
-        addJournal(`Besegrade ${bot.name} i en kunskapsduell i ${city?.name || state.city} (${myScore}-${botScore}) och vann 300 kr.`);
+        sub = `+${BAL.BOT_DUEL_WIN} kr rakt ner i din reskassa!`;
+        addJournal(`Besegrade ${bot.name} i en kunskapsduell i ${city?.name || state.city} (${myScore}-${botScore}) och vann ${BAL.BOT_DUEL_WIN} kr.`);
       } else if (myScore === botScore) {
-        changeCash(100, `Oavgjord duell mot ${bot.name}`);
+        changeCash(BAL.BOT_DUEL_DRAW, `Oavgjord duell mot ${bot.name}`);
         AudioMgr.play('right1');
         headline = `🤝 OAVGJORT! (${myScore}/${total} mot ${bot.name}s ${botScore}/${total})`;
-        sub = `Ni delar på äran och du får +100 kr i tröstpris.`;
+        sub = `Ni delar på äran och du får +${BAL.BOT_DUEL_DRAW} kr i tröstpris.`;
       } else {
         AudioMgr.play('wrong1');
         bot.cash += 200;
@@ -4947,7 +4944,7 @@
     const html = `
       <div class="card-modal" style="max-width:600px; background:linear-gradient(180deg,#1d140c 0%,#120c07 100%); color:#f4ead6; border:3px ridge #38b6ff;">
         <div style="font-size:10.5px; letter-spacing:1.6px; color:#8cd7ff; font-weight:bold; margin-bottom:4px;">⚡ DUELL-TELEGRAM FRÅN ${(ch.fromName || 'MOTSTÅNDAREN').toUpperCase()}</div>
-        <h3 style="margin:0 0 8px; font-family:Georgia,serif; color:#ffd875; font-size:18px;">Svara rätt för +250 kr — annars tar ${ch.fromName} pengarna!</h3>
+        <h3 style="margin:0 0 8px; font-family:Georgia,serif; color:#ffd875; font-size:18px;">Svara rätt för +${BAL.CHALLENGE_BONUS} kr — annars tar ${ch.fromName} pengarna!</h3>
         ${ch.img ? `<div style="text-align:center; margin-bottom:8px;"><img src="${ch.img}" alt="" style="max-height:110px; border:2px solid #c99a45; border-radius:4px;"></div>` : ''}
         <div style="font-family:Georgia,serif; font-size:15px; font-weight:bold; margin-bottom:12px;">${ch.q}</div>
         <div class="quiz-options" id="mpChallengeOpts">
@@ -4971,7 +4968,7 @@
         if (ok) {
           btn.classList.add('correct');
           AudioMgr.play('right1');
-          changeCash(250, `Vann duellfråga från ${ch.fromName}`);
+          changeCash(BAL.CHALLENGE_BONUS, `Vann duellfråga från ${ch.fromName}`);
         } else {
           btn.classList.add('wrong');
           AudioMgr.play('wrong1');
@@ -4982,7 +4979,7 @@
         if (out) {
           out.innerHTML = `
             <div style="padding:10px; background:rgba(255,248,230,0.08); border-left:3px solid ${ok ? '#78e08f' : '#ff7675'}; font-size:12.5px; margin-bottom:10px;">
-              <b style="color:${ok ? '#78e08f' : '#ff7675'};">${ok ? '✓ Rätt! Du vann +250 kr i duellen!' : `✕ Fel! Rätt svar var "${rightAns}" — ${ch.fromName} tog hem +250 kr.`}</b><br>
+              <b style="color:${ok ? '#78e08f' : '#ff7675'};">${ok ? `✓ Rätt! Du vann +${BAL.CHALLENGE_BONUS} kr i duellen!` : `✕ Fel! Rätt svar var "${rightAns}" — ${ch.fromName} tog hem +${BAL.CHALLENGE_BONUS} kr.`}</b><br>
               <span style="color:#d6c5a5;">${ch.explain || ''}</span>
             </div>
             <div style="text-align:right;"><button class="stamp-action-btn" onclick="window.GT.closeModal()">Tillbaka till resan</button></div>
@@ -5090,11 +5087,11 @@
           showToast(`⚡ ${msg.challenge.fromName} skickade en Duellfråga! Klicka på "⚡ DUELLFRÅGA!" längst upp.`, 4500);
         } else if (msg.type === 'CHALLENGE_RESULT') {
           if (msg.opponentGotItRight) {
-            showToast(`${msg.responderName} klarade din duellfråga och tog +250 kr!`, 3800);
+            showToast(`${msg.responderName} klarade din duellfråga och tog +${BAL.CHALLENGE_BONUS} kr!`, 3800);
           } else {
-            changeCash(250, `Vann frågeduell mot ${msg.responderName}`);
+            changeCash(BAL.CHALLENGE_BONUS, `Vann frågeduell mot ${msg.responderName}`);
             AudioMgr.play('cash');
-            showToast(`⚡ ${msg.responderName} svarade fel på din duellfråga! Du vann +250 kr!`, 4200);
+            showToast(`⚡ ${msg.responderName} svarade fel på din duellfråga! Du vann +${BAL.CHALLENGE_BONUS} kr!`, 4200);
           }
         } else if (msg.text) {
           showToast(msg.text, 3200);

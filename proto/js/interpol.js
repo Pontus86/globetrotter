@@ -324,7 +324,7 @@
         pick.lastKnownCity = pick.city;
         pick.lastKnownDay = hunt.day;
         const c = world.cities[pick.city];
-        addLog(`🔍 Dag ${hunt.day}: Interpol-spaning! ${pick.name} siktades precis i ${c?.name || pick.city} (${c?.region || ''})!`);
+        addLog(`🔍 Dag ${hunt.day}: Interpol-spaning! ${pick.name} siktades precis i ${c?.name || pick.city} (${c ? window.GT_ROUTES.regionLabel(c.region) : ''})!`);
       }
     } else {
       const edges = ROUTES().getAllOutgoingEdges(world, player.city);

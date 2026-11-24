@@ -359,7 +359,7 @@ root.GT_WORLD = {
       hours: 2,
       fee: 120,
       extra: true,
-      fact: 'Från höjden Mokattam blickar den mäktiga medeltida fästningen ut över staden. Innanför vallarna reser sig Muhammad Ali-moskén med sina höga, slanka minareter och en storslagen kupol av alabaster.',
+      fact: 'Från höjden Mokattam blickar den mäktiga medeltida fästningen ut över staden. Innanför vallarna reser sig Muhammad Ali-moskén med sina höga, nålsmala torn och en storslagen kupol av alabaster.',
       questions: [
         { t: 'mc', q: 'Vilken berömd muslimsk fältherre och sultan påbörjade bygget av Citadellet under korstågstiden på 1100-talet?', a: ['Saladin', 'Harun al-Rashid', 'Baibars', 'Suleyman den store'] },
         { t: 'mc', q: 'Vad kallas de höga tornen vid en moské varifrån böneutropet traditionellt kungörs?', a: ['Minareter', 'Obelisker', 'Pagoder', 'Stupor'] }
@@ -516,7 +516,7 @@ root.GT_WORLD = {
       photo: 'assets/photos/indiagate.jpg',
       hours: 2,
       fee: 0,
-      fact: 'I hjärtat av New Delhi reser sig den monumentala triumfbågen i gul sandsten längs paradgatan Kartavya Path. På kvällarna samlas tusentals familjer i parkerna runt monumentet.',
+      fact: 'I hjärtat av New Delhi reser sig den monumentala triumfbågen i gul sandsten längs den breda paradgatan, som fick ett nytt namn 2022. På kvällarna samlas tusentals familjer i parkerna runt monumentet.',
       questions: [
         { t: 'mc', q: 'Vilken brittisk arkitekt ritade stora delar av New Delhi och själva India Gate?', a: ['Edwin Lutyens', 'Christopher Wren', 'Norman Foster', 'John Nash'] },
         { t: 'mc', q: 'Till minne av vilka soldater restes India Gate ursprungligen på 1920-talet?', a: ['Indiska soldater som stupade i första världskriget', 'Mogulrikets kavalleri', 'Kriget mot Persien', 'Handelsflottans sjömän'] }
@@ -600,7 +600,7 @@ root.GT_WORLD = {
       photo: 'assets/photos/brooklynbridge.jpg',
       hours: 2,
       fee: 0,
-      fact: 'Den ikoniska hängbron i nygotisk stil med sina väldiga stenvalv och stålkablar binder samman Manhattan med Brooklyn över East River och har en upphöjd gångbana för fotgängare.',
+      fact: 'Den ikoniska hängbron i nygotisk stil med sina väldiga stenvalv och stålkablar binder samman Manhattan med Brooklyn över sundet och har en upphöjd gångbana för fotgängare.',
       questions: [
         { t: 'mc', q: 'Vilket vattendrag spänner Brooklyn Bridge över?', a: ['East River', 'Hudsonfloden', 'Harlem River', 'Potomac'] },
         { t: 'num', q: 'Vilket årtal på 1800-talet invigdes Brooklyn Bridge som världens då längsta hängbro?', ans: 1883, min: 1840, max: 1920, step: 1, unit: 'år' }

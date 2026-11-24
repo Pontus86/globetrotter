@@ -320,13 +320,13 @@
       "kopenhamn_s1": {
         "name": "Nyhavn",
         "photo": "assets/cities/kopenhamn.jpg",
-        "fact": "1600-talskanal kantad av färgglada gavelhus och gamla träskepp där H.C. Andersen bodde.",
+        "fact": "1600-talskanal kantad av färgglada gavelhus och gamla träskepp där en världsberömd sagoförfattare bodde i flera olika hus.",
         "hours": 2
       },
       "kopenhamn_s2": {
         "name": "Tivoli",
         "photo": "assets/cities/kopenhamn.jpg",
-        "fact": "En av världens äldsta nöjesparker mitt i centrala Köpenhamn, invigd år 1843.",
+        "fact": "En av världens äldsta nöjesparker mitt i centrala Köpenhamn, öppnad medan Kristian VIII var Danmarks kung.",
         "hours": 2
       },
       "kopenhamn_s3": {
@@ -560,7 +560,7 @@
       "helsingfors_s2": {
         "name": "Helsingfors domkyrka",
         "photo": "assets/cities/helsingfors.jpg",
-        "fact": "Kritvit nyklassisk katedral med gröna kupoler som reser sig över Senatstorget.",
+        "fact": "Kritvit nyklassisk katedral med gröna kupoler som tronar överst på en bred trappa ovanför stadens mest kända torg.",
         "hours": 2
       },
       "helsingfors_s3": {
@@ -3127,7 +3127,7 @@
       "aten_s1": {
         "name": "Akropolis & Parthenon",
         "photo": "assets/cities/aten.jpg",
-        "fact": "Marmortemplet från 447 f.Kr. helgat åt stadens beskyddarinna, vishetsgudinnan Athena.",
+        "fact": "Marmortemplet från 447 f.Kr. helgat åt stadens beskyddarinna, visdomens och krigskonstens gudinna.",
         "hours": 2
       },
       "aten_s2": {
@@ -3139,7 +3139,7 @@
       "aten_s3": {
         "name": "Agoran i Aten",
         "photo": "assets/cities/aten.jpg",
-        "fact": "Antikens marknads- och samlingsplats där filosofer som Sokrates och Platon debatterade.",
+        "fact": "Antikens marknads- och samlingsplats där stadens filosofer, köpmän och politiker möttes och debatterade.",
         "hours": 2
       }
     },
@@ -3601,7 +3601,7 @@
       "jerusalem_s2": {
         "name": "Klippdomen",
         "photo": "assets/cities/jerusalem.jpg",
-        "fact": "Guldklädd åttkantig helgedom från år 691 som glänser över Jerusalems gamla stad.",
+        "fact": "Guldklädd helgedom från år 691 som glänser över Jerusalems gamla stad.",
         "hours": 2
       },
       "jerusalem_s3": {
@@ -3829,13 +3829,13 @@
       "dubai_s1": {
         "name": "Burj Khalifa",
         "photo": "assets/cities/dubai.jpg",
-        "fact": "Världens högsta byggnad på hela 828 meter med 163 våningar mitt i ökenmetropolen.",
+        "fact": "Världens högsta byggnad med 163 våningar mitt i ökenmetropolen, invigd 2010.",
         "hours": 2
       },
       "dubai_s2": {
         "name": "Dubai Creek & Guldsouken",
         "photo": "assets/cities/dubai.jpg",
-        "fact": "Historisk saltvattenkanal där traditionella träbåtar (abras) korsar mellan krydd- och guldmarknader.",
+        "fact": "Historisk saltvattenkanal där små traditionella träfärjor korsar mellan krydd- och guldmarknader.",
         "hours": 2
       },
       "dubai_s3": {
@@ -5005,7 +5005,7 @@
       "hanoi_s2": {
         "name": "Litteraturens tempel",
         "photo": "assets/cities/hanoi.jpg",
-        "fact": "Grundat år 1070 som Vietnams första universitet, tillägnat Konfucius.",
+        "fact": "Tempel tillägnat Konfucius, grundat år 1070. Sex år senare öppnade här en akademi för landets blivande ämbetsmän.",
         "hours": 2
       },
       "hanoi_s3": {
@@ -5233,7 +5233,7 @@
       "hongkong_s1": {
         "name": "Victoria Peak",
         "photo": "assets/cities/hongkong.jpg",
-        "fact": "552 meter hög bergstopp som nås med bergbanan Peak Tram sedan 1888.",
+        "fact": "552 meter hög bergstopp med milsvid utsikt över skyskraporna och Victoriahamnen.",
         "hours": 2
       },
       "hongkong_s2": {
@@ -5473,7 +5473,7 @@
       "seoul_s2": {
         "name": "N Seoul Tower",
         "photo": "assets/cities/seoul.jpg",
-        "fact": "Utsiktstorn högst upp på berget Namsan mitt i staden, klätt med tusentals kärlekslås.",
+        "fact": "Utsiktstorn högst upp på ett grönskande berg mitt i staden, klätt med tusentals kärlekslås.",
         "hours": 2
       },
       "seoul_s3": {
@@ -6877,7 +6877,7 @@
       "nairobi_s2": {
         "name": "Karen Blixen-museet",
         "photo": "assets/cities/nairobi.jpg",
-        "fact": "Gården vid foten av Ngong Hills där författaren skrev \"Den afrikanska farmen\".",
+        "fact": "Gården vid foten av Ngong Hills där den danska författaren Karen Blixen bodde och odlade kaffe.",
         "hours": 2
       },
       "nairobi_s3": {
@@ -7111,7 +7111,7 @@
       "addisabeba_s2": {
         "name": "Merkato",
         "photo": "assets/cities/addisabeba.jpg",
-        "fact": "En av Afrikas största utomhusmarknader med kaffe, kryddor och handvävda tyger.",
+        "fact": "En av Afrikas största utomhusmarknader med kryddor, korgar och handvävda tyger.",
         "hours": 2
       },
       "addisabeba_s3": {
@@ -7813,13 +7813,13 @@
       "daressalaam_s2": {
         "name": "Färjan till Kryddön Zanzibar",
         "photo": "assets/cities/daressalaam.jpg",
-        "fact": "Kort båttur över sundet till Zanzibar med Stone Town, nejlikor och korallstränder.",
+        "fact": "Kort båttur över sundet till en ögrupp med Stone Town, nejlikor och korallstränder.",
         "hours": 2
       },
       "daressalaam_s3": {
         "name": "Tanzanias nationalmuseum",
         "photo": "assets/cities/daressalaam.jpg",
-        "fact": "Rymmer fossila fynd från Olduvai-ravinen och berättelsen om swahilikulturen.",
+        "fact": "Rymmer fossila fynd från Olduvai-ravinen och berättelsen om kustens gamla handelskultur.",
         "hours": 2
       }
     },
@@ -8053,7 +8053,7 @@
       "antananarivo_s3": {
         "name": "Avenue of the Baobabs (Utställning)",
         "photo": "assets/cities/antananarivo.jpg",
-        "fact": "Madagaskars uråldriga baobabträd, som kan bli över 1 000 år gamla.",
+        "fact": "Madagaskars uråldriga jätteträd, som kan bli över 1 000 år gamla.",
         "hours": 2
       }
     },
@@ -9211,7 +9211,7 @@
       "miami_s1": {
         "name": "South Beach & Art Deco-kvarteren",
         "photo": "assets/cities/miami.jpg",
-        "fact": "Världens största samling pastellfärgade 1930-talsbyggnader i Art Deco-stil längs Ocean Drive.",
+        "fact": "Världens största samling pastellfärgade 1930-talsbyggnader med neonskyltar längs Ocean Drive.",
         "hours": 2
       },
       "miami_s2": {
@@ -9913,7 +9913,7 @@
       "buenosaires_s1": {
         "name": "La Boca & Caminito",
         "photo": "assets/cities/buenosaires.jpg",
-        "fact": "Färgstark hamnstadsdel med korrugerade plåthus målade i restfärg från fartygen och gatu-tango.",
+        "fact": "Färgstark hamnstadsdel med korrugerade plåthus målade i restfärg från fartygen och gatudansare på kullerstenen.",
         "hours": 2
       },
       "buenosaires_s2": {
@@ -9925,7 +9925,7 @@
       "buenosaires_s3": {
         "name": "Plaza de Mayo & Casa Rosada",
         "photo": "assets/cities/buenosaires.jpg",
-        "fact": "Stadens historiska hjärta framför det rosafärgade presidentpalatset.",
+        "fact": "Stadens historiska hjärta framför presidentpalatset, platsen för otaliga demonstrationer.",
         "hours": 2
       }
     },

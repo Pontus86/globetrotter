@@ -167,8 +167,19 @@
   function normRegion(region) {
     const raw = String(region || '').trim().toLowerCase();
     if (!raw) return 'varlden';
-    if (raw === 'nordamerika' || raw === 'sydamerika' || raw === 'amerika') return raw;
+    // De ursprungliga städerna (New York, San Francisco, Mexico City) använder 'amerika'; alla ligger i Nordamerika.
+    if (raw === 'amerika') return 'nordamerika';
     return raw;
+  }
+
+  // Visningsnamn för en världsdel, oavsett hur regionen är stavad i datan.
+  const REGION_LABELS = {
+    europa: 'Europa', afrika: 'Afrika', asien: 'Asien', oceanien: 'Oceanien',
+    nordamerika: 'Nordamerika', sydamerika: 'Sydamerika', varlden: 'Världen'
+  };
+  function regionLabel(region) {
+    const key = normRegion(region);
+    return REGION_LABELS[key] || (key.charAt(0).toUpperCase() + key.slice(1));
   }
 
   function calcDistance(lat1, lon1, lat2, lon2) {
@@ -274,6 +285,7 @@
     CITY_ROUTES,
     CITY_TRAINS,
     normRegion,
+    regionLabel,
     calcDistance,
     getDistanceBetweenCities,
     getCityRoutePool,

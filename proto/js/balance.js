@@ -28,6 +28,13 @@
     BOT_JOB_RECORD_BONUS: 250,
     MP_JOB_RECORD_BONUS: 300,
     SIGHT_PERFECT_BONUS: 120, // Bonus för full pott (Guld) på en sevärdhet
+    STAMP_BONUS: 250, // Stämpel i passet när en stad är gjord (om hotellnatten redan är betald)
+    SIGNATURE_BONUS: 250, // Klarad lokal signaturaktivitet
+    SIGNATURE_BONUS_HIGH: 350, // Signaturaktivitet med hög lokalkännedom
+    KNOWLEDGE_STIPEND: 500, // Kunskapsduellen var 5:e dag i onlineduell
+    BOT_DUEL_WIN: 300, // Vinst i snabbduell mot bot
+    BOT_DUEL_DRAW: 100, // Oavgjord snabbduell mot bot
+    CHALLENGE_BONUS: 250, // Duellfråga via telegram (online)
 
     // Regional lokalkännedom (0-100 % per världsdel) — knyter kunskap direkt till ekonomi & resor!
     KNOWLEDGE_GAIN_PER_CORRECT: 4,
