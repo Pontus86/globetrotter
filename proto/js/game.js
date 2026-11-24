@@ -132,6 +132,7 @@
     contractBonusPoints: 0,
     claimedCitiesCount: 0,
     regionKnowledge: {}, // { europa: 36, asien: 12, ... } (0–100 %)
+    knowledgeCreditedIds: new Set(), // Frågor som redan gett lokalkännedom (ger aldrig dubbel ökning)
     streak: 0 // Antal rätta svar i rad (Reseflyt)
   };
 
@@ -261,6 +262,7 @@
         contractBonusPoints: state.contractBonusPoints || 0,
         claimedCitiesCount: state.claimedCitiesCount || 0,
         regionKnowledge: state.regionKnowledge || {},
+        knowledgeCreditedIds: Array.from(state.knowledgeCreditedIds || []),
         streak: state.streak || 0
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
@@ -332,6 +334,7 @@
     state.contractBonusPoints = d.contractBonusPoints || 0;
     state.claimedCitiesCount = d.claimedCitiesCount || 0;
     state.regionKnowledge = (d.regionKnowledge && typeof d.regionKnowledge === 'object') ? d.regionKnowledge : {};
+    state.knowledgeCreditedIds = new Set(Array.isArray(d.knowledgeCreditedIds) ? d.knowledgeCreditedIds : []);
     state.streak = Number(d.streak) || 0;
     window.GT_ACTIVE_BOTS = state.bots;
     window.GT_CITY_CLAIMS = state.cityClaims;
@@ -2075,7 +2078,7 @@
   function openKnowledgeHelpPopup() {
     AudioMgr.play('klick');
     const kbNow = getCurrentKnowledgeBonuses(state.city);
-    const gain = BAL.KNOWLEDGE_GAIN_PER_CORRECT || 12;
+    const gain = BAL.KNOWLEDGE_GAIN_PER_CORRECT || 4;
     const html = `
       <div class="card-modal" style="max-width:520px; background:linear-gradient(180deg,#fdf7e8 0%,#f0e2c2 100%); border:3px ridge #9e7537;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px;">
@@ -4525,6 +4528,7 @@
     state.contractBonusPoints = 0;
     state.claimedCitiesCount = 0;
     state.regionKnowledge = {};
+    state.knowledgeCreditedIds = new Set();
     state.streak = 0;
     state.bots = (window.GT_BOTS && chosenBotCount > 0)
       ? window.GT_BOTS.createBots(chosenBotCount, chosenBotDiff, chosenStart, W)

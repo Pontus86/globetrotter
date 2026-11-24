@@ -30,7 +30,7 @@
     SIGHT_PERFECT_BONUS: 120, // Bonus för full pott (Guld) på en sevärdhet
 
     // Regional lokalkännedom (0-100 % per världsdel) — knyter kunskap direkt till ekonomi & resor!
-    KNOWLEDGE_GAIN_PER_CORRECT: 12,
+    KNOWLEDGE_GAIN_PER_CORRECT: 4,
     KNOWLEDGE_TIER1: 30, // >= 30 %: +15 % lön, +8 % prutchans
     KNOWLEDGE_TIER2: 60, // >= 60 %: +30 % lön, +15 % prutchans, -10 % biljettpris
     KNOWLEDGE_TIER1_JOB_BONUS: 0.15,

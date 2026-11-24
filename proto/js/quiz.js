@@ -135,15 +135,21 @@
     const currentCity = W.cities[state.city];
     const region = normReg(currentCity?.region || '');
     const bal = window.GT_BALANCE || {};
-    const gainPerCorrect = bal.KNOWLEDGE_GAIN_PER_CORRECT || 12;
+    const gainPerCorrect = bal.KNOWLEDGE_GAIN_PER_CORRECT || 4;
 
-    function recordOutcome(kind) {
+    function recordOutcome(kind, qObj) {
       if (!state.regionKnowledge || typeof state.regionKnowledge !== 'object') state.regionKnowledge = {};
+      if (!(state.knowledgeCreditedIds instanceof Set)) {
+        state.knowledgeCreditedIds = new Set(Array.isArray(state.knowledgeCreditedIds) ? state.knowledgeCreditedIds : []);
+      }
       if (kind === 'full' || kind === 'partial') {
         state.streak = (state.streak || 0) + 1;
-        if (region) {
+        const qKey = qObj ? (qObj.id || qObj.q || '') : '';
+        const alreadyCredited = qKey && state.knowledgeCreditedIds.has(qKey);
+        if (region && !alreadyCredited) {
+          if (qKey) state.knowledgeCreditedIds.add(qKey);
           const prev = Number(state.regionKnowledge[region]) || 0;
-          const delta = kind === 'full' ? gainPerCorrect : Math.round(gainPerCorrect * 0.5);
+          const delta = kind === 'full' ? gainPerCorrect : Math.max(1, Math.round(gainPerCorrect * 0.5));
           state.regionKnowledge[region] = Math.min(100, prev + delta);
         }
       } else {
@@ -382,7 +388,7 @@
               AudioMgr.play('right1');
               state.questionsCorrect++;
               sessionCorrect++;
-              recordOutcome('full');
+              recordOutcome('full', q);
             } else {
               btn.classList.add('wrong');
               AudioMgr.play('wrong1');
@@ -460,9 +466,9 @@
           });
           const allRight = rightCount === q.pairs.length;
           const partial = rightCount >= q.pairs.length - 1;
-          if (allRight) { AudioMgr.play('right1'); state.questionsCorrect++; sessionCorrect++; recordOutcome('full'); }
-          else if (partial) { AudioMgr.play('right1'); state.questionsCorrect += 0.5; sessionCorrect += 0.5; recordOutcome('partial'); }
-          else { AudioMgr.play('wrong1'); recordOutcome('miss'); }
+          if (allRight) { AudioMgr.play('right1'); state.questionsCorrect++; sessionCorrect++; recordOutcome('full', q); }
+          else if (partial) { AudioMgr.play('right1'); state.questionsCorrect += 0.5; sessionCorrect += 0.5; recordOutcome('partial', q); }
+          else { AudioMgr.play('wrong1'); recordOutcome('miss', q); }
           const summary = q.pairs.map(p => `${p[0]} = ${p[1]}`).join(' · ');
           showAnswerDeepDive(partial, summary, `Du fick ${rightCount} av ${q.pairs.length} par rätt. ${q.explain || ''}`);
         };
@@ -500,9 +506,9 @@
           orderState.forEach((it, pos) => { if (it.idx === pos) exactPositions++; });
           const allRight = exactPositions === q.items.length;
           const partial = exactPositions >= 2;
-          if (allRight) { AudioMgr.play('right1'); state.questionsCorrect++; sessionCorrect++; recordOutcome('full'); }
-          else if (partial) { AudioMgr.play('right1'); state.questionsCorrect += 0.5; sessionCorrect += 0.5; recordOutcome('partial'); }
-          else { AudioMgr.play('wrong1'); recordOutcome('miss'); }
+          if (allRight) { AudioMgr.play('right1'); state.questionsCorrect++; sessionCorrect++; recordOutcome('full', q); }
+          else if (partial) { AudioMgr.play('right1'); state.questionsCorrect += 0.5; sessionCorrect += 0.5; recordOutcome('partial', q); }
+          else { AudioMgr.play('wrong1'); recordOutcome('miss', q); }
           const rightSeq = q.items.join(' → ');
           const note = `${allRight ? 'Helt rätt ordning!' : `Du fick ${exactPositions} av ${q.items.length} på exakt rätt plats.`} ${q.explain || ''}`;
           showAnswerDeepDive(allRight || partial, rightSeq, note);
@@ -526,7 +532,7 @@
             AudioMgr.play('right1');
             state.questionsCorrect++;
             sessionCorrect++;
-            recordOutcome('full');
+            recordOutcome('full', q);
             ok = true;
             note = `Du gissade ${userVal.toLocaleString('sv-SE')} ${q.unit} — imponerande nära det exakta värdet ${q.ans.toLocaleString('sv-SE')} ${q.unit}!`;
             addJournal(`Satte en knivskarp uppskattning (${userVal.toLocaleString('sv-SE')} ${q.unit}) i ${W.cities[state.city].name}!`);
@@ -534,7 +540,7 @@
             AudioMgr.play('right1');
             state.questionsCorrect += 0.5;
             sessionCorrect += 0.5;
-            recordOutcome('partial');
+            recordOutcome('partial', q);
             ok = true;
             note = `Din gissning (${userVal.toLocaleString('sv-SE')} ${q.unit}) var tillräckligt nära det exakta svaret ${q.ans.toLocaleString('sv-SE')} ${q.unit} för delpoäng.`;
           } else {
@@ -619,14 +625,14 @@
               ok = true;
               state.questionsCorrect++;
               sessionCorrect++;
-              recordOutcome('full');
+              recordOutcome('full', q);
               AudioMgr.play('right1');
               headline = `✓ Mitt i prick! (${distKm.toLocaleString('sv-SE')} km ifrån)`;
             } else if (distKm <= 1500) {
               ok = true;
               state.questionsCorrect += 0.5;
               sessionCorrect += 0.5;
-              recordOutcome('partial');
+              recordOutcome('partial', q);
               AudioMgr.play('right1');
               headline = `✓ Nära! (${distKm.toLocaleString('sv-SE')} km ifrån · delpoäng)`;
             } else {
@@ -711,7 +717,7 @@
             AudioMgr.play('right1');
             state.questionsCorrect++;
             sessionCorrect++;
-            recordOutcome('full');
+            recordOutcome('full', q);
           } else {
             inp.style.borderColor = '#a82828';
             inp.style.background = '#fae6e6';
