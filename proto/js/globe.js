@@ -230,6 +230,8 @@
       this.interactive = options.interactive !== undefined ? options.interactive : !this.mini;
       this.baseRadius = options.radius || Math.round(Math.min(canvas.width, canvas.height) * 0.43);
       this.radius = this.baseRadius;
+      this.maxRadius = options.maxRadius || Math.max(4200, this.baseRadius * 16);
+      this.minRadius = options.minRadius || Math.max(85, this.baseRadius * 0.72);
       this.centerLon = options.centerLon !== undefined ? options.centerLon : 18;
       this.centerLat = options.centerLat !== undefined ? options.centerLat : 38;
       this.isDragging = false;
@@ -458,11 +460,11 @@
       c.addEventListener('mouseleave', () => { this.hoverPos = null; });
       window.addEventListener('mouseup', onEnd);
 
-      // Mushjulszoom för att kunna zooma in på kontinenter och resrutter
+      // Mushjulszoom (proportionell zoom ända ner på landsdelsnivå!)
       c.addEventListener('wheel', e => {
         e.preventDefault();
-        const delta = e.deltaY > 0 ? -36 : 36;
-        this.radius = Math.max(this.baseRadius * 0.72, Math.min(780, this.radius + delta));
+        const factor = e.deltaY > 0 ? (1 / 1.16) : 1.16;
+        this.radius = Math.max(this.minRadius, Math.min(this.maxRadius, this.radius * factor));
       }, { passive: false });
 
       let pinchDist = null;
@@ -486,8 +488,10 @@
             e.touches[0].clientX - e.touches[1].clientX,
             e.touches[0].clientY - e.touches[1].clientY
           );
-          const diff = curDist - pinchDist;
-          this.radius = Math.max(this.baseRadius * 0.72, Math.min(780, this.radius + diff * 1.4));
+          if (pinchDist > 4) {
+            const ratio = curDist / pinchDist;
+            this.radius = Math.max(this.minRadius, Math.min(this.maxRadius, this.radius * ratio));
+          }
           pinchDist = curDist;
         }
       }, { passive: true });

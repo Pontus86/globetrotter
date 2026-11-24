@@ -2989,8 +2989,9 @@
 
     const canvas = document.getElementById('globeCanvas');
     if (canvas && window.GlobeRenderer) {
-      const cw = Math.max(320, Math.min(1200, Math.round(window.innerWidth || 1120)));
-      const ch = Math.max(320, Math.min(1200, Math.round(window.innerHeight || 630)));
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const cw = Math.max(320, Math.min(1800, Math.round((window.innerWidth || 1120) * dpr)));
+      const ch = Math.max(320, Math.min(1800, Math.round((window.innerHeight || 630) * dpr)));
       canvas.width = cw;
       canvas.height = ch;
       const isPortrait = ch > cw;
@@ -3145,13 +3146,13 @@
       if (zoomInBtn) {
         zoomInBtn.onclick = () => {
           stopSpin();
-          activeGlobeRenderer.radius = Math.min(780, activeGlobeRenderer.radius + 70);
+          activeGlobeRenderer.radius = Math.min(activeGlobeRenderer.maxRadius || 3600, activeGlobeRenderer.radius * 1.38);
         };
       }
       if (zoomOutBtn) {
         zoomOutBtn.onclick = () => {
           stopSpin();
-          activeGlobeRenderer.radius = Math.max(activeGlobeRenderer.baseRadius * 0.72, activeGlobeRenderer.radius - 70);
+          activeGlobeRenderer.radius = Math.max(activeGlobeRenderer.minRadius || activeGlobeRenderer.baseRadius * 0.72, activeGlobeRenderer.radius / 1.38);
         };
       }
 
