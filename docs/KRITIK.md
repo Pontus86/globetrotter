@@ -97,9 +97,11 @@ Ingen av punkterna i avsnitt 9 (speltest med nya spelare) är påbörjad. Det ä
 
 | Andel rätt | Klarade resor | Snitt dagar |
 |---|---|---|
-| 60 % | 170 av 200 | 21,6 av 30 |
-| 75 % | 196 av 200 | 18,0 av 30 |
-| 90 % | 199 av 200 | 15,9 av 30 |
+| 60 % | 177 av 200 | 18,7 av 30 |
+| 75 % | 196 av 200 | 16,9 av 30 |
+| 90 % | 200 av 200 | 15,4 av 30 |
+
+*(Med nödlånen hemifrån inräknade, som i spelet.)*
 
 Den gamla simuleringen var alltså inte för snäll i resultatet; den var bara fel byggd. Spelet är **för lätt**: med 4 500 kr och 30 dagar klarar nästan alla resan med god marginal. Det beror främst på att man kan stanna i en stad och ta samma jobb igen nästa dag, så pengar och yrken aldrig tar slut. Se förslaget *En chans per jobb och sevärdhet* i DESIGN.md.
 

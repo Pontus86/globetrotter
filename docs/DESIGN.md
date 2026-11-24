@@ -175,6 +175,91 @@ när nästa är halvvägs. Det finns aldrig en naturlig punkt att sluta på.
 - Underverk ger mycket poäng och är den naturliga dragningskraften i ruttvalet.
   Ska man ta omvägen till Petra?
 
+### 5.4 En chans per jobb, sevärdhet och aktivitet (förslag 2026-11-24)
+
+**Idé:** allt som ger pengar eller framsteg kan bara göras en gång per resa.
+Då går det inte att stanna i en stad och få oändligt många chanser eller
+oändligt med pengar, och pengarna kan ta slut på riktigt.
+
+**Problemet idag**
+- Jobben nollställs varje dag (`jobsDoneToday`). Man kan stanna i en billig
+  stad och ta samma jobbpass dag efter dag tills kassan och yrkena räcker.
+- Samma sak gäller stadens specialaktivitet (`signatureDoneToday`, +250/350 kr)
+  och snabbduellen mot en bot (`botDuelDoneToday`, +300 kr).
+- Sevärdheter är redan nästan en chans: första besöket ger betyg och bonus,
+  och omspel ger inga pengar.
+- Följden syns i simuleringen (`proto/tools/test_rules.js`): med 75 % rätt
+  klarar 98 % av resorna spelet, på i snitt 17 av 30 dagar. Varken pengar
+  eller tid är knappa.
+
+**Regler i förslaget**
+- **Jobb:** varje platsannons i en stad kan sökas en gång per resa. Ett
+  avklarat pass står som *Tjänsten tillsatt* i tidningen resten av resan.
+- **Sevärdheter:** ett betygsatt besök (Guld/Silver/Brons). Ett nytt besök är
+  tillåtet som träning, men ger inga pengar, ingen lokalkännedom och ingen
+  Reseflyt.
+- **Stadens specialaktivitet:** en gång per stad och resa.
+- **Duell mot bot:** en gång per bot och resa.
+- **Världsarv:** som idag, varje del en gång.
+
+**Varför det är bra**
+- **Pengarna blir ändliga.** Inkomsten finns utspridd över världen, så
+  ruttvalet avgör också var man kan tjäna pengar. "Ska jag ta omvägen via
+  Köpenhamn för att jobba där?" blir ett riktigt beslut.
+- **Kunskap blir avgörande.** När varje jobb bara går en gång kostar varje fel
+  svar riktiga pengar. Allmänbildningen får tyngd utan att spelet blir ett
+  nötande av samma frågor.
+- **Varje stad blir värd att besöka** för sina jobb, inte bara för passmålen.
+- Det stämmer med pelare 2: tid, pengar och kunskap drar åt olika håll.
+
+**Simulering (200 resor från Malmö, 4 500 kr i startkassa)**
+
+Simuleringsspelaren tar alla lediga jobb i en stad innan den reser vidare,
+eftersom det är rätt strategi när jobben bara finns en gång.
+
+| Regel | Dagar | 60 % rätt | 75 % rätt | 90 % rätt |
+|---|---|---|---|---|
+| Idag (jobb varje dag) | 30 | 89 % klarar | 98 % | 100 % |
+| En chans per jobb | 30 | 42 % | 77 % | 95 % |
+| En chans per jobb | 25 | 36 % | 76 % | 91 % |
+| En chans per jobb | 20 | 33 % | 67 % | 79 % |
+
+- Med 30 dagar slutar nästan alla misslyckade resor i konkurs, och de lyckade
+  tar ändå bara cirka 16 dagar. Tiden biter alltså inte.
+- **Med 20 dagar biter båda.** Med 75 % rätt klarar två av tre resan, och
+  misslyckandena delas ungefär lika mellan tidsbrist och konkurs.
+- Simuleringen räknar inte med sevärdheter (som kostar tid), handel med
+  souvenirer, resehändelser eller prutning (som kan ge pengar). Riktiga
+  spelare har alltså både mindre tid och fler inkomstkällor. Siffrorna är en
+  riktning, inte facit.
+
+**Det som måste finnas om pengarna kan ta slut**
+- **Utvägar som kostar något:** nödlån hemifrån (finns: 2 × 1 200 kr, −250
+  poäng), sälja souvenirer, stafett- och kurirpaket, extrajobb som däcksgast på
+  båten, billiga tåg och bussar till grannstäder.
+- **Ett tydligt slut om utvägarna är slut:** är man pank, utan lediga jobb och
+  har inte råd med billigaste avgången, betalar klubben hemresan och resan
+  slutar som *Turist*. Spelet får aldrig låsa sig i en stad.
+- **Synlig information före beslutet:** tidningen visar hur många jobb som är
+  kvar i staden, och jordgloben kan visa antal lediga jobb per stad i
+  ruttplaneringen.
+
+**Risker**
+- Spelare med låg träffsäkerhet kan hamna i en nedåtspiral (42 % klarar resan
+  med 60 % rätt). Behåll dagens regel som lätt läge (*Turist*) och använd en
+  chans per jobb som standard.
+- Hamnar den rätta tidsgränsen på 20 eller 25 dagar? Det ska avgöras i
+  speltest, inte bara i simuleringen.
+
+**Rekommendation:** inför en chans per jobb, specialaktivitet och botduell
+som standard, prova 20 och 25 dagar i speltest, och behåll dagens regler som
+lätt läge.
+
+**Teknik:** ersätt `jobsDoneToday`, `signatureDoneToday` och
+`botDuelDoneToday` med nycklar utan dag (t.ex. `"oslo_1"`), spara dem i
+sparfilen, och gör simuleringens rad *Förslag: en chans per jobb* i
+`test_rules.js` till ett krav när regeln införs.
+
 ## 6. Souvenirer
 
 ### 6.1 Värde efter avstånd

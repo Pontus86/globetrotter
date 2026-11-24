@@ -162,6 +162,7 @@ assert(kb2.tier === 2 && Math.abs(kb2.totalJobBonus - 0.40) < 0.001 && kb2.ticke
 // - varje jobb kan bara tas en gång per stad och dag
 // - lokalkännedom ökar med KNOWLEDGE_GAIN_PER_CORRECT per rätt svar
 // - minst 3 världsdelar krävs
+// - nödlån hemifrån (CALL_HOME_*) när kassan är låg
 // Sevärdheter, handel med vinst, resehändelser och prutning ingår inte.
 function mulberry32(seed) {
   let a = seed >>> 0;
@@ -174,7 +175,8 @@ function mulberry32(seed) {
   };
 }
 
-function simulateJourneys({ runs, accuracy, seed, dayLimit = 30, home = 'malmo' }) {
+// jobsOncePerJourney: designförslaget i DESIGN.md §5.4, där varje jobb bara kan tas en gång per resa.
+function simulateJourneys({ runs, accuracy, seed, dayLimit = 30, home = 'malmo', jobsOncePerJourney = false, startCash = BAL.START_CASH }) {
   const rng = mulberry32(seed);
   const shuffle = arr => {
     const a = arr.slice();
@@ -205,7 +207,8 @@ function simulateJourneys({ runs, accuracy, seed, dayLimit = 30, home = 'malmo' 
 
   let wins = 0;
   let daysUsedTotal = 0;
-  const failReasons = { tid: 0, fast: 0 };
+  const failReasons = { tid: 0, pank: 0, fast: 0 };
+  let loansTotal = 0;
 
   for (let run = 0; run < runs; run++) {
     // Passmål som i generateJourneyGoals
@@ -217,7 +220,7 @@ function simulateJourneys({ runs, accuracy, seed, dayLimit = 30, home = 'malmo' 
     const targets = shuffle(Object.keys(byRegion)).slice(0, 3)
       .map(r => byRegion[r][Math.floor(rng() * byRegion[r].length)]);
 
-    let cash = BAL.START_CASH;
+    let cash = startCash;
     let day = 1;
     let hour = BAL.DAY_START_HOUR;
     let cur = home;
@@ -226,6 +229,8 @@ function simulateJourneys({ runs, accuracy, seed, dayLimit = 30, home = 'malmo' 
     const comps = new Set();
     const regions = new Set([ROUTES.normRegion(W.cities[home].region)]);
     let jobsTaken = new Set();
+    const jobsDoneJourney = new Set(); // "stad_index" när jobbet bara får tas en gång per resa
+    let loans = 0;
     let board = null;
     let won = false;
     let guard = 0;
@@ -241,6 +246,9 @@ function simulateJourneys({ runs, accuracy, seed, dayLimit = 30, home = 'malmo' 
     while (day <= dayLimit && guard++ < 2000) {
       if (hour >= BAL.DAY_END_HOUR) { sleep(); continue; }
       if (!board) board = shuffle(edgesOf(cur)).slice(0, 5);
+
+      // Nödlån hemifrån som i spelet (hotelltelefonen)
+      if (cash < BAL.CALL_HOME_THRESHOLD && loans < BAL.CALL_HOME_MAX) { cash += BAL.CALL_HOME_AMOUNT; loans++; }
 
       if (targets.includes(cur) && !collected.has(cur)) {
         const sk = (W.cities[cur].souvenirs || [])[0];
@@ -262,12 +270,14 @@ function simulateJourneys({ runs, accuracy, seed, dayLimit = 30, home = 'malmo' 
       const travelHours = hop ? Math.max(2, Math.round(1 + km / 800)) : 0;
 
       // Jobba om det behövs pengar eller yrken och det finns ett ledigt jobb som hinns med idag
-      const needWork = comps.size < 3 || (hop && cash < price + 200) || (!hop && cash < 1500);
+      // Med en chans per jobb tar spelaren alla lediga jobb i staden innan resan fortsätter
+      const needWork = jobsOncePerJourney || comps.size < 3 || (hop && cash < price + 200) || (!hop && cash < 1500);
       const jobs = W.cities[cur].jobs || [];
-      const jobIdx = jobs.findIndex((j, i) => !jobsTaken.has(i) && hour + (j.hours || 4) <= BAL.DAY_END_HOUR);
+      const jobIdx = jobs.findIndex((j, i) => !jobsTaken.has(i) && !jobsDoneJourney.has(`${cur}_${i}`) && hour + (j.hours || 4) <= BAL.DAY_END_HOUR);
       if (needWork && jobIdx >= 0) {
         const job = jobs[jobIdx];
         jobsTaken.add(jobIdx);
+        if (jobsOncePerJourney) jobsDoneJourney.add(`${cur}_${jobIdx}`);
         let correct = 0;
         for (let i = 0; i < 6; i++) if (rng() < accuracy) correct++;
         cash += Math.round((job.pay || 800) * (correct / 6) * (1 + kb.totalJobBonus));
@@ -275,6 +285,24 @@ function simulateJourneys({ runs, accuracy, seed, dayLimit = 30, home = 'malmo' 
         if (correct >= 4) comps.add(job.isSignature ? `${cur}_sig` : (job.role || job.title));
         hour += job.hours || 4;
         continue;
+      }
+
+      // Pank och utan jobb kvar: ta billigaste avgången på tavlan till en stad som har lediga jobb (en riktig spelare gör så)
+      if (jobsOncePerJourney && jobIdx < 0 && (!hop || cash < price)) {
+        const workCity = board
+          .filter(k => (W.cities[k].jobs || []).some((j, i) => !jobsDoneJourney.has(`${k}_${i}`)))
+          .map(k => ({ k, p: Math.round(BAL.FLIGHT_BASE_PRICE + ROUTES.getDistanceBetweenCities(W, cur, k) * BAL.FLIGHT_PRICE_PER_KM) }))
+          .filter(o => o.p <= cash)
+          .sort((a, b) => a.p - b.p)[0];
+        if (workCity) {
+          cash -= workCity.p;
+          hour += 2;
+          cur = workCity.k;
+          board = null;
+          jobsTaken = new Set();
+          regions.add(ROUTES.normRegion(W.cities[cur].region));
+          continue;
+        }
       }
 
       if (hop && cash >= price) {
@@ -288,18 +316,23 @@ function simulateJourneys({ runs, accuracy, seed, dayLimit = 30, home = 'malmo' 
       }
       sleep();
     }
+    loansTotal += loans;
+    const cheapest = Math.min(...edgesOf(cur).map(k => BAL.FLIGHT_BASE_PRICE + ROUTES.getDistanceBetweenCities(W, cur, k) * BAL.FLIGHT_PRICE_PER_KM));
+    const jobsLeftHere = (W.cities[cur].jobs || []).some((j, i) => !jobsDoneJourney.has(`${cur}_${i}`));
     if (won) { wins++; daysUsedTotal += day; }
+    else if (cash < cheapest && !jobsLeftHere) failReasons.pank++;
     else if (day > dayLimit) failReasons.tid++;
     else failReasons.fast++;
   }
-  return { wins, runs, avgDays: wins ? Math.round(daysUsedTotal / wins * 10) / 10 : null, failReasons };
+  return { wins, runs, avgDays: wins ? Math.round(daysUsedTotal / wins * 10) / 10 : null, failReasons, avgLoans: Math.round(loansTotal / runs * 10) / 10 };
 }
 
 const simLevels = [0.6, 0.75, 0.9].map(acc => Object.assign({ acc }, simulateJourneys({ runs: 200, accuracy: acc, seed: 20261124 })));
-simLevels.forEach(r => {
-  console.log(`Ekonomisimulering (startkassa ${BAL.START_CASH} kr, ${Math.round(r.acc * 100)} % rätt): ${r.wins}/${r.runs} klarade inom 30 dagar` +
-    (r.avgDays ? `, snitt ${r.avgDays} dagar` : '') + ` (tiden tog slut: ${r.failReasons.tid}, fastnade: ${r.failReasons.fast}).`);
-});
+const printSim = (label, r) => console.log(`${label} (startkassa ${BAL.START_CASH} kr, ${Math.round(r.acc * 100)} % rätt): ${r.wins}/${r.runs} klarade inom 30 dagar` +
+  (r.avgDays ? `, snitt ${r.avgDays} dagar` : '') + `, ${r.avgLoans} nödlån/resa (tiden tog slut: ${r.failReasons.tid}, pank: ${r.failReasons.pank}, fastnade: ${r.failReasons.fast}).`);
+simLevels.forEach(r => printSim('Ekonomisimulering', r));
+// Designförslaget (DESIGN.md §5.4): varje jobb bara en gång per resa. Bara information, inget krav ännu.
+[0.6, 0.75, 0.9].forEach(acc => printSim('Förslag: en chans per jobb', Object.assign({ acc }, simulateJourneys({ runs: 200, accuracy: acc, seed: 20261124, jobsOncePerJourney: true }))));
 const sim75 = simLevels.find(r => r.acc === 0.75);
 const sim90 = simLevels.find(r => r.acc === 0.9);
 assert(sim75.wins / sim75.runs >= 0.85, `En spelare med 75 % rätt klarade för få resor: ${sim75.wins}/${sim75.runs}`);
