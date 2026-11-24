@@ -24,6 +24,69 @@ Nästan alla verb i spelet är en quiz:
 
 ---
 
+## Uppföljning 2026-11-24
+
+**Underlag:** de nio commits som kommit sedan första genomgången (`9d5a90d` till `187b08d`), åtta körningar av `proto/tools/test_rules.js`, mätningar på speldatan i webbläsaren och början av en ny resa från Malmö.
+
+### Omdöme
+
+Det har hänt mycket på ett dygn, och mycket av det är rätt saker:
+- Passmålen går nu att nå tur och retur.
+- Souvenirpriserna fungerar.
+- Prutningen har en riktig risk.
+- Man ser pris och tid innan man går in på en sevärdhet.
+- Solo är standard och dag 1 börjar med en tydlig genomgång av målen.
+- Det finns regeltester.
+
+Spelet har gått från *quiz i kostym* till *quiz med en ekonomi runt omkring*. Kärnan är ändå oförändrad: det enda sättet att få lokalkännedom, lön och yrken är fortfarande att svara på flervalsfrågor. Lokalkännedomen gör kunskapen värdefull, men man skaffar den på samma sätt som förut.
+
+### Det största problemet just nu: frysningen följdes inte
+
+Avsnitt 4 säger *frys nytt innehåll tills kärnloopen är rolig*. Samma dygn kom ändå:
+- ett helt nytt spelläge, Interpol-jakten (`js/interpol.js`, 509 rader)
+- 16× zoom med Retina-skärpa på jordgloben
+- tappkort och etikettfilter på globen
+
+Ingen av punkterna i avsnitt 9 (speltest med nya spelare) är påbörjad. Det är samma mönster som förut: nya system i stället för att pröva om grundloopen håller.
+
+### Bockar som inte stämmer med koden
+
+- **Balansfilen** (avsnitt 7) är bara delvis genomförd. `game.js` har fortfarande 12 hårdkodade bonusbelopp, till exempel `changeCash(350, …)` för jobbrekord och `changeCash(500, …)` för stipendiet. `BOT_JOB_RECORD_BONUS` (250) och `MP_JOB_RECORD_BONUS` (300) finns i `balance.js` men används inte; koden betalar ut 350 och 400 kr. Samma sak med `ROUTE_BLOCK_SURCHARGE`, som finns kvar fast rutblockeringen är borttagen för spelaren.
+- **Uppdelningen av `game.js`** (avsnitt 7) har kommit en bit. Filen har ändå 5 470 rader.
+- **Juicy Couture-väskan** (avsnitt 10) är borta ur texterna, men 3D-modellen för första nivån laddar fortfarande `tier0_juicy_atlas.jpg` (`js/backpack3d.js:12–13`).
+- **Bottarna får fortfarande `+500 kr` från ingenstans** när kassan tar slut (`js/bots.js:363`).
+
+### Regeltestet och simuleringen
+
+- **Testet är instabilt.** Ekonomisimuleringen slumpar och kräver minst 75 klarade resor av 100. På åtta körningar blev det 73–85, och en körning föll. Seeda slumpen eller sänk gränsen med god marginal.
+- **Simuleringen är för snäll för att lita på.** Den:
+  - antar 80 % rätt på varje jobb och att varje jobbpass ger en ny yrkeskompetens
+  - räknar alltid med 4 timmar per jobb (riktiga pass är 4–8 timmar)
+  - ger +36 % lokalkännedom per pass, trots att `balance.js` säger +4 % per rätt svar (högst 24 % på 6 frågor)
+  - bortser från dagens avgångstavla, fullbokade avgångar, kravet på 3 världsdelar och gränsen på ett pass per jobb och dag.
+
+  Siffran "79/100 klarade" säger därför lite om hur det går för en riktig spelare. Det är samma varning som i avsnitt 7: simulera med spelarens regler, inte en förenklad modell.
+- Raden "(79 behövde jobba)" är alltid lika med antalet klarade resor, eftersom simuleringen tvingas jobba för yrkeskompetenserna. Den säger alltså ingenting.
+
+### Mätningar på innehållet
+
+- **Svaret står i faktatexten i 25 av 286 sevärdhetsfrågor** (räknat lågt, bara exakta ordträffar), till exempel Turning Torso → Santiago Calatrava, Nyhavn → H.C. Andersen, Tivoli → 1843 och Akropolis → Athena. Lilla torg-frågan från första genomgången finns kvar.
+- **166 av 218 sevärdheter använder stadens översiktsfoto.** I alla 50 nya städer delar samtliga sevärdheter samma bild.
+
+### Nya småbuggar
+
+- [ ] Dag 1-genomgången visar regioner med gemener och fel namn: "Kairo (Egypten, afrika)", "New York (USA, amerika)". Den normaliserade regionnyckeln från `GT_ROUTES.normRegion` läcker ut i texten. Visa stadens riktiga `region` i stället.
+- [ ] Gör regeltestet deterministiskt.
+
+### Prioritet framåt
+
+1. **Speltesta det som finns** innan något nytt byggs (avsnitt 9). Göm Interpol-jakten och multiplayer under tiden.
+2. **Rätta de 25 frågorna** där svaret står i texten. Det tar några timmar och är det enda som ändrar upplevelsen av varje sevärdhetsbesök.
+3. **Gör simuleringen ärlig**, så att balansändringar kan bedömas med siffror.
+4. **För in de återstående bonusbeloppen i `balance.js`**, och rensa bort de flesta enligt avsnitt 1.
+
+---
+
 ## Tre fel som går före balanseringen
 
 Den oberoende granskningen omfattade början av två enspelarresor i webbläsaren, från Malmö och Oslo, samt kontroller av speldata och regler. Slutspelet bedömdes genom kodläsning. Siffrorna nedan avser versionen som granskades den 23 november 2026.
@@ -87,7 +150,7 @@ Den oberoende granskningen omfattade början av två enspelarresor i webbläsare
 - README:n lyfter fram antal (städer, frågor, minispel) i stället för upplevelser.
 
 **Åtgärder**
-- [ ] Frys nytt innehåll tills kärnloopen är rolig.
+- [ ] Frys nytt innehåll tills kärnloopen är rolig. *(Inte följt: Interpol-jakten, 16× zoom och tappkort på globen tillkom 2026-11-24.)*
 - [ ] Göm eller ta bort multiplayer, telegram, stipendium, kontrakt och inmutning tills grundspelet håller.
 - [ ] Gå ner till 10–12 städer med djup. Varje stad ska ha något unikt som påverkar spelarens beslut, inte bara ett nytt foto.
 
@@ -135,8 +198,8 @@ Den oberoende granskningen omfattade början av två enspelarresor i webbläsare
 - Inga tester och ingen simulering av ekonomin.
 
 **Åtgärder**
-- [x] Samla alla balanssiffror i en balansfil (`proto/js/balance.js`).
-- [x] Dela upp `game.js` i moduler (`balance.js`, `audio.js`, `routes.js`, `economy.js`, `quiz.js` — över 1 030 rader utbrutna ur `game.js`).
+- [ ] Samla alla balanssiffror i en balansfil (`proto/js/balance.js`). *(Påbörjat. 12 bonusbelopp är fortfarande hårdkodade i `game.js`, och två konstanter i `balance.js` används inte; se Uppföljning 2026-11-24.)*
+- [ ] Dela upp `game.js` i moduler (`balance.js`, `audio.js`, `routes.js`, `economy.js`, `quiz.js` — över 1 030 rader utbrutna ur `game.js`). *(Påbörjat. `game.js` har fortfarande 5 470 rader.)*
 - [ ] Använd de befintliga bottarna för att simulera 1 000 resor och kontrollera att ekonomin håller (automatiserade regeltester för rutter, priser, regioner och prutning tillagda i `proto/tools/test_rules.js`).
 
 **Kommentar från den oberoende granskningen.** Prioritera tester som skulle ha fångat det omöjliga passet och den trasiga osthyveln. Det finns redan en testsida för minispel. Den lucka som spelar roll här är kontroller av resor och handel genom spelarens regler. Bottarna väljer destinationer ur världens städer med egen logik. Tusen lyckade botresor kan därför ge falsk trygghet om spelaren står kvar på Malmö central. Låt simuleringen köpa från samma avgångstavla och betala samma priser som spelaren. [Bottarnas ruttval](../proto/js/bots.js) · [Minispelens testsida](../proto/minigames_test.html)
@@ -186,7 +249,7 @@ Följande punkter tillkommer utöver genomgången ovan (och överlappar inte red
 ### Kompletterande åtgärder
 - [x] Inför verkliga konsekvenser av att vara pank *(sova pank på stationen innebär nu att man vaknar kl. 11:00 istället för 08:00)*.
 - [x] Byt ut prutningsknappen mot ett 3-nivåersval med riktig risk *(-10 % artigt, -20 % tufft, -35 % skambud med risk för +15 % straffpris)*.
-- [x] Börja med rymligare startväska *(4 platser i `Liten resväska`, skrotade Juicy Couture-väskan)*.
+- [x] Börja med rymligare startväska *(4 platser i `Liten resväska`, skrotade Juicy Couture-väskan)*. *(3D-modellen för första nivån laddar fortfarande `tier0_juicy_atlas.jpg`.)*
 - [x] Markera målstäder och möjliga flygrutter direkt på 3D-jordgloben *(inkl. snabbknappar för varje passmål)*.
 - [x] Ta bort Ticket-to-Ride-rutblockeringen *(och sluttabell mot botarna i `triggerGameOver` är tillagd)*.
 - [x] Låt spelaren se sevärdhetens namn, pris och tidskostnad före quizet, och ersätt 100 %-kravet med Guld/Silver/Brons.
