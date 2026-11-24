@@ -156,8 +156,11 @@
       return def && def.kind === 'kunskap' && (!def.region || normReg(def.region) === region) && (i.uses || def.uses) > 0;
     });
 
+    state.quizInProgress = true;
+
     function renderQuestion() {
       if (qIndex >= questions.length) {
+        state.quizInProgress = false;
         onComplete({ correct: sessionCorrect, total: questions.length });
         return;
       }

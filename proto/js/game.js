@@ -833,19 +833,23 @@
     );
     el.spotsContainer.appendChild(shopSpot);
 
-    // 3b. Bibliotek på kartan (med cirkelmätare som visar lokalkännedom % för aktuell världsdel!)
+    // 3b. Bibliotek på kartan (med cirkelmätare för lokalkännedom % + 🔥-symbol vid aktivt Reseflyt!)
     const cf = (window.GT_COUNTRY_FACTS && window.GT_COUNTRY_FACTS[state.city]) || null;
     if (cf && posMap.library) {
       const libKb = getCurrentKnowledgeBonuses(state.city);
       const ringColor = libKb.tier === 2 ? '#66e38c' : (libKb.tier === 1 ? '#ffd875' : '#c99a45');
+      const streakBadge = libKb.streakActive
+        ? `<span class="lib-streak-pill" title="Reseflyt aktivt: ${state.streak} rätt i rad (+10% jobblön)">🔥${state.streak}</span>`
+        : '';
       const libSpot = createSpot(
         posMap.library[0], posMap.library[1],
         'service library',
-        `<div class="spot-badge lib-progress-ring" style="--lib-pct:${libKb.pct}%; --lib-color:${ringColor};" title="Bibliotek · Lokalkännedom i ${city.region}: ${libKb.pct}%">
+        `<div class="spot-badge lib-progress-ring" style="--lib-pct:${libKb.pct}%; --lib-color:${ringColor};" title="Bibliotek · Lokalkännedom i ${city.region}: ${libKb.pct}%${libKb.streakActive ? ` · Reseflyt ×${state.streak}` : ''}">
            <img class="spot-model-img" src="${cf.libraryPhoto}" onerror="this.src='assets/photos/libraries/lib_stockholm.jpg'" alt="Bibliotek">
+           ${streakBadge}
            <span class="lib-pct-pill" style="border-color:${ringColor}; color:${ringColor};">${libKb.pct}%</span>
          </div>`,
-        `Bibliotek · ${libKb.pct}%`,
+        `Bibliotek · ${libKb.pct}%${libKb.streakActive ? ` 🔥${state.streak}` : ''}`,
         () => openLibraryModal()
       );
       el.spotsContainer.appendChild(libSpot);
@@ -1074,6 +1078,15 @@
 
   function closeModal() {
     AudioMgr.play('klick');
+    if (state.quizInProgress) {
+      state.quizInProgress = false;
+      if ((state.streak || 0) > 0) {
+        state.streak = 0;
+        showToast('Du lämnade mitt i en fråga — ditt Reseflyt bröts!', 2800);
+        updateHUD();
+        renderCitySpots(W.cities[state.city]);
+      }
+    }
     el.modalOverlay.classList.add('hidden');
     el.modalContent.innerHTML = '';
     if (window.AmbientMgr) {
