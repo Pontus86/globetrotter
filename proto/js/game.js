@@ -1941,31 +1941,17 @@
       }).join('');
 
       bodyHtml = `
-        <div class="encyc-know-grid">
-          <div class="encyc-know-guide">
-            <div class="encyc-section-title">SÅ FUNGERAR LOKALKÄNNEDOM &amp; RESEFLYT</div>
-            <p class="encyc-know-intro">
-              Varje gång du svarar rätt på frågor i en världsdel (på <b>sevärdheter</b>, <b>jobbpass</b> eller <b>världsarv</b>) stiger din lokalkännedom i den världsdelen med <b>+${BAL.KNOWLEDGE_GAIN_PER_CORRECT || 12} %</b> (+${Math.round((BAL.KNOWLEDGE_GAIN_PER_CORRECT || 12) / 2)} % vid delpoäng).
-            </p>
-            <div class="encyc-know-tier-list">
-              <div class="encyc-know-tier">
-                <b>Nivå 1 (≥ 30 % lokalkännedom)</b>
-                <span>+15 % högre lön på alla jobbpass och +8 % bättre chans när du prutar i världsdelen.</span>
-              </div>
-              <div class="encyc-know-tier gold">
-                <b>Nivå 2 (≥ 60 % lokalkännedom)</b>
-                <span>+30 % högre jobblön, +15 % bättre prutchans <b>och -10 % rabatt på alla flyg-, tåg- och båtbiljetter</b> härifrån!</span>
-              </div>
-              <div class="encyc-know-tier streak">
-                <b>🔥 Reseflyt (3+ rätt i rad) · Nu: ${state.streak || 0} i rad</b>
-                <span>Ger ytterligare <b>+10 % extra jobblön</b> så länge du inte svarar fel (${kbNow.streakActive ? 'AKTIVT JUST NU!' : `svara rätt på ${Math.max(1, 3 - (state.streak || 0))} fråga/frågor till`}).</span>
+        <div class="encyc-know-single">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+            <div>
+              <div class="encyc-section-title" style="margin-bottom:2px;">DIN LOKALKÄNNEDOM PER VÄRLDSDEL</div>
+              <div style="font-size:11.5px; color:#5b4228;">
+                🔥 Reseflyt: <b>${state.streak || 0} rätt i rad</b> ${kbNow.streakActive ? '<span style="color:#216e35; font-weight:bold;">(Aktivt: +10% jobblön!)</span>' : `(nå 3 för +10% jobblön)`}
               </div>
             </div>
+            <button type="button" class="encyc-tab-btn" onclick="window.GT.openKnowledgeHelpPopup()">ⓘ Hur fungerar lokalkännedom?</button>
           </div>
-          <div class="encyc-know-regions">
-            <div class="encyc-section-title">DIN LOKALKÄNNEDOM PER VÄRLDSDEL</div>
-            <div class="encyc-know-list">${barsHtml}</div>
-          </div>
+          <div class="encyc-know-list">${barsHtml}</div>
         </div>
       `;
     } else if (activeTab === 'history' && ch && Array.isArray(ch.timeline) && ch.timeline.length > 0) {
@@ -2073,7 +2059,43 @@
     showModal(html);
   }
 
-  // --- Basar / Marknad, Pruta & Sälja (delegeras till GT_ECONOMY & GT_BALANCE) ---
+  function openKnowledgeHelpPopup() {
+    AudioMgr.play('klick');
+    const kbNow = getCurrentKnowledgeBonuses(state.city);
+    const gain = BAL.KNOWLEDGE_GAIN_PER_CORRECT || 12;
+    const html = `
+      <div class="card-modal" style="max-width:520px; background:linear-gradient(180deg,#fdf7e8 0%,#f0e2c2 100%); border:3px ridge #9e7537;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px;">
+          <div>
+            <div style="font-size:10px; letter-spacing:1.4px; color:#8c5a18; font-weight:bold; text-transform:uppercase;">BIBLIOTEKETS RESEHANDBOK</div>
+            <h3 style="margin:2px 0 0; font-family:Georgia,serif; color:#3d2410;">Så fungerar Lokalkännedom &amp; Reseflyt</h3>
+          </div>
+          <button type="button" class="globe-brass-btn" style="padding:4px 10px; font-size:11px;" onclick="window.GT.openLibraryModal('knowledge', 0)">✕ Stäng</button>
+        </div>
+        <p class="encyc-know-intro">
+          Varje gång du svarar rätt på frågor i en världsdel (på <b>sevärdheter</b>, <b>jobbpass</b> eller <b>världsarv</b>) stiger din lokalkännedom i den världsdelen med <b>+${gain} %</b> (+${Math.round(gain / 2)} % vid delpoäng).
+        </p>
+        <div class="encyc-know-tier-list" style="margin-bottom:12px;">
+          <div class="encyc-know-tier">
+            <b>Nivå 1 (≥ 30 % lokalkännedom)</b>
+            <span>+15 % högre lön på alla jobbpass och +8 % bättre chans när du prutar i världsdelen.</span>
+          </div>
+          <div class="encyc-know-tier gold">
+            <b>Nivå 2 (≥ 60 % lokalkännedom)</b>
+            <span>+30 % högre jobblön, +15 % bättre prutchans <b>och -10 % rabatt på alla flyg-, tåg- och båtbiljetter</b> härifrån!</span>
+          </div>
+          <div class="encyc-know-tier streak">
+            <b>🔥 Reseflyt (3+ rätt i rad) · Nu: ${state.streak || 0} i rad</b>
+            <span>Ger ytterligare <b>+10 % extra jobblön</b> så länge du inte svarar fel (${kbNow.streakActive ? 'AKTIVT JUST NU!' : `svara rätt på ${Math.max(1, 3 - (state.streak || 0))} fråga/frågor till`}).</span>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content:flex-end;">
+          <button class="stamp-action-btn" onclick="window.GT.openLibraryModal('knowledge', 0)">Tillbaka till Biblioteket</button>
+        </div>
+      </div>
+    `;
+    showModal(html);
+  }
   function getEffectiveBuyPrice(key) {
     return ECON.getEffectiveBuyPrice(W, state, key, getCityEvent(state.city));
   }
@@ -5305,6 +5327,7 @@
     startJobShift,
     startJobMinigame,
     openLibraryModal,
+    openKnowledgeHelpPopup,
     openBazaarModal,
     upgradeBackpack,
     buyGearItem,
