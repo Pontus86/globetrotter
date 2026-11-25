@@ -1048,7 +1048,7 @@ window.GT_SCOTLAND = (function () {
       landmarkBonusCooldownUntil: {}, // cityId -> elapsedSec (för biljetter i vanliga städer)
       placeCooldownUntil: {}, // "cityId:hotel|market|library" -> elapsedSec
       thiefVisitLog: {}, // cityId -> { lastTo, modeLabel, day, hh, mm } (för hotelliggaren!)
-      cash: 1800, // Reskassa i kronor — tjänas vid sevärdheter & används till resor, hotell & marknad!
+      cash: 2200, // Balanserad startkassa (simulering: 46.5% tjuv / 53.5% polis vid jämvikt!)
       gear: {
         lockpick: 0,      // Tjuv: 2x bredare grön zon i kassaskåp
         smoke: 0,         // Tjuv: fryser jagande poliser i 6s
@@ -1815,14 +1815,14 @@ window.GT_SCOTLAND = (function () {
       const isTarget = isThief && state.realTargets.includes(destId) && !state.collectedTargets.includes(destId);
       const hasPol = state.police.some(p => !p.travel && p.city === destId);
       const canAfford = !isThief || state.cash >= fare;
-      const boardSec = isThief ? (mode === 'flight' ? 5 : 7) : 2;
+      const boardSec = isThief ? 4 : 5;
       const badge = !canAfford
         ? `<span class="sy-flap-badge loud">SAKNAR ${formatKr(fare - state.cash)}</span>`
         : mode === 'train'
-          ? '<span class="sy-flap-badge stealth">OSYNLIG · 7s BOARDING</span>'
+          ? '<span class="sy-flap-badge stealth">OSYNLIG · 4s BOARDING</span>'
           : (isThief && state.gear.fakePass > 0
-            ? '<span class="sy-flap-badge stealth">🛂 FALSKPASS · 5s BOARDING</span>'
-            : '<span class="sy-flap-badge loud">AVSLÖJAR DIG · 5s BOARDING</span>');
+            ? '<span class="sy-flap-badge stealth">🛂 FALSKPASS · 4s BOARDING</span>'
+            : '<span class="sy-flap-badge loud">AVSLÖJAR DIG · 4s BOARDING</span>');
       return `
         <button type="button" class="sy-flap-row" data-to="${destId}" data-mode="${mode}" ${!canAfford ? 'disabled style="opacity:0.45;cursor:not-allowed;"' : ''}>
           <span>${tInfo.icon} ${d.name.toUpperCase()} ${isTarget ? '🎯' : ''}${hasPol ? ' 🚓' : ''} ${badge}</span>
@@ -1918,8 +1918,8 @@ window.GT_SCOTLAND = (function () {
       }
     }
     const boardSec = (actor === getControlledActor() && state.playerRole === 'thief')
-      ? (mode === 'flight' ? 5 : 7)
-      : 2;
+      ? 4
+      : 5;
     const tInfo = getTransitModeInfo(actor.city, destId, mode);
     actor.boarding = {
       to: destId,
@@ -2052,7 +2052,7 @@ window.GT_SCOTLAND = (function () {
       return;
     }
     const clk = formatClock(state.elapsedSec, state.secPerDay);
-    state.lastPing = { cityId, day: clk.day, hh: clk.hh, mm: clk.mm, reason };
+    state.lastPing = { cityId, day: clk.day, hh: clk.hh, mm: clk.mm, time: state.elapsedSec, reason };
     state.stats.reveals++;
     AUDIO().play('stamp');
     addLog(`📡 RADARPING i ${DATA().CITIES[cityId].name}! (${reason})`, 'alert');
@@ -2461,7 +2461,22 @@ window.GT_SCOTLAND = (function () {
         const destId = actor.travel.to;
         actor.city = destId;
         actor.travel = null;
-        actor.coords = actor.id === 'thief' ? [...CITIES[destId].hub.coords] : [...CITIES[destId].precinct.coords];
+        if (actor.id === 'thief') {
+          actor.coords = [...CITIES[destId].hub.coords];
+        } else {
+          // Garantera minst 550m mellan polisspawn och station (förhindrar orättvisa instagripanden vid boarding)
+          let spawn = [...CITIES[destId].precinct.coords];
+          const dHub = DATA().distanceMeters(spawn, CITIES[destId].hub.coords);
+          if (dHub < 550) {
+            const dx = spawn[0] - CITIES[destId].hub.coords[0] || 0.004;
+            const dy = spawn[1] - CITIES[destId].hub.coords[1] || 0.003;
+            const scale = 550 / Math.max(10, dHub);
+            spawn = [CITIES[destId].hub.coords[0] + dx * scale, CITIES[destId].hub.coords[1] + dy * scale];
+          }
+          actor.coords = spawn;
+          actor.spottedPos = null;
+          actor.alertState = 'patrol';
+        }
         actor.walkTarget = null;
         actor.pendingAction = null;
         actor.stuckTimer = 0;
@@ -2786,44 +2801,54 @@ window.GT_SCOTLAND = (function () {
 
       p.aiCooldown -= dt;
       if (p.aiCooldown > 0) return;
-      p.aiCooldown = 3.0 + Math.random() * 2.2;
+      p.aiCooldown = 2.0 + Math.random() * 1.5;
+
+      // Koordinerad polis-AI (V4): undvik att två poliser åker till samma stad!
+      const claimedByOthers = new Set(state.police.filter(o => o.id !== p.id).map(o => (o.travel ? o.travel.to : o.city)));
+      const pingAge = state.lastPing ? (state.elapsedSec - (state.lastPing.time || 0)) : 999;
 
       let goal = null;
       let radioMsg = '';
 
       if (idx === 0) {
-        // Polis 1 (Holm — Spåraren): jagar senaste spåret, eller en grannstad om redan på spåret
-        if (pingCity && pingCity !== p.city) {
+        // Polis 1 (Holm — Spåraren): jagar färskt spår (<25s), annars genskjuter grannstad mot misstänkt mål
+        if (pingCity && pingCity !== p.city && pingAge < 25) {
           goal = pingCity;
-          radioMsg = `📻 ${p.short}: "Jag tar spåret direkt mot ${CITIES[pingCity].name}!"`;
+          radioMsg = `📻 ${p.short}: "Färskt spår — jag tar sikte på ${CITIES[pingCity].name}!"`;
+        } else if (pingCity) {
+          const nb = [...CITIES[pingCity].trains, ...CITIES[pingCity].flights].filter(id => id !== p.city && !claimedByOthers.has(id));
+          goal = nb.find(id => activeSuspects.includes(id)) || nb[Math.floor(Math.random() * nb.length)];
+          if (goal) radioMsg = `📻 ${p.short}: "Spåret kallnar i ${CITIES[pingCity].name} — söker vidare i ${CITIES[goal].name}!"`;
         } else {
-          const curEdges = [...CITIES[p.city].trains, ...CITIES[p.city].flights];
-          goal = curEdges[Math.floor(Math.random() * curEdges.length)];
-          if (goal) radioMsg = `📻 ${p.short}: "Tjuven har lämnat ${CITIES[p.city].name} — söker vidare mot ${CITIES[goal].name}!"`;
+          const cands = activeSuspects.filter(id => id !== p.city && !claimedByOthers.has(id));
+          goal = cands[0] || activeSuspects[0];
+          if (goal) radioMsg = `📻 ${p.short}: "Börjar patrullera ${CITIES[goal].name}."`;
         }
       } else if (idx === 1) {
-        // Polis 2 (Vega — Genskjutaren): stänger av en grannstad/knutpunkt FRAMFÖR tjuvens senaste spår mot misstänkta mål!
-        if (pingCity) {
-          const neighbors = [...CITIES[pingCity].trains, ...CITIES[pingCity].flights].filter(id => id !== p.city);
-          const intercept = neighbors.find(id => activeSuspects.includes(id)) || neighbors[Math.floor(Math.random() * neighbors.length)];
-          goal = intercept || activeSuspects[0];
-          if (goal) radioMsg = `📻 ${p.short}: "Jag genskjuter flyktvägen via ${CITIES[goal].name}!"`;
-        } else {
-          const hubs = ['zurich', 'paris', 'berlin', 'milan'].filter(id => id !== p.city);
+        // Polis 2 (Vega — Genskjutaren): stänger av närmaste misstänkta mål från tjuvens senaste spår!
+        if (pingCity && activeSuspects.length > 0) {
+          const sorted = activeSuspects
+            .filter(id => id !== p.city && !claimedByOthers.has(id))
+            .sort((a, b) => DATA().haversineKm(CITIES[pingCity].center, CITIES[a].center) - DATA().haversineKm(CITIES[pingCity].center, CITIES[b].center));
+          goal = sorted[0];
+          if (goal) radioMsg = `📻 ${p.short}: "Jag genskjuter tjuvens rutt vid ${CITIES[goal].name}!"`;
+        }
+        if (!goal) {
+          const hubs = ['zurich', 'paris', 'berlin', 'milan', 'prague'].filter(id => id !== p.city && !claimedByOthers.has(id));
           goal = hubs[Math.floor(Math.random() * hubs.length)];
           if (goal) radioMsg = `📻 ${p.short}: "Stänger av knutpunkten ${CITIES[goal].name}."`;
         }
       } else {
-        // Polis 3 (Lind — Väktaren): vaktar de misstänkta målstäderna!
-        const guardChoices = activeSuspects.filter(id => id !== p.city);
-        goal = guardChoices[Math.floor(Math.random() * guardChoices.length)] || Object.keys(CITIES)[0];
+        // Polis 3 (Lind — Väktaren): vaktar ett oklarat misstänkt mål som ingen annan polis bevakar!
+        const guardChoices = activeSuspects.filter(id => id !== p.city && !claimedByOthers.has(id));
+        goal = guardChoices[Math.floor(Math.random() * guardChoices.length)] || activeSuspects[0] || Object.keys(CITIES)[0];
         if (goal) radioMsg = `📻 ${p.short}: "Jag lägger mig i bakhåll vid ${CITIES[goal].name}."`;
       }
 
       if (goal && goal !== p.city) {
         const step = bfsNextStep(p.city, goal, true);
         if (step) {
-          startTravel(p, step.to, step.mode);
+          p.boarding = { to: step.to, mode: step.mode, startSec: state.elapsedSec, durationSec: 5 };
           if (radioMsg && Math.random() < 0.72) {
             addLog(radioMsg, 'police');
           }
