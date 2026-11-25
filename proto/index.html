@@ -11,7 +11,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..600&family=Playfair+Display:ital,wght@0,600..900;1,600&family=Special+Elite&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@5.1.0/dist/maplibre-gl.css" rel="stylesheet">
   <link rel="stylesheet" href="css/game.css?v=20261124d">
+  <link rel="stylesheet" href="css/scotland_mode.css?v=20261125a">
 </head>
 <body>
 
@@ -49,7 +51,7 @@
           <span class="wallet-amount"><b>4 500 kr</b></span>
         </div>
       </div>
-      <button class="hud-radio-btn" id="btnMenu" onclick="window.GT.openMenuModal()" title="Meny &amp; inställningar">☰ MENY</button>
+      <button class="hud-radio-btn" id="btnMenu" onclick="window.GT_SCOTLAND && window.GT_SCOTLAND.isActive() ? window.GT_SCOTLAND.openMenu() : window.GT.openMenuModal()" title="Meny &amp; inställningar">☰ MENY</button>
     </div>
 
     <!-- Interaktiva kartspots (Snurrande 3D-modeller/fotomedaljonger & sevärdheter) -->
@@ -57,16 +59,16 @@
 
     <!-- Dock nere till höger: Snurrande 3D-Jordglob, Ryggsäck och Pass (rena symboler utan överflödiga etiketter) -->
     <div class="travel-dock">
-      <div class="dock-badge globe-badge" id="dockGlobe" onclick="window.GT.openGlobeModal()" title="Jordglob & världshändelser">
+      <div class="dock-badge globe-badge" id="dockGlobe" onclick="window.GT_SCOTLAND && window.GT_SCOTLAND.isActive() ? window.GT_SCOTLAND.toggleView() : window.GT.openGlobeModal()" title="Jordglob & 3D-stad">
         <canvas id="dockMiniGlobe" class="dock-globe-canvas" width="46" height="46"></canvas>
         <span class="dock-sub" id="dockGlobeDist">0 km</span>
         <span class="globe-event-dot hidden" id="dockGlobeEventDot" title="Aktiva världshändelser!">!</span>
       </div>
-      <div class="dock-badge" id="dockBackpack" onclick="window.GT.openBackpackModal()" title="Vandringsryggsäck">
+      <div class="dock-badge" id="dockBackpack" onclick="window.GT_SCOTLAND && window.GT_SCOTLAND.isActive() ? window.GT_SCOTLAND.openDepartureBoardModal() : window.GT.openBackpackModal()" title="Vandringsryggsäck / Avgångar">
         <canvas id="dockMiniBackpack" class="dock-globe-canvas" width="46" height="46"></canvas>
         <span class="dock-sub" id="dockBackpackCount">0/5</span>
       </div>
-      <div class="dock-badge passport-badge" id="dockPassport" onclick="window.GT.openPassportModal()" title="Svenskt pass, stämplar & resedagbok">
+      <div class="dock-badge passport-badge" id="dockPassport" onclick="window.GT_SCOTLAND && window.GT_SCOTLAND.isActive() ? window.GT_SCOTLAND.openPassportModal() : window.GT.openPassportModal()" title="Svenskt pass & mål">
         <div class="mini-swe-passport" aria-hidden="true">
           <span class="msp-eu">EU</span>
           <span class="msp-swe">SVERIGE</span>
@@ -138,7 +140,10 @@
 <script src="js/routes.js?v=20261124g"></script>
 <script src="js/economy.js?v=20261123"></script>
 <script src="js/quiz.js?v=20261124f"></script>
+<script src="https://unpkg.com/maplibre-gl@5.1.0/dist/maplibre-gl.js"></script>
+<script src="js/scotland_data.js?v=20261125b"></script>
+<script src="js/scotland_mode.js?v=20261125a"></script>
 <script src="js/interpol.js?v=20261124g"></script>
-<script src="js/game.js?v=20261124g"></script>
+<script src="js/game.js?v=20261125a"></script>
 </body>
 </html>

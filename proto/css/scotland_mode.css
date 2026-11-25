@@ -1,0 +1,648 @@
+/* Globetrotter: Scotland Yard 3D — Integrerad 90-tals taktil stil inne i huvudspelet */
+
+/* När Scotland Yard-läget är aktivt: ersätt bakgrundsfoto & gamla ikoner med 3D-kartlagret */
+body.scotland-active #mapLayer,
+body.scotland-active #photoLayer,
+body.scotland-active #timeLightLayer,
+body.scotland-active #spotsContainer,
+body.scotland-active #mpOpponentBar {
+  display: none !important;
+}
+
+#scotlandMapLayer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  display: none;
+}
+body.scotland-active #scotlandMapLayer {
+  display: block;
+}
+
+/* Se till att huvudspelets 90-tals HUD, stadsskylt, docka och modaler ligger prydligt ovanpå 3D-kartan */
+body.scotland-active .city-plate,
+body.scotland-active .hud,
+body.scotland-active .travel-dock {
+  z-index: 25 !important;
+}
+
+/* Siren-vinjett vid jakt i samma stad */
+.sy-danger-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+  box-shadow: inset 0 0 95px rgba(210, 30, 45, 0.6);
+  animation: sySirenPulse 0.9s infinite alternate;
+}
+@keyframes sySirenPulse {
+  0% { box-shadow: inset 0 0 85px rgba(210, 30, 45, 0.58); }
+  100% { box-shadow: inset 0 0 95px rgba(40, 145, 235, 0.48); }
+}
+
+/* Vänster 90-tals taktil kompass- & uppdragspanel */
+.sy-compass-panel {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  width: 318px;
+  max-height: calc(100% - 145px);
+  z-index: 24;
+  background: linear-gradient(180deg, rgba(36, 26, 17, 0.94) 0%, rgba(22, 15, 9, 0.96) 100%);
+  border: 2px solid #c59b48;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 232, 170, 0.25);
+  color: #f6ead4;
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  font-family: 'Lora', Georgia, serif;
+}
+
+.sy-panel-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(212, 166, 74, 0.35);
+  padding-bottom: 6px;
+}
+.sy-role-tag {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #ffd875;
+}
+.sy-stealth-pill {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(45, 138, 86, 0.25);
+  border: 1px solid #52c480;
+  color: #9ff0bf;
+}
+.sy-stealth-pill.exposed {
+  background: rgba(190, 35, 45, 0.32);
+  border-color: #ff6b6b;
+  color: #ffc2c2;
+}
+
+.sy-ping-strip {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #d9c59e;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(212, 166, 74, 0.25);
+  border-radius: 5px;
+  padding: 5px 8px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.sy-police-tabs {
+  display: flex;
+  gap: 5px;
+}
+.sy-police-tab {
+  flex: 1;
+  background: rgba(255, 245, 220, 0.07);
+  border: 1px solid rgba(212, 166, 74, 0.3);
+  color: #efe2c6;
+  border-radius: 6px;
+  padding: 6px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+}
+.sy-police-tab.active {
+  background: linear-gradient(180deg, #27588c, #183b61);
+  border-color: #7cc4fa;
+  color: #fff;
+}
+.sy-police-tab small {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 400;
+  color: #cbb894;
+  margin-top: 2px;
+}
+
+.sy-chase-alert {
+  background: linear-gradient(135deg, #991b1b, #dc2626);
+  border: 1.5px solid #fecaca;
+  border-radius: 7px;
+  padding: 8px 10px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  animation: syPulse 0.7s infinite alternate;
+}
+@keyframes syPulse {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.18); }
+}
+
+.sy-travel-card {
+  background: rgba(28, 52, 78, 0.65);
+  border: 1px solid #60a5fa;
+  border-radius: 7px;
+  padding: 9px 10px;
+}
+.sy-travel-label { font-size: 12.5px; font-weight: 700; color: #e0f2fe; margin-bottom: 5px; }
+.sy-travel-bar { height: 7px; background: rgba(0,0,0,0.45); border-radius: 99px; overflow: hidden; }
+.sy-travel-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #38bdf8, #ffd875); transition: width 0.12s linear; }
+.sy-travel-eta { font-family: 'Courier New', monospace; font-size: 11px; color: #bae6fd; margin-top: 4px; }
+
+.sy-btn-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sy-brass-btn {
+  width: 100%;
+  padding: 9px 11px;
+  border-radius: 7px;
+  border: 1.5px solid #c59b48;
+  background: linear-gradient(180deg, #4b3621 0%, #2e2012 100%);
+  color: #fff2d6;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: filter 0.12s, transform 0.08s;
+}
+.sy-brass-btn:hover { filter: brightness(1.16); border-color: #ffd875; }
+.sy-brass-btn:active { transform: scale(0.98); }
+.sy-brass-btn:disabled { opacity: 0.48; cursor: not-allowed; }
+.sy-brass-btn.gold {
+  background: linear-gradient(180deg, #e0ad48 0%, #b37d1e 100%);
+  border-color: #ffeaad;
+  color: #1d1205;
+}
+.sy-brass-btn.blue {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  border-color: #93c5fd;
+  color: #fff;
+}
+.sy-brass-btn.red {
+  background: linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%);
+  border-color: #fca5a5;
+  color: #fff;
+}
+.sy-brass-btn small {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.sy-hint-note {
+  font-size: 10.8px;
+  color: #c2ae89;
+  line-height: 1.38;
+  border-top: 1px solid rgba(212, 166, 74, 0.22);
+  padding-top: 6px;
+}
+
+/* Höger 90-tals Polisscanner / Radio */
+.sy-scanner-toggle {
+  display: none;
+  position: absolute;
+  right: 14px;
+  top: 90px;
+  z-index: 26;
+  background: linear-gradient(180deg, #3a2b1c, #20160d);
+  border: 1.5px solid #c59b48;
+  color: #ffd875;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sy-scanner-box {
+  position: absolute;
+  right: 16px;
+  top: 96px;
+  width: 288px;
+  max-height: calc(100% - 215px);
+  z-index: 24;
+  background: linear-gradient(180deg, #231c15 0%, #14100c 100%);
+  border: 2px solid #8c6d3b;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 226, 150, 0.18);
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.sy-scanner-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 11px;
+  color: #f4c668;
+  letter-spacing: 0.06em;
+}
+.sy-led {
+  color: #ff595e;
+  font-weight: 700;
+  animation: syPulse 0.9s infinite alternate;
+}
+.sy-scanner-lcd {
+  background: #0d1510;
+  border: 1.5px inset #4d3e28;
+  border-radius: 6px;
+  padding: 7px;
+  max-height: 185px;
+  min-height: 110px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.sy-log-line {
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #d6e4d2;
+  border-left: 2.5px solid #64748b;
+}
+.sy-log-line.police { border-left-color: #38bdf8; color: #bae6fd; background: rgba(56, 189, 248, 0.08); }
+.sy-log-line.alert  { border-left-color: #f87171; color: #fecaca; background: rgba(239, 68, 68, 0.14); }
+.sy-log-line.good   { border-left-color: #4ade80; color: #bbf7d0; background: rgba(74, 222, 128, 0.1); }
+.sy-log-line.thief  { border-left-color: #fbbf24; color: #fef08a; background: rgba(245, 197, 86, 0.12); }
+
+.sy-scanner-quick {
+  display: flex;
+  gap: 5px;
+}
+.sy-scanner-quick button {
+  flex: 1;
+  background: rgba(255, 240, 200, 0.08);
+  border: 1px solid rgba(212, 166, 74, 0.35);
+  color: #f2dfb7;
+  border-radius: 5px;
+  padding: 4px 6px;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+.sy-scanner-quick button:hover { background: rgba(255, 240, 200, 0.18); }
+
+.sy-scanner-form {
+  display: flex;
+  gap: 5px;
+}
+.sy-scanner-form input {
+  flex: 1;
+  min-width: 0;
+  background: #0a0f0c;
+  border: 1px solid #6b5633;
+  border-radius: 5px;
+  padding: 5px 7px;
+  color: #a7f3d0;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  outline: none;
+}
+.sy-scanner-form input:focus { border-color: #ffd875; }
+.sy-scanner-form button {
+  background: #b37d1e;
+  border: 1px solid #ffeaad;
+  color: #1c1205;
+  font-weight: 800;
+  font-size: 11px;
+  padding: 5px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* Kartmarkörer på 3D-globen & 3D-staden */
+.sy-map-city {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+.sy-city-pin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #f5ead4;
+  border: 2.5px solid #2b1d10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
+  transition: transform 0.14s;
+}
+.sy-city-pin:hover { transform: scale(1.3); }
+.sy-city-pin.target { background: #f5c556; width: 17px; height: 17px; box-shadow: 0 0 14px rgba(245, 197, 86, 0.95); }
+.sy-city-pin.current { background: #34d399; width: 18px; height: 18px; }
+.sy-city-tag {
+  margin-top: 2px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(24, 16, 10, 0.9);
+  border: 1px solid rgba(212, 166, 74, 0.45);
+  color: #f9edd5;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sy-actor-pin {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.65);
+  position: relative;
+}
+.sy-actor-pin.thief { background: #b91c1c; border-color: #fde68a; }
+.sy-actor-pin.police { background: #0369a1; border-color: #e0f2fe; }
+.sy-actor-pin.ping {
+  background: rgba(220, 38, 38, 0.28);
+  border: 2px dashed #ff595e;
+  animation: syRadarRing 1.3s infinite;
+}
+@keyframes syRadarRing {
+  0% { transform: scale(0.95); opacity: 1; }
+  100% { transform: scale(1.48); opacity: 0.25; }
+}
+.sy-actor-caption {
+  position: absolute;
+  top: -21px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 14, 9, 0.92);
+  border: 1px solid rgba(212, 166, 74, 0.45);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.sy-poi-pin {
+  cursor: pointer;
+}
+.sy-poi-pill {
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 12px;
+  font-weight: 800;
+  color: #1f1407;
+  background: linear-gradient(180deg, #ffe08a, #d99b2e);
+  border: 2px solid #fff7e0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  transition: transform 0.12s;
+}
+.sy-poi-pill:hover { transform: scale(1.07); }
+.sy-poi-pill.hub {
+  background: linear-gradient(180deg, #7dd3fc, #0284c7);
+  color: #041320;
+  border-color: #e0f2fe;
+}
+
+/* 90-tals Modal-ram (Klappertavla, Frågekort, Kassaskåp, Uppdragspass, Setup) */
+.sy-modal-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  background: rgba(12, 8, 5, 0.72);
+  backdrop-filter: blur(5px);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.sy-modal-layer.hidden { display: none !important; }
+
+.sy-card-90s {
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #271d14 0%, #18110b 100%);
+  border: 2.5px solid #c99a45;
+  border-radius: 12px;
+  padding: 20px 22px;
+  color: #f5ebd6;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 232, 170, 0.25);
+  font-family: 'Lora', Georgia, serif;
+}
+.sy-card-90s h2 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 24px;
+  color: #ffd875;
+  margin-bottom: 6px;
+}
+.sy-card-sub {
+  font-size: 13px;
+  color: #cbb998;
+  margin-bottom: 14px;
+  line-height: 1.45;
+}
+
+/* Mekanisk Klappertavla */
+.sy-flap-board {
+  background: #100e0c;
+  border: 2px solid #8c6a2f;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.sy-flap-head {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 11.5px;
+  color: #ffd875;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 216, 117, 0.22);
+  padding-bottom: 4px;
+}
+.sy-flap-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 9px 11px;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #23201c 0%, #161411 50%, #1e1b17 100%);
+  border: 1px solid #4d4131;
+  color: #fef3c7;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+.sy-flap-row:hover { border-color: #ffd875; background: #2d261d; }
+.sy-flap-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+.sy-flap-badge.stealth { background: rgba(52, 211, 153, 0.2); color: #6ee7b7; border: 1px solid #34d399; }
+.sy-flap-badge.loud { background: rgba(248, 113, 113, 0.22); color: #fca5a5; border: 1px solid #f87171; }
+
+/* Setup valknappar */
+.sy-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.sy-choice-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.sy-choice-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.sy-choice-card {
+  background: rgba(255, 245, 220, 0.05);
+  border: 1.5px solid rgba(212, 166, 74, 0.3);
+  border-radius: 9px;
+  padding: 10px;
+  color: #f5ebd6;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Lora', Georgia, serif;
+}
+.sy-choice-card.active {
+  background: rgba(245, 197, 86, 0.18);
+  border-color: #ffd875;
+}
+.sy-choice-card b { display: block; font-size: 14px; color: #fff; margin-bottom: 3px; }
+.sy-choice-card span { font-size: 11.5px; color: #cbb998; line-height: 1.3; }
+
+/* Challenge-flikar & Kassaskåp */
+.sy-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.sy-tab {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: rgba(255, 245, 220, 0.06);
+  border: 1px solid rgba(212, 166, 74, 0.3);
+  color: #d6c39e;
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.sy-tab.active {
+  background: linear-gradient(180deg, #b37d1e, #7a5210);
+  border-color: #ffd875;
+  color: #fff;
+}
+
+.sy-quiz-paper {
+  background: #f6eedc;
+  color: #1f160c;
+  border: 2px solid #b58d3d;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.sy-quiz-q { font-size: 15.5px; font-weight: 700; line-height: 1.45; margin-bottom: 12px; }
+.sy-quiz-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sy-quiz-opt {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #fffaf0;
+  border: 1.5px solid #bfa065;
+  color: #1f160c;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+.sy-quiz-opt:hover { background: #fdf0cf; border-color: #8c5a0d; }
+.sy-quiz-opt.right { background: #d1fae5; border-color: #059669; }
+.sy-quiz-opt.wrong { background: #fee2e2; border-color: #dc2626; opacity: 0.7; }
+
+.sy-lock-bar {
+  position: relative;
+  width: 100%;
+  height: 34px;
+  background: #14100c;
+  border: 2.5px solid #c59b48;
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+.sy-lock-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(52, 211, 153, 0.5);
+  border-left: 2px solid #34d399;
+  border-right: 2px solid #34d399;
+}
+.sy-lock-needle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: #ffd875;
+  box-shadow: 0 0 12px #ffd875;
+}
+.sy-lock-pips { display: flex; justify-content: center; gap: 10px; margin-bottom: 12px; }
+.sy-pip {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid #8c6a2f;
+}
+.sy-pip.lit { background: #34d399; border-color: #a7f3d0; box-shadow: 0 0 10px #34d399; }
+
+.sy-feedback {
+  min-height: 22px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffd875;
+  margin-top: 6px;
+}
+
+.sy-modal-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(212, 166, 74, 0.25);
+}
+
+@media (max-width: 860px) {
+  .sy-scanner-toggle { display: block; }
+  .sy-scanner-box { display: none; top: 128px; right: 12px; width: calc(100% - 24px); max-height: 45vh; z-index: 30; }
+  .sy-scanner-box.mobile-open { display: flex; }
+  .sy-compass-panel { width: calc(100% - 24px); left: 12px; bottom: 72px; max-height: 38vh; }
+  .sy-quiz-opts { grid-template-columns: 1fr; }
+}
+
+#syUiContainer .hidden {
+  display: none !important;
+}

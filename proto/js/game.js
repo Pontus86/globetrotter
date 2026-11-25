@@ -4263,13 +4263,13 @@
 
             <div class="bp90-menu-buttons">
               ${continueBtn}
-              <button class="bp90-menu-btn primary" onclick="window.GT.openNewGameSetup()">
-                <span class="bp90-btn-title">STARTA NY RESA (1 SPELARE)</span>
-                <span class="bp90-btn-sub">VÄLJ STARTSTAD, RESLÄNGD &amp; UPP TILL 6 BOTTAR »</span>
+              <button class="bp90-menu-btn primary" onclick="window.GT_SCOTLAND && window.GT_SCOTLAND.openSetup()">
+                <span class="bp90-btn-title">🕵️ SCOTLAND YARD — 3D REALTIDSJAKT</span>
+                <span class="bp90-btn-sub">1 TJUV VS 3 POLISER · HÖGUPPLÖST 3D-GLOB, 3D-STÄDER &amp; POLISRADIO »</span>
               </button>
-              <button class="bp90-menu-btn continue" style="border-color:#ff9f43;" onclick="window.GT_INTERPOL && window.GT_INTERPOL.openIntroModal()">
-                <span class="bp90-btn-title" style="color:#ffd875;">🕵️ INTERPOL-JAKTEN</span>
-                <span class="bp90-btn-sub">SMITTA-JAKT ÖVER JORDGLOBEN · AGENT VS 5 RYMLINGAR</span>
+              <button class="bp90-menu-btn continue" onclick="window.GT.openNewGameSetup()">
+                <span class="bp90-btn-title">KLASSISK RESA (1 SPELARE)</span>
+                <span class="bp90-btn-sub">VÄLJ STARTSTAD, RESLÄNGD &amp; UPP TILL 6 BOTTAR »</span>
               </button>
               <button class="bp90-menu-btn continue" style="border-color:#38b6ff;" onclick="window.GT.openMultiplayerLobby()">
                 <span class="bp90-btn-title" style="color:#8cd7ff;">ONLINE DUELL (2 SPELARE)</span>
@@ -4845,7 +4845,7 @@
           <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
             ${(state.bots && state.bots.length > 0) ? `<button class="globe-brass-btn" style="padding:10px 14px; font-size:13px; text-align:left;" onclick="window.GT.openBotStandingsModal()">🏆 Topplista &amp; Öppna bonuskontrakt</button>` : ''}
             <button class="globe-brass-btn" style="padding:10px 14px; font-size:13px; text-align:left;" onclick="window.GT.openNewGameSetup()">🗺️ Starta nytt spel (välj stad &amp; bottar)</button>
-            <button class="globe-brass-btn" style="padding:10px 14px; font-size:13px; text-align:left; border-color:#ff9f43; color:#ffd875;" onclick="window.GT_INTERPOL && window.GT_INTERPOL.openIntroModal()">🕵️ Interpol-jakten (Smitta-jakt)</button>
+            <button class="globe-brass-btn" style="padding:10px 14px; font-size:13px; text-align:left; border-color:#ff9f43; color:#ffd875;" onclick="window.GT_SCOTLAND && window.GT_SCOTLAND.openSetup()">🕵️ Scotland Yard (3D Realtidsjakt)</button>
             <button class="globe-brass-btn" style="padding:10px 14px; font-size:13px; text-align:left; border-color:#38b6ff; color:#8cd7ff;" onclick="window.GT.openMultiplayerLobby()">⚡ Online Duell (2 spelare)</button>
             <button class="globe-brass-btn" style="padding:10px 14px; font-size:13px; text-align:left;" onclick="window.GT.openStartScreen()">🏠 Till startskärmen</button>
             <button class="stamp-action-btn" style="padding:10px 14px; font-size:13px; margin-top:4px;" onclick="window.GT.closeModal()">Fortsätt spela »</button>
