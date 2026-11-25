@@ -41,6 +41,8 @@ window.GT_SCOTLAND = (function () {
   let buildingLayers = [];
   let waterLayers = [];
   let walkableLayers = [];
+  let roadSourceName = null;
+  let roadGraph = { cityId: null, segments: [], nodes: new Map() };
   let rafId = null;
   let lastFrameTs = 0;
 
@@ -192,39 +194,7 @@ window.GT_SCOTLAND = (function () {
     hudSnapshot = null;
   }
 
-  // --- Exakt 2D punkt-i-polygon (helt immun mot 3D-lutning / pitch!) ---
-  function pointInRing(lng, lat, ring) {
-    let inside = false;
-    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-      const xi = ring[i][0], yi = ring[i][1];
-      const xj = ring[j][0], yj = ring[j][1];
-      const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / ((yj - yi) || 1e-12) + xi);
-      if (intersect) inside = !inside;
-    }
-    return inside;
-  }
-
-  function pointInPolygon(lng, lat, coords) {
-    if (!coords || coords.length === 0) return false;
-    if (!pointInRing(lng, lat, coords[0])) return false;
-    for (let i = 1; i < coords.length; i++) {
-      if (pointInRing(lng, lat, coords[i])) return false; // Innergård / hål
-    }
-    return true;
-  }
-
-  function pointInGeometry(lng, lat, geom) {
-    if (!geom) return false;
-    if (geom.type === 'Polygon') return pointInPolygon(lng, lat, geom.coordinates);
-    if (geom.type === 'MultiPolygon') {
-      for (let i = 0; i < geom.coordinates.length; i++) {
-        if (pointInPolygon(lng, lat, geom.coordinates[i])) return true;
-      }
-    }
-    return false;
-  }
-
-  // --- Gatukollision (exakta 2D-husgrunder + broar över vatten — omöjligt att gå genom hus!) ---
+  // --- Gatunät-motor: man kan BARA gå på riktiga gator, gångvägar och broar! ---
   function detectMapCollisionLayers() {
     if (!map) return;
     const style = map.getStyle();
@@ -232,114 +202,262 @@ window.GT_SCOTLAND = (function () {
     buildingLayers = [];
     waterLayers = [];
     walkableLayers = [];
+    roadSourceName = null;
 
     style.layers.forEach(l => {
       const id = (l.id || '').toLowerCase();
       const sl = (l['source-layer'] || '').toLowerCase();
       if (l.type === 'symbol') return;
 
-      if (id === 'sy-building-footprints') {
-        buildingLayers.push(l.id);
-      } else if (id.includes('bridge') || id.includes('road') || id.includes('path') || id.includes('tunnel') || sl === 'transportation') {
-        walkableLayers.push(l.id);
-      } else if (id === 'water' || sl === 'water') {
-        waterLayers.push(l.id);
+      if (sl === 'transportation' || id.includes('bridge') || id.includes('road') || id.includes('path')) {
+        if (!id.includes('rail') && !id.includes('ferry') && !id.includes('aeroway')) {
+          walkableLayers.push(l.id);
+          if (sl === 'transportation' && l.source && !roadSourceName) roadSourceName = l.source;
+        }
       }
     });
-
-    // Fallback om sy-building-footprints inte kunde läggas till
-    if (buildingLayers.length === 0) {
-      style.layers.forEach(l => {
-        const id = (l.id || '').toLowerCase();
-        const sl = (l['source-layer'] || '').toLowerCase();
-        if (l.type !== 'symbol' && (id.includes('building') || sl === 'building')) {
-          buildingLayers.push(l.id);
-        }
-      });
-    }
   }
 
-  function isBlockedOnMap(coords) {
-    if (!mapReady || !map) return false;
-    if (!state || state.viewMode !== 'city' || map.getZoom() < 14) return false;
+  function coordKey(c) {
+    // ~1.1 meters precision så gatukorsningar kopplas ihop
+    return `${c[0].toFixed(5)},${c[1].toFixed(5)}`;
+  }
+
+  function projectPointToSegment(p, a, b) {
+    const cosLat = Math.max(0.2, Math.cos(p[1] * Math.PI / 180));
+    const sx = 111320 * cosLat;
+    const sy = 111320;
+    const ax = (a[0] - p[0]) * sx, ay = (a[1] - p[1]) * sy;
+    const bx = (b[0] - p[0]) * sx, by = (b[1] - p[1]) * sy;
+    const abx = bx - ax, aby = by - ay;
+    const abLenSq = abx * abx + aby * aby;
+    let t = abLenSq > 1e-6 ? (-(ax * abx + ay * aby) / abLenSq) : 0;
+    t = Math.max(0, Math.min(1, t));
+    const qx = ax + abx * t;
+    const qy = ay + aby * t;
+    return {
+      coords: [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t],
+      distM: Math.hypot(qx, qy)
+    };
+  }
+
+  function buildRoadGraph(cityId) {
+    if (!mapReady || !map || !cityId) return;
+    const c = DATA().CITIES[cityId];
+    if (!c) return;
+
+    let feats = [];
     try {
-      const pt = map.project(coords);
-      const canvas = map.getCanvas();
-      const w = canvas.clientWidth || window.innerWidth;
-      const h = canvas.clientHeight || window.innerHeight;
-      if (pt.x < 6 || pt.y < 6 || pt.x > w - 6 || pt.y > h - 6) return false;
-
-      // 1. Exakt 2D punkt-i-polygon mot husgrunder (med liten 2.5m säkerhetsmarginal i 4 riktningar)
-      if (buildingLayers.length > 0) {
-        const queryBox = [[pt.x - 16, pt.y - 16], [pt.x + 16, pt.y + 16]];
-        const bFeats = map.queryRenderedFeatures(queryBox, { layers: buildingLayers });
-        if (bFeats && bFeats.length > 0) {
-          const probes = [
-            coords,
-            moveCoordsByMeters(coords, 2.5, 0),
-            moveCoordsByMeters(coords, -2.5, 0),
-            moveCoordsByMeters(coords, 0, 2.5),
-            moveCoordsByMeters(coords, 0, -2.5)
-          ];
-          for (let i = 0; i < bFeats.length; i++) {
-            const geom = bFeats[i].geometry;
-            for (let p = 0; p < probes.length; p++) {
-              if (pointInGeometry(probes[p][0], probes[p][1], geom)) return true;
-            }
-          }
-        }
+      if (roadSourceName) {
+        feats = map.querySourceFeatures(roadSourceName, { sourceLayer: 'transportation' }) || [];
       }
-
-      // 2. Vatten blockerar ENDAST om det inte ligger en bro/väg/gångstig ovanpå!
-      if (waterLayers.length > 0) {
-        const box = [[pt.x - 3, pt.y - 3], [pt.x + 3, pt.y + 3]];
-        const wFeats = map.queryRenderedFeatures(box, { layers: waterLayers });
-        if (wFeats && wFeats.length > 0) {
-          let inWater = false;
-          for (let i = 0; i < wFeats.length; i++) {
-            if (pointInGeometry(coords[0], coords[1], wFeats[i].geometry)) { inWater = true; break; }
-          }
-          if (inWater) {
-            if (walkableLayers.length > 0) {
-              const bridgeBox = [[pt.x - 7, pt.y - 7], [pt.x + 7, pt.y + 7]];
-              const rFeats = map.queryRenderedFeatures(bridgeBox, { layers: walkableLayers });
-              if (rFeats && rFeats.length > 0) return false; // På en bro → gåbart!
-            }
-            return true;
-          }
-        }
+      if (feats.length < 15 && walkableLayers.length > 0) {
+        feats = map.queryRenderedFeatures({ layers: walkableLayers }) || [];
       }
-      return false;
     } catch (e) {
-      return false;
+      return;
+    }
+
+    const segments = [];
+    const nodes = new Map();
+    const seenEdge = new Set();
+
+    const addNode = (pt) => {
+      const k = coordKey(pt);
+      if (!nodes.has(k)) nodes.set(k, { coords: [pt[0], pt[1]], edges: [] });
+      return k;
+    };
+
+    const addLine = (coordsArr) => {
+      for (let i = 0; i < coordsArr.length - 1; i++) {
+        const a = coordsArr[i];
+        const b = coordsArr[i + 1];
+        // Behåll bara gator inom ~2.4 km från stadskärnan
+        if (DATA().distanceMeters(c.center, a) > 2400) continue;
+        const ka = addNode(a);
+        const kb = addNode(b);
+        if (ka === kb) continue;
+        const ek = ka < kb ? `${ka}|${kb}` : `${kb}|${ka}`;
+        if (seenEdge.has(ek)) continue;
+        seenEdge.add(ek);
+        const distM = DATA().distanceMeters(a, b);
+        if (distM < 0.5 || distM > 600) continue;
+        segments.push([a, b]);
+        nodes.get(ka).edges.push({ to: kb, dist: distM });
+        nodes.get(kb).edges.push({ to: ka, dist: distM });
+      }
+    };
+
+    const EXCLUDED = new Set(['rail', 'transit', 'ferry', 'aerialway', 'motorway', 'raceway']);
+    for (let i = 0; i < feats.length; i++) {
+      const f = feats[i];
+      if (!f || !f.geometry) continue;
+      const cls = f.properties && (f.properties.class || f.properties.subclass);
+      if (cls && EXCLUDED.has(String(cls).toLowerCase())) continue;
+      if (f.geometry.type === 'LineString') {
+        addLine(f.geometry.coordinates);
+      } else if (f.geometry.type === 'MultiLineString') {
+        for (let j = 0; j < f.geometry.coordinates.length; j++) addLine(f.geometry.coordinates[j]);
+      }
+    }
+
+    if (segments.length > 0) {
+      roadGraph = { cityId, segments, nodes };
     }
   }
 
+  function snapToNearestRoad(coords, maxDistM = 200) {
+    if (!roadGraph || roadGraph.segments.length === 0) return coords;
+    let best = null;
+    let bestD = maxDistM;
+    const segs = roadGraph.segments;
+    for (let i = 0; i < segs.length; i++) {
+      const res = projectPointToSegment(coords, segs[i][0], segs[i][1]);
+      if (res.distM < bestD) {
+        bestD = res.distM;
+        best = res.coords;
+      }
+    }
+    return best || coords;
+  }
+
+  function findNearestRoadNodeKey(coords) {
+    let bestKey = null;
+    let bestD = Infinity;
+    roadGraph.nodes.forEach((n, k) => {
+      const d = DATA().distanceMeters(coords, n.coords);
+      if (d < bestD) { bestD = d; bestKey = k; }
+    });
+    return bestKey;
+  }
+
+  // Kortaste gångväg längs stadens riktiga gator (Dijkstra)
+  function findStreetPath(fromCoords, toCoords) {
+    if (!roadGraph || roadGraph.nodes.size < 2) return [toCoords];
+    const startKey = findNearestRoadNodeKey(fromCoords);
+    const goalKey = findNearestRoadNodeKey(toCoords);
+    if (!startKey || !goalKey || startKey === goalKey) return [snapToNearestRoad(toCoords)];
+
+    const dist = new Map([[startKey, 0]]);
+    const prev = new Map();
+    const visited = new Set();
+    const open = [{ k: startKey, d: 0 }];
+    let pops = 0;
+
+    while (open.length > 0 && pops < 2600) {
+      pops++;
+      let bestIdx = 0;
+      for (let i = 1; i < open.length; i++) {
+        if (open[i].d < open[bestIdx].d) bestIdx = i;
+      }
+      const cur = open.splice(bestIdx, 1)[0];
+      if (visited.has(cur.k)) continue;
+      visited.add(cur.k);
+      if (cur.k === goalKey) break;
+
+      const node = roadGraph.nodes.get(cur.k);
+      if (!node) continue;
+      for (let i = 0; i < node.edges.length; i++) {
+        const e = node.edges[i];
+        if (visited.has(e.to)) continue;
+        const nd = cur.d + e.dist;
+        if (nd < (dist.get(e.to) ?? Infinity)) {
+          dist.set(e.to, nd);
+          prev.set(e.to, cur.k);
+          open.push({ k: e.to, d: nd });
+        }
+      }
+    }
+
+    if (!prev.has(goalKey)) return [snapToNearestRoad(toCoords)];
+    const path = [];
+    let cur = goalKey;
+    while (cur && cur !== startKey) {
+      path.push(roadGraph.nodes.get(cur).coords);
+      cur = prev.get(cur);
+    }
+    path.reverse();
+    return path.length > 0 ? path : [snapToNearestRoad(toCoords)];
+  }
+
+  function updateWalkPathLine(actor) {
+    if (!mapReady || !map) return;
+    const src = map.getSource('sy-walk-path');
+    if (!src) return;
+    if (!actor || !actor.walkPath || actor.walkPath.length === 0 || state.viewMode !== 'city') {
+      src.setData({ type: 'FeatureCollection', features: [] });
+      return;
+    }
+    src.setData({
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates: [actor.coords, ...actor.walkPath] }
+      }]
+    });
+  }
+
+  function setActorWalkTo(actor, targetCoords, pendingAction = null) {
+    if (!actor || !state) return;
+    if (roadGraph.cityId !== actor.city || roadGraph.segments.length === 0) {
+      buildRoadGraph(actor.city);
+    }
+    actor.walkPath = findStreetPath(actor.coords, targetCoords);
+    actor.walkTarget = actor.walkPath[actor.walkPath.length - 1] || targetCoords;
+    actor.pendingAction = pendingAction;
+    actor.stuckTimer = 0;
+    if (actor === getControlledActor()) updateWalkPathLine(actor);
+  }
+
+  // WASD-rörelse låst direkt till gatorna — glider längs gatan och svänger mjukt i korsningar!
   function tryStepOnStreet(fromCoords, dxM, dyM) {
     const stepLen = Math.hypot(dxM, dyM);
     if (stepLen < 0.01) return fromCoords;
-    const direct = moveCoordsByMeters(fromCoords, dxM, dyM);
-    if (!isBlockedOnMap(direct)) return direct;
+    const rawNext = moveCoordsByMeters(fromCoords, dxM, dyM);
 
-    const baseAngle = Math.atan2(dyM, dxM);
-    for (const off of [0.5, -0.5, 1.0, -1.0, 1.45, -1.45, 1.9, -1.9]) {
-      const a = baseAngle + off;
-      const cand = moveCoordsByMeters(fromCoords, Math.cos(a) * stepLen * 0.85, Math.sin(a) * stepLen * 0.85);
-      if (!isBlockedOnMap(cand)) return cand;
+    if (!state || state.viewMode !== 'city' || roadGraph.cityId !== state.focusedCityId || roadGraph.segments.length === 0) {
+      return rawNext;
     }
-    return fromCoords;
+
+    const dirX = dxM / stepLen;
+    const dirY = dyM / stepLen;
+    const cosLat = Math.max(0.2, Math.cos(fromCoords[1] * Math.PI / 180));
+    const sx = 111320 * cosLat;
+    const sy = 111320;
+
+    let bestCoords = null;
+    let bestScore = -Infinity;
+    const segs = roadGraph.segments;
+
+    for (let i = 0; i < segs.length; i++) {
+      // Bara gator som är direkt anslutna till där spelaren står (inom 22m)
+      const curProj = projectPointToSegment(fromCoords, segs[i][0], segs[i][1]);
+      if (curProj.distM > 22) continue;
+
+      const nxtProj = projectPointToSegment(rawNext, segs[i][0], segs[i][1]);
+      const moveX = (nxtProj.coords[0] - fromCoords[0]) * sx;
+      const moveY = (nxtProj.coords[1] - fromCoords[1]) * sy;
+      const moved = Math.hypot(moveX, moveY);
+      if (moved < 0.1 || moved > stepLen * 1.45) continue;
+
+      const forward = moveX * dirX + moveY * dirY;
+      if (forward <= 0.05) continue;
+
+      // Föredra gatan som tar dig längst i önskad riktning utan att hoppa sidledes
+      const score = forward - curProj.distM * 0.22;
+      if (score > bestScore) {
+        bestScore = score;
+        bestCoords = nxtProj.coords;
+      }
+    }
+
+    if (bestCoords) return bestCoords;
+    // Om aktören råkar stå strax utanför gatunätet, dra in till närmaste gata
+    return snapToNearestRoad(fromCoords, 60);
   }
 
   function nudgeToOpenStreet(coords) {
-    if (!isBlockedOnMap(coords)) return coords;
-    for (let dist = 8; dist <= 96; dist += 8) {
-      for (let i = 0; i < 12; i++) {
-        const a = (i * Math.PI) / 6;
-        const cand = moveCoordsByMeters(coords, Math.cos(a) * dist, Math.sin(a) * dist);
-        if (!isBlockedOnMap(cand)) return cand;
-      }
-    }
-    return coords;
+    return snapToNearestRoad(coords, 180);
   }
 
   // --- Rensa alla markörer & animationer rent ---
@@ -572,9 +690,7 @@ window.GT_SCOTLAND = (function () {
       if (!$('syModalLayer').classList.contains('hidden')) return;
       const actor = getControlledActor();
       if (!actor || actor.travel) return;
-      actor.walkTarget = [e.lngLat.lng, e.lngLat.lat];
-      actor.pendingAction = null;
-      actor.stuckTimer = 0;
+      setActorWalkTo(actor, [e.lngLat.lng, e.lngLat.lat], null);
     });
   }
 
@@ -695,6 +811,15 @@ window.GT_SCOTLAND = (function () {
     map.addSource('sy-trains', { type: 'geojson', data: { type: 'FeatureCollection', features: trains } });
     map.addSource('sy-flights', { type: 'geojson', data: { type: 'FeatureCollection', features: flights } });
     map.addSource('sy-active-routes', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addSource('sy-walk-path', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+
+    map.addLayer({
+      id: 'sy-walk-path-layer',
+      type: 'line',
+      source: 'sy-walk-path',
+      minzoom: 13,
+      paint: { 'line-color': '#ffd875', 'line-width': 4, 'line-opacity': 0.85, 'line-dasharray': [2, 1.5] }
+    });
 
     map.addLayer({
       id: 'sy-trains-layer',
@@ -1046,8 +1171,15 @@ window.GT_SCOTLAND = (function () {
       const myToken = matchToken;
       map.once('idle', () => {
         if (!active || !state || matchToken !== myToken) return;
+        buildRoadGraph(targetId);
         if (actor && !actor.travel && actor.city === targetId) {
-          actor.coords = nudgeToOpenStreet(actor.coords);
+          actor.coords = snapToNearestRoad(actor.coords, 200);
+        }
+        state.police.forEach(p => {
+          if (!p.travel && p.city === targetId) p.coords = snapToNearestRoad(p.coords, 200);
+        });
+        if (!state.thief.travel && state.thief.city === targetId) {
+          state.thief.coords = snapToNearestRoad(state.thief.coords, 200);
         }
       });
     } else {
@@ -1297,9 +1429,7 @@ window.GT_SCOTLAND = (function () {
     if (d <= INTERACT_DIST_M) {
       openChallengeModal();
     } else {
-      actor.walkTarget = [...c.landmark.coords];
-      actor.pendingAction = 'landmark';
-      actor.stuckTimer = 0;
+      setActorWalkTo(actor, c.landmark.coords, 'landmark');
       addLog(`🏃 Springer längs gatorna mot ${c.landmark.name} (${Math.round(d)} m)...`, 'good');
     }
   }
@@ -1314,11 +1444,9 @@ window.GT_SCOTLAND = (function () {
     const mustRunToHub = !atHub && (state.playerRole === 'thief' || state.viewMode === 'city' || isChaseActiveFor(actor));
     if (mustRunToHub) {
       if (state.viewMode !== 'city') switchToView('city', actor.city);
-      actor.walkTarget = [...c.hub.coords];
-      actor.pendingAction = 'hub';
-      actor.stuckTimer = 0;
+      setActorWalkTo(actor, c.hub.coords, 'hub');
       const d = Math.round(DATA().distanceMeters(actor.coords, c.hub.coords));
-      addLog(`🏃 Springer till ${c.hub.name} för avresa (${d} m)...`, 'good');
+      addLog(`🏃 Springer längs gatorna till ${c.hub.name} (${d} m)...`, 'good');
       return;
     }
     openDepartureBoardModal();
@@ -1330,15 +1458,13 @@ window.GT_SCOTLAND = (function () {
     if (state.viewMode !== 'city') switchToView('city', actor.city);
     const extra = getCityPlaces(actor.city);
     if (!extra || !extra[placeKey]) return;
-    const targetCoords = nudgeToOpenStreet(extra[placeKey].coords);
+    const targetCoords = snapToNearestRoad(extra[placeKey].coords, 200);
     const d = DATA().distanceMeters(actor.coords, targetCoords);
     if (d <= INTERACT_DIST_M) {
       openExtraPlaceModal(placeKey);
     } else {
-      actor.walkTarget = [...targetCoords];
-      actor.pendingAction = placeKey;
-      actor.stuckTimer = 0;
-      addLog(`🏃 Springer till ${extra[placeKey].name} (${Math.round(d)} m)...`, 'good');
+      setActorWalkTo(actor, targetCoords, placeKey);
+      addLog(`🏃 Springer längs gatorna till ${extra[placeKey].name} (${Math.round(d)} m)...`, 'good');
     }
   }
 
@@ -2310,8 +2436,10 @@ window.GT_SCOTLAND = (function () {
 
     if (sx !== 0 || sy !== 0) {
       actor.walkTarget = null;
+      actor.walkPath = null;
       actor.pendingAction = null;
       actor.stuckTimer = 0;
+      updateWalkPathLine(actor);
       const len = Math.hypot(sx, sy);
       // Rotera skärmriktningen efter kartans aktuella bearing (t.ex. -18°)
       const bearingRad = (map.getBearing() || 0) * Math.PI / 180;
@@ -2321,37 +2449,39 @@ window.GT_SCOTLAND = (function () {
       const dyM = (-nx * Math.sin(bearingRad) + ny * Math.cos(bearingRad)) * speed * dt;
       actor.coords = tryStepOnStreet(actor.coords, dxM, dyM);
       map.jumpTo({ center: actor.coords });
-    } else if (actor.walkTarget) {
-      const dist = DATA().distanceMeters(actor.coords, actor.walkTarget);
-      if (dist < 18 || (actor.pendingAction && dist <= INTERACT_DIST_M - 10)) {
+    } else if (actor.walkPath && actor.walkPath.length > 0) {
+      // Följ gatunätets waypoints runt riktiga kvartershörn!
+      let remaining = speed * dt;
+      while (remaining > 0.1 && actor.walkPath.length > 0) {
+        const wp = actor.walkPath[0];
+        const dWp = DATA().distanceMeters(actor.coords, wp);
+        if (dWp <= remaining) {
+          actor.coords = [wp[0], wp[1]];
+          remaining -= dWp;
+          actor.walkPath.shift();
+        } else {
+          const r = remaining / dWp;
+          actor.coords = [
+            actor.coords[0] + (wp[0] - actor.coords[0]) * r,
+            actor.coords[1] + (wp[1] - actor.coords[1]) * r
+          ];
+          remaining = 0;
+        }
+      }
+      updateWalkPathLine(actor);
+      map.jumpTo({ center: actor.coords });
+
+      const finalTarget = actor.walkTarget || actor.coords;
+      const distGoal = DATA().distanceMeters(actor.coords, finalTarget);
+      if (actor.walkPath.length === 0 || (actor.pendingAction && distGoal <= INTERACT_DIST_M - 10)) {
         const act = actor.pendingAction;
         actor.walkTarget = null;
+        actor.walkPath = null;
         actor.pendingAction = null;
-        actor.stuckTimer = 0;
+        updateWalkPathLine(actor);
         if (act === 'landmark') openChallengeModal();
         else if (act === 'hub') openDepartureBoardModal();
         else if (act === 'hotel' || act === 'market' || act === 'library') openExtraPlaceModal(act);
-      } else {
-        const prev = actor.coords;
-        const latRad = actor.coords[1] * Math.PI / 180;
-        const dxM = (actor.walkTarget[0] - actor.coords[0]) * 111320 * Math.max(0.2, Math.cos(latRad));
-        const dyM = (actor.walkTarget[1] - actor.coords[1]) * 111320;
-        const len = Math.hypot(dxM, dyM) || 1;
-        const step = Math.min(dist, speed * dt);
-        actor.coords = tryStepOnStreet(actor.coords, (dxM / len) * step, (dyM / len) * step);
-        const moved = DATA().distanceMeters(prev, actor.coords);
-        if (moved < 0.8) {
-          actor.stuckTimer = (actor.stuckTimer || 0) + dt;
-          if (actor.stuckTimer > 0.7) {
-            actor.walkTarget = null;
-            actor.pendingAction = null;
-            actor.stuckTimer = 0;
-            addLog('🚧 Husblock i vägen — styr runt hörnet med WASD eller klicka på gatan runt kvarteret!', '');
-          }
-        } else {
-          actor.stuckTimer = 0;
-        }
-        map.jumpTo({ center: actor.coords });
       }
     }
   }
