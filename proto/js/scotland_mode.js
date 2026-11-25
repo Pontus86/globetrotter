@@ -144,7 +144,39 @@ window.GT_SCOTLAND = (function () {
     hudSnapshot = null;
   }
 
-  // --- Gatukollision (bara springa på gator & broar, aldrig över hus eller öppet vatten!) ---
+  // --- Exakt 2D punkt-i-polygon (helt immun mot 3D-lutning / pitch!) ---
+  function pointInRing(lng, lat, ring) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const xi = ring[i][0], yi = ring[i][1];
+      const xj = ring[j][0], yj = ring[j][1];
+      const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / ((yj - yi) || 1e-12) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function pointInPolygon(lng, lat, coords) {
+    if (!coords || coords.length === 0) return false;
+    if (!pointInRing(lng, lat, coords[0])) return false;
+    for (let i = 1; i < coords.length; i++) {
+      if (pointInRing(lng, lat, coords[i])) return false; // Innergård / hål
+    }
+    return true;
+  }
+
+  function pointInGeometry(lng, lat, geom) {
+    if (!geom) return false;
+    if (geom.type === 'Polygon') return pointInPolygon(lng, lat, geom.coordinates);
+    if (geom.type === 'MultiPolygon') {
+      for (let i = 0; i < geom.coordinates.length; i++) {
+        if (pointInPolygon(lng, lat, geom.coordinates[i])) return true;
+      }
+    }
+    return false;
+  }
+
+  // --- Gatukollision (exakta 2D-husgrunder + broar över vatten — omöjligt att gå genom hus!) ---
   function detectMapCollisionLayers() {
     if (!map) return;
     const style = map.getStyle();
@@ -158,14 +190,25 @@ window.GT_SCOTLAND = (function () {
       const sl = (l['source-layer'] || '').toLowerCase();
       if (l.type === 'symbol') return;
 
-      if (id.includes('bridge') || id.includes('road') || id.includes('path') || id.includes('tunnel') || sl === 'transportation') {
-        walkableLayers.push(l.id);
-      } else if (id.includes('building') || sl === 'building') {
+      if (id === 'sy-building-footprints') {
         buildingLayers.push(l.id);
+      } else if (id.includes('bridge') || id.includes('road') || id.includes('path') || id.includes('tunnel') || sl === 'transportation') {
+        walkableLayers.push(l.id);
       } else if (id === 'water' || sl === 'water') {
         waterLayers.push(l.id);
       }
     });
+
+    // Fallback om sy-building-footprints inte kunde läggas till
+    if (buildingLayers.length === 0) {
+      style.layers.forEach(l => {
+        const id = (l.id || '').toLowerCase();
+        const sl = (l['source-layer'] || '').toLowerCase();
+        if (l.type !== 'symbol' && (id.includes('building') || sl === 'building')) {
+          buildingLayers.push(l.id);
+        }
+      });
+    }
   }
 
   function isBlockedOnMap(coords) {
@@ -176,25 +219,46 @@ window.GT_SCOTLAND = (function () {
       const canvas = map.getCanvas();
       const w = canvas.clientWidth || window.innerWidth;
       const h = canvas.clientHeight || window.innerHeight;
-      if (pt.x < 8 || pt.y < 8 || pt.x > w - 8 || pt.y > h - 8) return false;
-      const box = [[pt.x - 3, pt.y - 3], [pt.x + 3, pt.y + 3]];
+      if (pt.x < 6 || pt.y < 6 || pt.x > w - 6 || pt.y > h - 6) return false;
 
-      // 1. Hus blockerar alltid
+      // 1. Exakt 2D punkt-i-polygon mot husgrunder (med liten 2.5m säkerhetsmarginal i 4 riktningar)
       if (buildingLayers.length > 0) {
-        const bFeats = map.queryRenderedFeatures(box, { layers: buildingLayers });
-        if (bFeats && bFeats.length > 0) return true;
+        const queryBox = [[pt.x - 16, pt.y - 16], [pt.x + 16, pt.y + 16]];
+        const bFeats = map.queryRenderedFeatures(queryBox, { layers: buildingLayers });
+        if (bFeats && bFeats.length > 0) {
+          const probes = [
+            coords,
+            moveCoordsByMeters(coords, 2.5, 0),
+            moveCoordsByMeters(coords, -2.5, 0),
+            moveCoordsByMeters(coords, 0, 2.5),
+            moveCoordsByMeters(coords, 0, -2.5)
+          ];
+          for (let i = 0; i < bFeats.length; i++) {
+            const geom = bFeats[i].geometry;
+            for (let p = 0; p < probes.length; p++) {
+              if (pointInGeometry(probes[p][0], probes[p][1], geom)) return true;
+            }
+          }
+        }
       }
 
       // 2. Vatten blockerar ENDAST om det inte ligger en bro/väg/gångstig ovanpå!
       if (waterLayers.length > 0) {
+        const box = [[pt.x - 3, pt.y - 3], [pt.x + 3, pt.y + 3]];
         const wFeats = map.queryRenderedFeatures(box, { layers: waterLayers });
         if (wFeats && wFeats.length > 0) {
-          if (walkableLayers.length > 0) {
-            const bridgeBox = [[pt.x - 6, pt.y - 6], [pt.x + 6, pt.y + 6]];
-            const rFeats = map.queryRenderedFeatures(bridgeBox, { layers: walkableLayers });
-            if (rFeats && rFeats.length > 0) return false; // På en bro → gåbart!
+          let inWater = false;
+          for (let i = 0; i < wFeats.length; i++) {
+            if (pointInGeometry(coords[0], coords[1], wFeats[i].geometry)) { inWater = true; break; }
           }
-          return true;
+          if (inWater) {
+            if (walkableLayers.length > 0) {
+              const bridgeBox = [[pt.x - 7, pt.y - 7], [pt.x + 7, pt.y + 7]];
+              const rFeats = map.queryRenderedFeatures(bridgeBox, { layers: walkableLayers });
+              if (rFeats && rFeats.length > 0) return false; // På en bro → gåbart!
+            }
+            return true;
+          }
         }
       }
       return false;
@@ -210,20 +274,19 @@ window.GT_SCOTLAND = (function () {
     if (!isBlockedOnMap(direct)) return direct;
 
     const baseAngle = Math.atan2(dyM, dxM);
-    for (const off of [0.55, -0.55, 1.1, -1.1, 1.5, -1.5, 2.0, -2.0]) {
+    for (const off of [0.5, -0.5, 1.0, -1.0, 1.45, -1.45, 1.9, -1.9]) {
       const a = baseAngle + off;
       const cand = moveCoordsByMeters(fromCoords, Math.cos(a) * stepLen * 0.85, Math.sin(a) * stepLen * 0.85);
       if (!isBlockedOnMap(cand)) return cand;
     }
-    if (isBlockedOnMap(fromCoords)) return direct;
     return fromCoords;
   }
 
   function nudgeToOpenStreet(coords) {
     if (!isBlockedOnMap(coords)) return coords;
-    for (let dist = 12; dist <= 72; dist += 12) {
-      for (let i = 0; i < 8; i++) {
-        const a = (i * Math.PI) / 4;
+    for (let dist = 8; dist <= 96; dist += 8) {
+      for (let i = 0; i < 12; i++) {
+        const a = (i * Math.PI) / 6;
         const cand = moveCoordsByMeters(coords, Math.cos(a) * dist, Math.sin(a) * dist);
         if (!isBlockedOnMap(cand)) return cand;
       }
@@ -502,6 +565,42 @@ window.GT_SCOTLAND = (function () {
       }, beforeId);
 
       map.setTerrain({ source: 'sy-terrain', exaggeration: 1.85 });
+
+      // 2. Snygga europeiska 3D-hus i varma sandstens-, ockra- och terrakottatoner + varmt solljus
+      try {
+        map.setLight({ anchor: 'viewport', color: '#fff2d6', intensity: 0.45, position: [1.5, 130, 38] });
+      } catch (e) {}
+
+      const bldLayer = styleLayers.find(l => (l['source-layer'] || '').toLowerCase() === 'building' && l.source);
+      if (bldLayer) {
+        // Osynligt platt 2D-husgrundlager för 100% exakt kollision (utan 3D-taköverhäng!)
+        if (!map.getLayer('sy-building-footprints')) {
+          map.addLayer({
+            id: 'sy-building-footprints',
+            type: 'fill',
+            source: bldLayer.source,
+            'source-layer': bldLayer['source-layer'],
+            minzoom: 13,
+            paint: { 'fill-color': '#000000', 'fill-opacity': 0.001 }
+          });
+        }
+
+        // Ge alla 3D-byggnader varma, vackra europeiska fasadfärger efter höjd!
+        styleLayers.forEach(l => {
+          if (l.type === 'fill-extrusion' && ((l.id || '').toLowerCase().includes('building') || (l['source-layer'] || '').toLowerCase() === 'building')) {
+            map.setPaintProperty(l.id, 'fill-extrusion-color', [
+              'interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 12],
+              0, '#ead8bc',
+              10, '#dfbe99',
+              22, '#cfa078',
+              40, '#b9835e',
+              75, '#8e9bab'
+            ]);
+            map.setPaintProperty(l.id, 'fill-extrusion-vertical-gradient', true);
+            map.setPaintProperty(l.id, 'fill-extrusion-opacity', 0.94);
+          }
+        });
+      }
     } catch (e) {
       console.warn('Satellit/terränglager kunde inte laddas:', e);
     }
