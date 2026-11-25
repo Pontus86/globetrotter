@@ -443,39 +443,90 @@ body.scotland-active .travel-dock {
 .sy-poi-pin {
   cursor: pointer;
 }
-.sy-poi-pill {
-  padding: 6px 12px;
-  border-radius: 99px;
-  font-family: 'Lora', Georgia, serif;
+/* Gyllene glitter-aura på 3D-byggnader (istället för stora fula knappar) */
+.sy-sparkle-poi {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.sy-sparkle-ring {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 224, 120, 0.55) 0%, rgba(245, 185, 55, 0.18) 55%, transparent 75%);
+  border: 1.5px solid rgba(255, 220, 115, 0.65);
+  box-shadow: 0 0 22px rgba(255, 205, 75, 0.75);
+  animation: syGoldPulse 2.2s ease-in-out infinite;
+}
+.sy-sparkle-poi.target .sy-sparkle-ring {
+  inset: 2px;
+  border-width: 2px;
+  border-color: #ffe899;
+  box-shadow: 0 0 32px rgba(255, 212, 82, 0.95);
+}
+.sy-sparkle-poi.nearby .sy-sparkle-ring {
+  inset: 0;
+  border: 2.5px solid #fff3c4;
+  background: radial-gradient(circle, rgba(255, 236, 153, 0.75) 0%, rgba(245, 197, 86, 0.32) 60%, transparent 80%);
+  box-shadow: 0 0 38px rgba(255, 224, 110, 1);
+  animation: syGoldPulse 0.95s ease-in-out infinite;
+}
+@keyframes syGoldPulse {
+  0%, 100% { transform: scale(0.92); opacity: 0.8; }
+  50% { transform: scale(1.12); opacity: 1; }
+}
+.sy-sparkle-ico {
+  position: relative;
+  z-index: 2;
+  font-size: 20px;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 8px rgba(255, 216, 117, 0.85));
+  transition: transform 0.15s;
+}
+.sy-sparkle-poi:hover .sy-sparkle-ico,
+.sy-sparkle-poi.nearby .sy-sparkle-ico {
+  transform: scale(1.22);
+}
+.sy-glint {
+  position: absolute;
+  color: #fff6cc;
   font-size: 12px;
-  font-weight: 800;
-  color: #1f1407;
-  background: linear-gradient(180deg, #ffe08a, #d99b2e);
-  border: 2px solid #fff7e0;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  text-shadow: 0 0 8px #ffd875;
+  animation: syTwinkle 1.8s ease-in-out infinite;
+}
+.sy-glint.g1 { top: 2px; left: 8px; animation-delay: 0s; }
+.sy-glint.g2 { top: 10px; right: 4px; font-size: 10px; animation-delay: 0.6s; }
+.sy-glint.g3 { bottom: 6px; left: 12px; font-size: 9px; animation-delay: 1.2s; }
+@keyframes syTwinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.6) translateY(3px); }
+  50% { opacity: 1; transform: scale(1.25) translateY(-4px); }
+}
+.sy-sparkle-tip {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(24, 16, 9, 0.92);
+  border: 1px solid #ffd875;
+  color: #fff3d1;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
   white-space: nowrap;
-  transition: transform 0.12s;
+  opacity: 0.78;
+  transition: opacity 0.15s, transform 0.15s;
+  pointer-events: none;
 }
-.sy-poi-pill:hover { transform: scale(1.07); }
-.sy-poi-pill.hub {
-  background: linear-gradient(180deg, #7dd3fc, #0284c7);
-  color: #041320;
-  border-color: #e0f2fe;
-}
-.sy-poi-pill.hotel {
-  background: linear-gradient(180deg, #f9a8d4, #be185d);
-  color: #fff;
-  border-color: #fce7f3;
-}
-.sy-poi-pill.market {
-  background: linear-gradient(180deg, #86efac, #15803d);
-  color: #052e16;
-  border-color: #dcfce7;
-}
-.sy-poi-pill.library {
-  background: linear-gradient(180deg, #c4b5fd, #6d28d9);
-  color: #fff;
-  border-color: #ede9fe;
+.sy-sparkle-poi:hover .sy-sparkle-tip,
+.sy-sparkle-poi.nearby .sy-sparkle-tip,
+.sy-sparkle-poi.target .sy-sparkle-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
 }
 
 .sy-mini-places-row {

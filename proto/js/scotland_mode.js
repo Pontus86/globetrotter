@@ -612,6 +612,12 @@ window.GT_SCOTLAND = (function () {
         if (k === ' ' && lockState.active) {
           e.preventDefault();
           handleLockHit();
+        } else if (k === 'e' && state && state.viewMode === 'city' && $('syModalLayer').classList.contains('hidden')) {
+          const actor = getControlledActor();
+          if (actor && !actor.travel) {
+            const near = markers.pois.find(mk => mk._poiMeta && DATA().distanceMeters(actor.coords, mk._poiMeta.coords) <= INTERACT_DIST_M);
+            if (near) near._poiMeta.onClick();
+          }
         }
       });
       window.addEventListener('keyup', (e) => {
@@ -1243,38 +1249,55 @@ window.GT_SCOTLAND = (function () {
     if (!c || !mapReady) return;
 
     const isRealTarget = state.realTargets.includes(cityId) && !state.collectedTargets.includes(cityId);
-    const lmEl = document.createElement('div');
-    lmEl.className = 'sy-poi-pin';
-    lmEl.innerHTML = `<div class="sy-poi-pill">${
-      state.playerRole === 'thief' && isRealTarget
-        ? `${c.landmark.icon} ${c.landmark.name} (STÖLDMÅL)`
-        : `🏛️ ${c.landmark.name} (FRÅGA / MINISPEL)`
-    }</div>`;
-    lmEl.addEventListener('click', (ev) => { ev.stopPropagation(); triggerLandmarkAction(); });
-    markers.pois.push(new window.maplibregl.Marker({ element: lmEl, anchor: 'bottom' }).setLngLat(c.landmark.coords).addTo(map));
-
-    const hubEl = document.createElement('div');
-    hubEl.className = 'sy-poi-pin';
-    hubEl.innerHTML = `<div class="sy-poi-pill hub">🚉 ${c.hub.name} (AVGÅNGAR)</div>`;
-    hubEl.addEventListener('click', (ev) => { ev.stopPropagation(); triggerHubAction(); });
-    markers.pois.push(new window.maplibregl.Marker({ element: hubEl, anchor: 'bottom' }).setLngLat(c.hub.coords).addTo(map));
-
-    // Hotell, Marknad och Bibliotek i 3D-staden!
     const extra = getCityPlaces(cityId);
+
+    const makeSparkleMarker = (key, coords, icon, title, isTarget, onClick) => {
+      const el = document.createElement('div');
+      el.className = 'sy-poi-pin';
+      el.innerHTML = `
+        <div class="sy-sparkle-poi ${isTarget ? 'target' : ''}" data-poi-key="${key}">
+          <div class="sy-sparkle-ring"></div>
+          <span class="sy-glint g1">✦</span>
+          <span class="sy-glint g2">✦</span>
+          <span class="sy-glint g3">✦</span>
+          <span class="sy-sparkle-ico">${icon}</span>
+          <span class="sy-sparkle-tip">${title}</span>
+        </div>
+      `;
+      el.addEventListener('click', (ev) => { ev.stopPropagation(); onClick(); });
+      const mk = new window.maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(coords).addTo(map);
+      mk._poiMeta = { key, coords, el: el.querySelector('.sy-sparkle-poi'), onClick };
+      markers.pois.push(mk);
+    };
+
+    makeSparkleMarker(
+      'landmark',
+      c.landmark.coords,
+      state.playerRole === 'thief' && isRealTarget ? c.landmark.icon : '🏛️',
+      state.playerRole === 'thief' && isRealTarget ? `${c.landmark.name} ★` : c.landmark.name,
+      state.playerRole === 'thief' && isRealTarget,
+      triggerLandmarkAction
+    );
+
+    makeSparkleMarker('hub', c.hub.coords, '🚉', c.hub.name, false, triggerHubAction);
+
     if (extra) {
-      const specs = [
-        { key: 'hotel', cls: 'hotel', label: `🏨 ${extra.hotel.name}` },
-        { key: 'market', cls: 'market', label: `🛍️ ${extra.market.name}` },
-        { key: 'library', cls: 'library', label: `📚 ${extra.library.name}` }
-      ];
-      specs.forEach(s => {
-        const pEl = document.createElement('div');
-        pEl.className = 'sy-poi-pin';
-        pEl.innerHTML = `<div class="sy-poi-pill ${s.cls}">${s.label}</div>`;
-        pEl.addEventListener('click', (ev) => { ev.stopPropagation(); triggerExtraPlaceAction(s.key); });
-        markers.pois.push(new window.maplibregl.Marker({ element: pEl, anchor: 'bottom' }).setLngLat(extra[s.key].coords).addTo(map));
-      });
+      makeSparkleMarker('hotel', extra.hotel.coords, '🏨', 'Hotell', false, () => triggerExtraPlaceAction('hotel'));
+      makeSparkleMarker('market', extra.market.coords, '🛍️', 'Marknad', false, () => triggerExtraPlaceAction('market'));
+      makeSparkleMarker('library', extra.library.coords, '📚', 'Bibliotek', false, () => triggerExtraPlaceAction('library'));
     }
+  }
+
+  // Låt byggnaden glittra starkare i guld när spelaren närmar sig (och öppna med E/klick)
+  function updateNearbyPoiSparkle() {
+    if (!state || state.viewMode !== 'city' || markers.pois.length === 0) return;
+    const actor = getControlledActor();
+    if (!actor || actor.travel) return;
+    markers.pois.forEach(mk => {
+      if (!mk._poiMeta) return;
+      const d = DATA().distanceMeters(actor.coords, mk._poiMeta.coords);
+      mk._poiMeta.el.classList.toggle('nearby', d <= INTERACT_DIST_M);
+    });
   }
 
   function getActorDisplayCoords(actor) {
@@ -2281,6 +2304,7 @@ window.GT_SCOTLAND = (function () {
     if (state.finished) return;
 
     syncActorMarkers();
+    updateNearbyPoiSparkle();
     updateLiveHud(clk);
     renderMinimap();
     rafId = requestAnimationFrame(gameLoop);
