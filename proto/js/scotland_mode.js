@@ -9,7 +9,9 @@ window.GT_SCOTLAND = (function () {
 
   const TOTAL_DAYS = 10;
   const REVEAL_DAYS = [3, 6, 8];
-  const CAPTURE_DIST_M = 70;
+  const CAPTURE_DIST_M = 38;
+  const POLICE_VISION_M = 250;
+  const POLICE_LOSE_SIGHT_M = 285;
   const INTERACT_DIST_M = 120;
   const PLAYER_BASE_SPEED_MPS = 115;
   const POLICE_RECON_COOLDOWN_SEC = 45;
@@ -162,6 +164,16 @@ window.GT_SCOTLAND = (function () {
     const out = [];
     for (let i = 0; i <= steps; i++) out.push(slerpLngLat(a, b, i / steps));
     return out;
+  }
+
+  // Exakt geografisk cirkelpolygon (i meter) för synlig gripanderadie & siktlinje på 3D-gatorna
+  function buildCircleRing(center, radiusMeters, steps = 28) {
+    const ring = [];
+    for (let i = 0; i <= steps; i++) {
+      const a = (i / steps) * Math.PI * 2;
+      ring.push(moveCoordsByMeters(center, Math.cos(a) * radiusMeters, Math.sin(a) * radiusMeters));
+    }
+    return ring;
   }
 
   function bfsNextStep(fromId, toId, allowFlights = true) {
@@ -841,6 +853,32 @@ window.GT_SCOTLAND = (function () {
     map.addSource('sy-flights', { type: 'geojson', data: { type: 'FeatureCollection', features: flights } });
     map.addSource('sy-active-routes', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
     map.addSource('sy-walk-path', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addSource('sy-police-rings', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+
+    map.addLayer({
+      id: 'sy-police-vision-fill',
+      type: 'line',
+      source: 'sy-police-rings',
+      minzoom: 13,
+      filter: ['==', ['get', 'kind'], 'vision'],
+      paint: { 'line-color': '#38bdf8', 'line-width': 1.6, 'line-opacity': 0.42, 'line-dasharray': [3, 3] }
+    });
+    map.addLayer({
+      id: 'sy-police-capture-fill',
+      type: 'fill',
+      source: 'sy-police-rings',
+      minzoom: 13,
+      filter: ['==', ['get', 'kind'], 'capture'],
+      paint: { 'fill-color': '#ef4444', 'fill-opacity': 0.24 }
+    });
+    map.addLayer({
+      id: 'sy-police-capture-outline',
+      type: 'line',
+      source: 'sy-police-rings',
+      minzoom: 13,
+      filter: ['==', ['get', 'kind'], 'capture'],
+      paint: { 'line-color': '#ff6b6b', 'line-width': 2.4, 'line-opacity': 0.9 }
+    });
 
     map.addLayer({
       id: 'sy-walk-path-layer',
@@ -1022,6 +1060,7 @@ window.GT_SCOTLAND = (function () {
       skipNextReveal: false,
       guideHintReady: false,
       policeFrozenUntilSec: 0,
+      thiefHiddenUntilSec: 0,
       houndUntilSec: 0,
       trainTapActive: false,
       revealTriggered: {},
@@ -1055,6 +1094,8 @@ window.GT_SCOTLAND = (function () {
         pendingAction: null,
         stuckTimer: 0,
         travel: null,
+        spottedPos: null,
+        alertState: 'patrol', // 'chasing' | 'searching' | 'patrol'
         aiCooldown: 2 + Math.random() * 3
       }))
     };
@@ -1534,6 +1575,19 @@ window.GT_SCOTLAND = (function () {
     const isPolice = state.playerRole === 'police';
     AUDIO().play('bell');
 
+    // Gömma sig i byggnader: slinker tjuven in på Hotell/Marknad/Bibliotek när polisen är >= 80m bort tappar polisen spåret i 8s!
+    if (!isPolice && !state.thief.travel) {
+      const chasersHere = state.police.filter(p => !p.travel && p.city === cityId);
+      if (chasersHere.length > 0) {
+        const minPoliceDist = Math.min(...chasersHere.map(p => DATA().distanceMeters(p.coords, state.thief.coords)));
+        if (minPoliceDist >= 80) {
+          state.thiefHiddenUntilSec = state.elapsedSec + 8;
+          chasersHere.forEach(p => { p.spottedPos = null; p.alertState = 'searching'; });
+          addLog(`👥 Du smälte in i folkmassan på ${extra[placeKey].name}! Polisen tappade spåret i 8s!`, 'good');
+        }
+      }
+    }
+
     if (placeKey === 'hotel') {
       if (isPolice) {
         const log = state.thiefVisitLog[cityId];
@@ -1778,6 +1832,13 @@ window.GT_SCOTLAND = (function () {
     };
 
     const cheapestTrain = Math.min(...c.trains.map(id => getFareKr(actor.city, id, 'train')), 9999);
+    const policeInCity = isThief && state.police.some(p => !p.travel && p.city === actor.city);
+    const emergencyHtml = policeInCity && c.trains.length > 0
+      ? `<button type="button" class="sy-brass-btn red" style="margin-bottom:10px;border-color:#fde68a;" id="syEmergencyEscapeBtn">
+           <span>🏃 <b>NÖDFLYKT: KASTA DIG PÅ FÖRSTA BÄSTA TÅG!</b> (2s boarding · Avslöjar destination!)</span>
+           <small>+250 kr</small>
+         </button>`
+      : '';
     const cashBanner = isThief
       ? `<div style="background:rgba(245,197,86,0.14);border:1px solid #ffd875;border-radius:7px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;display:flex;justify-content:space-between;align-items:center;">
           <span>💰 Din reskassa: <b>${formatKr(state.cash)}</b></span>
@@ -1788,6 +1849,7 @@ window.GT_SCOTLAND = (function () {
     const html = `
       <div class="sy-card-90s">
         <h2>🚉 Avgångstavla — ${c.name}</h2>
+        ${emergencyHtml}
         ${cashBanner}
         <p class="sy-card-sub">
           Tåg/båt är billigt och osynligt. Direktflyg är snabbt men dyrt och avslöjar din destination. Boarding tar 5–7 s på perrongen!
@@ -1818,6 +1880,24 @@ window.GT_SCOTLAND = (function () {
         beginBoarding(actor, to, mode);
       });
     });
+    const emergBtn = $('syEmergencyEscapeBtn');
+    if (emergBtn) {
+      emergBtn.addEventListener('click', () => {
+        const safeTrains = c.trains.filter(id => !state.police.some(p => !p.travel && p.city === id));
+        const pool = safeTrains.length > 0 ? safeTrains : c.trains;
+        const destId = pool[Math.floor(Math.random() * pool.length)];
+        closeSyModal();
+        // Nödflykt: 2 sek boarding, +250 kr tillägg (låser aldrig pank spelare), avslöjar destination!
+        state.cash = Math.max(0, state.cash - 250);
+        actor.boarding = { to: destId, mode: 'train', startSec: state.elapsedSec, durationSec: 2, emergency: true };
+        actor.walkTarget = null;
+        actor.walkPath = null;
+        actor.pendingAction = null;
+        updateWalkPathLine(actor);
+        AUDIO().play('flap');
+        addLog(`🏃 NÖDFLYKT! Kastar dig på tåget mot ${CITIES[destId].name} (2s boarding)!`, 'alert');
+      });
+    }
     const earnBtn = $('syGoEarnTickets');
     if (earnBtn) {
       earnBtn.addEventListener('click', () => {
@@ -2364,9 +2444,12 @@ window.GT_SCOTLAND = (function () {
     [state.thief, ...state.police].forEach(actor => {
       if (!actor.boarding) return;
       if (state.elapsedSec >= actor.boarding.startSec + actor.boarding.durationSec) {
-        const { to, mode } = actor.boarding;
+        const { to, mode, emergency } = actor.boarding;
         actor.boarding = null;
         startTravel(actor, to, mode);
+        if (emergency && actor.id === 'thief') {
+          triggerThiefReveal(to, `Nödflykt från stationen mot ${DATA().CITIES[to].name}!`);
+        }
       }
     });
 
@@ -2417,10 +2500,38 @@ window.GT_SCOTLAND = (function () {
     if (state.finished) return;
 
     syncActorMarkers();
+    updatePoliceRadiusRings();
     updateNearbyPoiSparkle();
     updateLiveHud(clk);
     renderMinimap();
     rafId = requestAnimationFrame(gameLoop);
+  }
+
+  // Rita ut synlig gripanderadie (röd cirkel) och siktlinje (streckad blå cirkel) runt poliser i 3D-staden!
+  function updatePoliceRadiusRings() {
+    if (!mapReady || !map || !state) return;
+    const src = map.getSource('sy-police-rings');
+    if (!src) return;
+    if (state.viewMode !== 'city') {
+      src.setData({ type: 'FeatureCollection', features: [] });
+      return;
+    }
+    const captureR = state.elapsedSec < state.houndUntilSec ? CAPTURE_DIST_M * 2 : CAPTURE_DIST_M;
+    const feats = [];
+    state.police.forEach(p => {
+      if (p.travel || p.city !== state.focusedCityId) return;
+      feats.push({
+        type: 'Feature',
+        properties: { kind: 'capture' },
+        geometry: { type: 'Polygon', coordinates: [buildCircleRing(p.coords, captureR, 28)] }
+      });
+      feats.push({
+        type: 'Feature',
+        properties: { kind: 'vision' },
+        geometry: { type: 'LineString', coordinates: buildCircleRing(p.coords, POLICE_VISION_M, 36) }
+      });
+    });
+    src.setData({ type: 'FeatureCollection', features: feats });
   }
 
   // --- Klassisk taktisk radar-minimap i 3D-stadsvyn (grannstäder + poliser + riktningspilar) ---
@@ -2637,11 +2748,38 @@ window.GT_SCOTLAND = (function () {
       if (p.travel || p.boarding) return;
       if (!state.thief.travel && p.city === state.thief.city) {
         if (state.elapsedSec < state.policeFrozenUntilSec) return; // Rökbomb fryser polisen!
+
+        const distToThief = DATA().distanceMeters(p.coords, state.thief.coords);
+        const thiefHidden = state.elapsedSec < state.thiefHiddenUntilSec;
+        const thiefSprinting = state.elapsedSec < state.thief.boostUntilSec;
+
+        // Siktlinje istället för röntgensyn!
+        if (!thiefHidden && (distToThief <= POLICE_VISION_M || thiefSprinting)) {
+          if (p.alertState !== 'chasing') {
+            p.alertState = 'chasing';
+            addLog(`📻 ${p.short}: "Jag har ögonkontakt med tjuven i ${CITIES[p.city].name}!"`, 'alert');
+          }
+          p.spottedPos = [...state.thief.coords];
+        } else if (p.alertState === 'chasing' && (distToThief > POLICE_LOSE_SIGHT_M || thiefHidden)) {
+          p.alertState = 'searching';
+          addLog(`📻 ${p.short}: "Tappade siktlinjen i ${CITIES[p.city].name} — söker av kvarteret!"`, 'police');
+        }
+
+        const chaseSpeed = PLAYER_BASE_SPEED_MPS * (p.alertState === 'chasing' ? 0.74 : 0.58);
+        let targetPt = p.spottedPos;
+        if (!targetPt || DATA().distanceMeters(p.coords, targetPt) < 25) {
+          // Har nått senast sedda punkt utan att hitta tjuven → patrullera mot sevärdhet/station
+          p.alertState = 'searching';
+          const c = CITIES[p.city];
+          p.spottedPos = Math.random() < 0.5 ? [...c.hub.coords] : [...c.landmark.coords];
+          targetPt = p.spottedPos;
+        }
+
         const latRad = p.coords[1] * Math.PI / 180;
-        const dxM = (state.thief.coords[0] - p.coords[0]) * 111320 * Math.max(0.2, Math.cos(latRad));
-        const dyM = (state.thief.coords[1] - p.coords[1]) * 111320;
+        const dxM = (targetPt[0] - p.coords[0]) * 111320 * Math.max(0.2, Math.cos(latRad));
+        const dyM = (targetPt[1] - p.coords[1]) * 111320;
         const len = Math.hypot(dxM, dyM) || 1;
-        const step = Math.min(len, PLAYER_BASE_SPEED_MPS * 0.88 * dt);
+        const step = Math.min(len, chaseSpeed * dt);
         p.coords = tryStepOnStreet(p.coords, (dxM / len) * step, (dyM / len) * step);
         return;
       }
@@ -2771,12 +2909,16 @@ window.GT_SCOTLAND = (function () {
       if (d < minD) { minD = d; chaser = p; }
     });
 
-    $('syDangerVignette').classList.toggle('hidden', !chaser);
+    $('syDangerVignette').classList.toggle('hidden', !chaser || chaser.alertState !== 'chasing');
     $('syChaseAlert').classList.toggle('hidden', !chaser);
     if (chaser) {
-      $('syChaseMsg').textContent = state.playerRole === 'thief'
-        ? '🚨 POLIS I STADEN! FLY TILL STATIONEN!'
-        : `🚨 TJUVEN I ${DATA().CITIES[state.thief.city].name.toUpperCase()}! GRIP TJUVEN!`;
+      if (state.playerRole === 'thief') {
+        $('syChaseMsg').textContent = chaser.alertState === 'chasing'
+          ? '🚨 POLIS JAGAR DIG! DRA IFRÅN (>285m) ELLER NÖDFLY!'
+          : '🔍 POLIS I STADEN (SÖKER...) — LÄGE ATT FLY!';
+      } else {
+        $('syChaseMsg').textContent = `🚨 TJUVEN I ${DATA().CITIES[state.thief.city].name.toUpperCase()}! GRIP TJUVEN!`;
+      }
       $('syChaseDist').textContent = `(${Math.round(minD)} m)`;
       const captureR = state.elapsedSec < state.houndUntilSec ? CAPTURE_DIST_M * 2 : CAPTURE_DIST_M;
       if (minD <= captureR) {
