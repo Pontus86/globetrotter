@@ -14,7 +14,7 @@ window.GT_SCOTLAND = (function () {
   const POLICE_LOSE_SIGHT_M = 285;
   const INTERACT_DIST_M = 120;
   const PLAYER_BASE_SPEED_MPS = 115;
-  const POLICE_RECON_COOLDOWN_SEC = 45;
+  const POLICE_RECON_COOLDOWN_SEC = 90;
 
   const CITY_MG_ID = {
     stockholm: 'mg_spy',
@@ -107,10 +107,10 @@ window.GT_SCOTLAND = (function () {
   function getFareKr(fromId, toId, mode) {
     const c1 = DATA().CITIES[fromId];
     const c2 = DATA().CITIES[toId];
-    if (!c1 || !c2) return mode === 'flight' ? 1200 : 500;
+    if (!c1 || !c2) return mode === 'flight' ? 950 : 500;
     const km = DATA().haversineKm(c1.center, c2.center);
     if (mode === 'flight') {
-      return Math.round((900 + km * 0.45) / 50) * 50; // ~1100–2000 kr
+      return Math.round((650 + km * 0.30) / 50) * 50; // ~750–1250 kr
     }
     return Math.round((300 + km * 0.25) / 50) * 50; // ~400–850 kr
   }
@@ -1822,7 +1822,7 @@ window.GT_SCOTLAND = (function () {
           ? '<span class="sy-flap-badge stealth">OSYNLIG · 4s BOARDING</span>'
           : (isThief && state.gear.fakePass > 0
             ? '<span class="sy-flap-badge stealth">🛂 FALSKPASS · 4s BOARDING</span>'
-            : '<span class="sy-flap-badge loud">AVSLÖJAR DIG · 4s BOARDING</span>');
+            : '<span class="sy-flap-badge loud">PINGAR AVGÅNGSSTAD · 4s</span>');
       return `
         <button type="button" class="sy-flap-row" data-to="${destId}" data-mode="${mode}" ${!canAfford ? 'disabled style="opacity:0.45;cursor:not-allowed;"' : ''}>
           <span>${tInfo.icon} ${d.name.toUpperCase()} ${isTarget ? '🎯' : ''}${hasPol ? ' 🚓' : ''} ${badge}</span>
@@ -1835,7 +1835,7 @@ window.GT_SCOTLAND = (function () {
     const policeInCity = isThief && state.police.some(p => !p.travel && p.city === actor.city);
     const emergencyHtml = policeInCity && c.trains.length > 0
       ? `<button type="button" class="sy-brass-btn red" style="margin-bottom:10px;border-color:#fde68a;" id="syEmergencyEscapeBtn">
-           <span>🏃 <b>NÖDFLYKT: KASTA DIG PÅ FÖRSTA BÄSTA TÅG!</b> (2s boarding · Avslöjar destination!)</span>
+           <span>🏃 <b>NÖDFLYKT: KASTA DIG PÅ FÖRSTA BÄSTA TÅG!</b> (2s boarding · Pingar avgångsstad)</span>
            <small>+250 kr</small>
          </button>`
       : '';
@@ -1852,7 +1852,7 @@ window.GT_SCOTLAND = (function () {
         ${emergencyHtml}
         ${cashBanner}
         <p class="sy-card-sub">
-          Tåg/båt är billigt och osynligt. Direktflyg är snabbt men dyrt och avslöjar din destination. Boarding tar 5–7 s på perrongen!
+          Tåg/båt är billigt och osynligt. Direktflyg är snabbare men pingar <b>avgångsstaden</b> (inte din destination!). Boarding tar 4 s på perrongen.
         </p>
         <div class="sy-flap-board">
           <div class="sy-flap-head"><span>🚂 TÅG &amp; BÅT (BILLIGT · OSYNLIG)</span><span>PRIS · TID</span></div>
@@ -2022,10 +2022,11 @@ window.GT_SCOTLAND = (function () {
     if (actor.id === 'thief' && mode === 'flight') {
       if (state.gear.fakePass > 0) {
         state.gear.fakePass--;
-        addLog(`🛂 Förfalskat pass använt! Ditt flyg mot ${CITIES[destId].name} hölls helt osynligt!`, 'good');
+        addLog(`🛂 Förfalskat pass använt! Ditt flyg från ${CITIES[fromId].name} hölls helt osynligt!`, 'good');
         renderGearStrip();
       } else {
-        triggerThiefReveal(destId, `Tog direktflyg mot ${CITIES[destId].name}!`);
+        // Flyg avslöjar AVGÅNGSSTADEN (inte destinationen!)
+        triggerThiefReveal(fromId, `Lyfte med direktflyg från ${CITIES[fromId].name}!`);
       }
     } else if (actor.id === 'thief') {
       if (state.trainTapActive) {
@@ -2444,11 +2445,12 @@ window.GT_SCOTLAND = (function () {
     [state.thief, ...state.police].forEach(actor => {
       if (!actor.boarding) return;
       if (state.elapsedSec >= actor.boarding.startSec + actor.boarding.durationSec) {
+        const fromCity = actor.city;
         const { to, mode, emergency } = actor.boarding;
         actor.boarding = null;
         startTravel(actor, to, mode);
         if (emergency && actor.id === 'thief') {
-          triggerThiefReveal(to, `Nödflykt från stationen mot ${DATA().CITIES[to].name}!`);
+          triggerThiefReveal(fromCity, `Nödflykt från stationen i ${DATA().CITIES[fromCity].name}!`);
         }
       }
     });

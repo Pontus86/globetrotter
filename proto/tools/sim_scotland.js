@@ -37,7 +37,7 @@ function shuffle(arr, rng) {
 function getFareKr(fromId, toId, mode) {
   const c1 = CITIES[fromId], c2 = CITIES[toId];
   const km = DATA.haversineKm(c1.center, c2.center);
-  if (mode === 'flight') return Math.round((900 + km * 0.45) / 50) * 50;
+  if (mode === 'flight') return Math.round((650 + km * 0.30) / 50) * 50;
   return Math.round((300 + km * 0.25) / 50) * 50;
 }
 
@@ -167,16 +167,18 @@ function runMatch(seed) {
   }
 
   function startTravel(actor, to, mode, isThief, emergency = false) {
-    const dur = DATA.getTravelSeconds(actor.city, to, mode);
+    const fromCity = actor.city;
+    const dur = DATA.getTravelSeconds(fromCity, to, mode);
     if (isThief) {
-      const fare = getFareKr(actor.city, to, mode);
+      const fare = getFareKr(fromCity, to, mode);
       st.cash = Math.max(0, st.cash - fare);
       if (mode === 'flight') st.metrics.flightsTaken++;
       else st.metrics.trainsTaken++;
     }
-    actor.travel = { from: actor.city, to, mode, startSec: st.elapsedSec, durationSec: dur };
+    actor.travel = { from: fromCity, to, mode, startSec: st.elapsedSec, durationSec: dur };
+    // Ny regel: Flyg & nödflykt avslöjar AVGÅNGSSTADEN (inte destinationen!)
     if (isThief && (mode === 'flight' || emergency)) {
-      triggerReveal(to, emergency ? 'emergency' : 'flight');
+      triggerReveal(fromCity, emergency ? 'emergency' : 'flight');
     }
   }
 
