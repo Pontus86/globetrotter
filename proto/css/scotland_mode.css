@@ -216,6 +216,44 @@ body.scotland-active .travel-dock {
   padding-top: 6px;
 }
 
+/* Taktisk radar-minimap i 3D-staden (visar grannstäder + poliser + riktningspilar) */
+.sy-minimap-wrap {
+  position: absolute;
+  left: 16px;
+  top: 104px;
+  width: 174px;
+  height: 174px;
+  z-index: 24;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #10201a 0%, #091310 75%, #050a08 100%);
+  border: 3px solid #c59b48;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.65), inset 0 0 18px rgba(0, 0, 0, 0.8);
+  cursor: pointer;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.sy-minimap-wrap:hover { border-color: #ffd875; }
+.sy-minimap-wrap canvas {
+  width: 168px;
+  height: 168px;
+  display: block;
+}
+.sy-minimap-label {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 9px;
+  color: #ffd875;
+  background: rgba(8, 14, 11, 0.85);
+  padding: 1px 6px;
+  border-radius: 99px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 /* Höger 90-tals Polisscanner / Radio */
 .sy-scanner-toggle {
   display: none;
@@ -425,6 +463,56 @@ body.scotland-active .travel-dock {
   color: #041320;
   border-color: #e0f2fe;
 }
+.sy-poi-pill.hotel {
+  background: linear-gradient(180deg, #f9a8d4, #be185d);
+  color: #fff;
+  border-color: #fce7f3;
+}
+.sy-poi-pill.market {
+  background: linear-gradient(180deg, #86efac, #15803d);
+  color: #052e16;
+  border-color: #dcfce7;
+}
+.sy-poi-pill.library {
+  background: linear-gradient(180deg, #c4b5fd, #6d28d9);
+  color: #fff;
+  border-color: #ede9fe;
+}
+
+.sy-mini-places-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+.sy-mini-place-btn {
+  padding: 6px 4px;
+  border-radius: 6px;
+  border: 1px solid rgba(212, 166, 74, 0.4);
+  background: rgba(255, 245, 220, 0.07);
+  color: #f6ead4;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+}
+.sy-mini-place-btn:hover { background: rgba(255, 245, 220, 0.18); border-color: #ffd875; }
+.sy-gear-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.sy-gear-chip {
+  font-size: 10.5px;
+  padding: 3px 7px;
+  border-radius: 99px;
+  background: rgba(245, 197, 86, 0.18);
+  border: 1px solid #ffd875;
+  color: #fef3c7;
+  cursor: pointer;
+  font-weight: 700;
+}
+.sy-gear-chip:hover { background: rgba(245, 197, 86, 0.35); }
 
 /* 90-tals Modal-ram (Klappertavla, Frågekort, Kassaskåp, Uppdragspass, Setup) */
 .sy-modal-layer {

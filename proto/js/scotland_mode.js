@@ -95,8 +95,56 @@ window.GT_SCOTLAND = (function () {
     ];
   }
 
-  function lerpCoords(a, b, t) {
-    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  // Sjöförbindelser (visar 🚢 Båt istället för 🚂 Tåg)
+  const SEA_EDGES = new Set([
+    'amsterdam--london', 'copenhagen--oslo', 'athens--rome', 'athens--istanbul', 'london--paris'
+  ]);
+
+  function getTransitModeInfo(fromId, toId, mode) {
+    if (mode === 'flight') return { icon: '✈️', label: 'Flyg' };
+    const key = [fromId, toId].sort().join('--');
+    if (SEA_EDGES.has(key)) return { icon: '🚢', label: 'Båt' };
+    return { icon: '🚂', label: 'Tåg' };
+  }
+
+  // Deterministiska 3D-stadskoordinater för Hotell, Marknad & Bibliotek nära varje stadskärna
+  function getCityPlaces(cityId) {
+    const c = DATA().CITIES[cityId];
+    if (!c) return null;
+    if (!c._extraPlaces) {
+      c._extraPlaces = {
+        hotel: { name: `Grand Hotel ${c.name}`, coords: moveCoordsByMeters(c.center, -290, 220) },
+        market: { name: `${c.name} Basar`, coords: moveCoordsByMeters(c.center, 310, 190) },
+        library: { name: `${c.name} Bibliotek`, coords: moveCoordsByMeters(c.center, -210, -280) }
+      };
+    }
+    return c._extraPlaces;
+  }
+
+  // Sfärisk interpolation (storcirkel) så markören och linjen på 3D-globen alltid matchar exakt!
+  function slerpLngLat(a, b, t) {
+    const toRad = d => d * Math.PI / 180;
+    const toDeg = r => r * 180 / Math.PI;
+    const lat1 = toRad(a[1]), lon1 = toRad(a[0]);
+    const lat2 = toRad(b[1]), lon2 = toRad(b[0]);
+    const p1 = [Math.cos(lat1) * Math.cos(lon1), Math.cos(lat1) * Math.sin(lon1), Math.sin(lat1)];
+    const p2 = [Math.cos(lat2) * Math.cos(lon2), Math.cos(lat2) * Math.sin(lon2), Math.sin(lat2)];
+    const dot = Math.max(-1, Math.min(1, p1[0] * p2[0] + p1[1] * p2[1] + p1[2] * p2[2]));
+    const omega = Math.acos(dot);
+    if (omega < 1e-5) return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+    const s = Math.sin(omega);
+    const w1 = Math.sin((1 - t) * omega) / s;
+    const w2 = Math.sin(t * omega) / s;
+    const x = w1 * p1[0] + w2 * p2[0];
+    const y = w1 * p1[1] + w2 * p2[1];
+    const z = w1 * p1[2] + w2 * p2[2];
+    return [toDeg(Math.atan2(y, x)), toDeg(Math.atan2(z, Math.hypot(x, y)))];
+  }
+
+  function buildArcCoords(a, b, steps = 20) {
+    const out = [];
+    for (let i = 0; i <= steps; i++) out.push(slerpLngLat(a, b, i / steps));
+    return out;
   }
 
   function bfsNextStep(fromId, toId, allowFlights = true) {
@@ -339,6 +387,11 @@ window.GT_SCOTLAND = (function () {
     const overlayHtml = `
       <div id="syDangerVignette" class="sy-danger-vignette hidden"></div>
 
+      <div id="syMinimapWrap" class="sy-minimap-wrap hidden" title="Klicka för att zooma ut till 3D-globen">
+        <canvas id="syMinimapCanvas" width="168" height="168"></canvas>
+        <div class="sy-minimap-label">RADAR · POLISER</div>
+      </div>
+
       <aside id="syCompassPanel" class="sy-compass-panel hidden">
         <div class="sy-panel-top">
           <span class="sy-role-tag" id="syRoleTag">🕵️ TJUV</span>
@@ -366,6 +419,12 @@ window.GT_SCOTLAND = (function () {
             <span id="syBtnDeparturesTxt">🚉 Spring till stationen</span>
             <small id="syBtnHubDist">–</small>
           </button>
+          <div class="sy-mini-places-row">
+            <button type="button" class="sy-mini-place-btn" id="syBtnHotel" title="Spring till Hotellet">🏨 Hotell</button>
+            <button type="button" class="sy-mini-place-btn" id="syBtnMarket" title="Spring till Marknaden">🛍️ Marknad</button>
+            <button type="button" class="sy-mini-place-btn" id="syBtnLibrary" title="Spring till Biblioteket">📚 Bibliotek</button>
+          </div>
+          <div class="sy-gear-strip" id="syGearStrip"></div>
           <button class="sy-brass-btn" id="syBtnToggleView">
             <span id="syBtnToggleViewTxt">🏙️ Gå in i 3D-staden</span>
             <small>🌍/🏙️</small>
@@ -405,7 +464,13 @@ window.GT_SCOTLAND = (function () {
 
     $('syBtnLandmark').addEventListener('click', triggerLandmarkAction);
     $('syBtnDepartures').addEventListener('click', triggerHubAction);
+    $('syBtnHotel').addEventListener('click', () => triggerExtraPlaceAction('hotel'));
+    $('syBtnMarket').addEventListener('click', () => triggerExtraPlaceAction('market'));
+    $('syBtnLibrary').addEventListener('click', () => triggerExtraPlaceAction('library'));
     $('syBtnToggleView').addEventListener('click', toggleView);
+    $('syMinimapWrap').addEventListener('click', () => {
+      if (state && state.viewMode === 'city') switchToView('globe');
+    });
     $('syBtnSprint').addEventListener('click', activateSprintBoost);
     $('syScannerToggleBtn').addEventListener('click', () => {
       $('syScannerBox').classList.toggle('mobile-open');
@@ -564,7 +629,7 @@ window.GT_SCOTLAND = (function () {
         }
       }, beforeId);
 
-      map.setTerrain({ source: 'sy-terrain', exaggeration: 1.85 });
+      map.setTerrain({ source: 'sy-terrain', exaggeration: 1.15 });
 
       // 2. Snygga europeiska 3D-hus i varma sandstens-, ockra- och terrakottatoner + varmt solljus
       try {
@@ -671,6 +736,7 @@ window.GT_SCOTLAND = (function () {
     active = true;
     document.body.classList.add('scotland-active');
     $('syCompassPanel').classList.add('hidden');
+    $('syMinimapWrap').classList.add('hidden');
     $('syScannerBox').classList.add('hidden');
     $('syScannerToggleBtn').classList.add('hidden');
     $('syDangerVignette').classList.add('hidden');
@@ -786,6 +852,21 @@ window.GT_SCOTLAND = (function () {
       clearedSuspects: [],
       suspectPool,
       reconCooldownUntil: {}, // cityId -> elapsedSec (förhindrar oändlig ping-spam som polis)
+      placeCooldownUntil: {}, // "cityId:hotel|market|library" -> elapsedSec
+      thiefVisitLog: {}, // cityId -> { lastTo, modeLabel, day, hh, mm } (för hotelliggaren!)
+      gear: {
+        lockpick: 0,      // Tjuv: 2x bredare grön zon i kassaskåp
+        smoke: 0,         // Tjuv: fryser jagande poliser i 6s
+        fakePass: 0,      // Tjuv: nästa direktflyg blir osynligt
+        fastFlight: 0,    // Polis: halverar nästa restid
+        hound: 0,         // Polis: 2x gripanderadie i 30s
+        trainTap: 0       // Polis: avslöjar tjuven nästa gång tjuven åker tåg/båt
+      },
+      skipNextReveal: false,
+      guideHintReady: false,
+      policeFrozenUntilSec: 0,
+      houndUntilSec: 0,
+      trainTapActive: false,
       revealTriggered: {},
       lastPing: null,
       aiRadioTauntTimer: 22 + Math.random() * 18,
@@ -861,6 +942,7 @@ window.GT_SCOTLAND = (function () {
     closeSyModal();
     document.body.classList.remove('scotland-active');
     if ($('syCompassPanel')) $('syCompassPanel').classList.add('hidden');
+    if ($('syMinimapWrap')) $('syMinimapWrap').classList.add('hidden');
     if ($('syScannerBox')) {
       $('syScannerBox').classList.add('hidden');
       $('syScannerBox').classList.remove('mobile-open');
@@ -972,9 +1054,9 @@ window.GT_SCOTLAND = (function () {
       $('syBtnToggleViewTxt').textContent = '🏙️ Gå in i 3D-staden';
       clearCityPois();
       try {
-        if (map.getSource('sy-terrain')) map.setTerrain({ source: 'sy-terrain', exaggeration: 1.85 });
+        if (map.getSource('sy-terrain')) map.setTerrain({ source: 'sy-terrain', exaggeration: 1.15 });
       } catch (e) {}
-      map.flyTo({ center: city.center, zoom: 3.8, pitch: 28, bearing: 0, duration: 950 });
+      map.flyTo({ center: city.center, zoom: 3.8, pitch: 22, bearing: 0, duration: 950 });
     }
 
     rebuildCityMarkers();
@@ -1044,16 +1126,40 @@ window.GT_SCOTLAND = (function () {
     hubEl.innerHTML = `<div class="sy-poi-pill hub">🚉 ${c.hub.name} (AVGÅNGAR)</div>`;
     hubEl.addEventListener('click', (ev) => { ev.stopPropagation(); triggerHubAction(); });
     markers.pois.push(new window.maplibregl.Marker({ element: hubEl, anchor: 'bottom' }).setLngLat(c.hub.coords).addTo(map));
+
+    // Hotell, Marknad och Bibliotek i 3D-staden!
+    const extra = getCityPlaces(cityId);
+    if (extra) {
+      const specs = [
+        { key: 'hotel', cls: 'hotel', label: `🏨 ${extra.hotel.name}` },
+        { key: 'market', cls: 'market', label: `🛍️ ${extra.market.name}` },
+        { key: 'library', cls: 'library', label: `📚 ${extra.library.name}` }
+      ];
+      specs.forEach(s => {
+        const pEl = document.createElement('div');
+        pEl.className = 'sy-poi-pin';
+        pEl.innerHTML = `<div class="sy-poi-pill ${s.cls}">${s.label}</div>`;
+        pEl.addEventListener('click', (ev) => { ev.stopPropagation(); triggerExtraPlaceAction(s.key); });
+        markers.pois.push(new window.maplibregl.Marker({ element: pEl, anchor: 'bottom' }).setLngLat(extra[s.key].coords).addTo(map));
+      });
+    }
   }
 
   function getActorDisplayCoords(actor) {
     const CITIES = DATA().CITIES;
     if (actor.travel) {
       const p = Math.min(1, (state.elapsedSec - actor.travel.startSec) / actor.travel.durationSec);
-      return lerpCoords(CITIES[actor.travel.from].center, CITIES[actor.travel.to].center, p);
+      return slerpLngLat(CITIES[actor.travel.from].center, CITIES[actor.travel.to].center, p);
     }
     if (state.viewMode === 'city' && actor.city === state.focusedCityId) return actor.coords;
     return CITIES[actor.city].center;
+  }
+
+  function getActorIcon(actor, defaultIcon) {
+    if (actor.travel) {
+      return getTransitModeInfo(actor.travel.from, actor.travel.to, actor.travel.mode).icon;
+    }
+    return defaultIcon;
   }
 
   function syncActorMarkers() {
@@ -1061,10 +1167,11 @@ window.GT_SCOTLAND = (function () {
 
     state.police.forEach(p => {
       const pos = getActorDisplayCoords(p);
+      const icon = getActorIcon(p, '🚓');
       if (!markers.police[p.id]) {
         const el = document.createElement('div');
         el.className = 'sy-actor-pin police';
-        el.innerHTML = `🚓<span class="sy-actor-caption">${p.short}</span>`;
+        el.innerHTML = `<span class="sy-pin-ico">${icon}</span><span class="sy-actor-caption">${p.short}</span>`;
         if (state.playerRole === 'police') {
           el.style.cursor = 'pointer';
           el.addEventListener('click', (ev) => {
@@ -1076,6 +1183,8 @@ window.GT_SCOTLAND = (function () {
         markers.police[p.id] = new window.maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(pos).addTo(map);
       } else {
         markers.police[p.id].setLngLat(pos);
+        const ico = markers.police[p.id].getElement().querySelector('.sy-pin-ico');
+        if (ico && ico.textContent !== icon) ico.textContent = icon;
       }
     });
 
@@ -1083,13 +1192,16 @@ window.GT_SCOTLAND = (function () {
     const showThief = state.playerRole === 'thief' || policeInThiefCity;
     if (showThief) {
       const tPos = getActorDisplayCoords(state.thief);
+      const tIcon = getActorIcon(state.thief, '🕵️');
       if (!markers.thief) {
         const el = document.createElement('div');
         el.className = 'sy-actor-pin thief';
-        el.innerHTML = `🕵️<span class="sy-actor-caption">${state.playerRole === 'thief' ? 'DU' : 'TJUV!'}</span>`;
+        el.innerHTML = `<span class="sy-pin-ico">${tIcon}</span><span class="sy-actor-caption">${state.playerRole === 'thief' ? 'DU' : 'TJUV!'}</span>`;
         markers.thief = new window.maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(tPos).addTo(map);
       } else {
         markers.thief.setLngLat(tPos);
+        const ico = markers.thief.getElement().querySelector('.sy-pin-ico');
+        if (ico && ico.textContent !== tIcon) ico.textContent = tIcon;
       }
     } else if (markers.thief) {
       markers.thief.remove();
@@ -1127,7 +1239,7 @@ window.GT_SCOTLAND = (function () {
       feats.push({
         type: 'Feature',
         properties: { color },
-        geometry: { type: 'LineString', coordinates: [CITIES[a.travel.from].center, CITIES[a.travel.to].center] }
+        geometry: { type: 'LineString', coordinates: buildArcCoords(CITIES[a.travel.from].center, CITIES[a.travel.to].center, 20) }
       });
     };
     state.police.forEach(p => pushLine(p, '#38bdf8'));
@@ -1212,6 +1324,230 @@ window.GT_SCOTLAND = (function () {
     openDepartureBoardModal();
   }
 
+  function triggerExtraPlaceAction(placeKey) {
+    const actor = getControlledActor();
+    if (!actor || actor.travel) return;
+    if (state.viewMode !== 'city') switchToView('city', actor.city);
+    const extra = getCityPlaces(actor.city);
+    if (!extra || !extra[placeKey]) return;
+    const targetCoords = nudgeToOpenStreet(extra[placeKey].coords);
+    const d = DATA().distanceMeters(actor.coords, targetCoords);
+    if (d <= INTERACT_DIST_M) {
+      openExtraPlaceModal(placeKey);
+    } else {
+      actor.walkTarget = [...targetCoords];
+      actor.pendingAction = placeKey;
+      actor.stuckTimer = 0;
+      addLog(`🏃 Springer till ${extra[placeKey].name} (${Math.round(d)} m)...`, 'good');
+    }
+  }
+
+  function openExtraPlaceModal(placeKey) {
+    if (!state || state.finished) return;
+    const actor = getControlledActor();
+    if (!actor || actor.travel) return;
+    const cityId = actor.city;
+    const c = DATA().CITIES[cityId];
+    const extra = getCityPlaces(cityId);
+    const cdKey = `${cityId}:${placeKey}`;
+    if (state.placeCooldownUntil[cdKey] && state.elapsedSec < state.placeCooldownUntil[cdKey]) {
+      const rem = Math.ceil(state.placeCooldownUntil[cdKey] - state.elapsedSec);
+      addLog(`⏳ ${extra[placeKey].name} är upptaget — kom tillbaka om ${rem}s.`, '');
+      AUDIO().play('klick');
+      return;
+    }
+
+    const isPolice = state.playerRole === 'police';
+    AUDIO().play('bell');
+
+    if (placeKey === 'hotel') {
+      if (isPolice) {
+        const log = state.thiefVisitLog[cityId];
+        showSyModal(`
+          <div class="sy-card-90s" style="max-width:520px;">
+            <h2>🏨 ${extra.hotel.name} — Hotelliggare</h2>
+            <p class="sy-card-sub">${log
+              ? `📖 <b>SPÅR HITTAT!</b> Receptionisten minns en misstänkt gäst här på <b>Dag ${log.day} kl. ${log.hh}:${log.mm}</b> som reste vidare med <b>${log.modeLabel}</b> mot <b>${DATA().CITIES[log.lastTo].name}</b>!`
+              : `Receptionisten bläddrar i gästboken: <i>"Ingen som matchar signalementet har checkat in här."</i>`
+            }</p>
+            <div class="sy-modal-actions">
+              <button type="button" class="sy-brass-btn gold" style="width:auto;" id="syCloseExtra">Stäng gästboken</button>
+            </div>
+          </div>
+        `);
+        if (log) addLog(`🏨 Hotelliggaren i ${c.name}: Tjuven åkte ${log.modeLabel} mot ${DATA().CITIES[log.lastTo].name}!`, 'police');
+        $('syCloseExtra').addEventListener('click', closeSyModal);
+      } else {
+        const neighbors = [...c.trains, ...c.flights];
+        const decoyId = neighbors[Math.floor(Math.random() * neighbors.length)] || cityId;
+        showSyModal(`
+          <div class="sy-card-90s" style="max-width:540px;">
+            <h2>🏨 ${extra.hotel.name}</h2>
+            <p class="sy-card-sub">Välj en taktisk åtgärd på hotellet medan klockan tickar:</p>
+            <div class="sy-btn-stack">
+              <button type="button" class="sy-brass-btn gold" id="syHotelDisguise">
+                <span>🎭 Byt förklädnad (Nollställer missar &amp; döljer nästa radarping!)</span>
+              </button>
+              <button type="button" class="sy-brass-btn blue" id="syHotelDecoy">
+                <span>📡 Falsk hotellbokning i ${DATA().CITIES[decoyId].name} (Skickar falskt spår!)</span>
+              </button>
+            </div>
+            <div class="sy-modal-actions">
+              <button type="button" class="sy-brass-btn" style="width:auto;" id="syCloseExtra">Avbryt</button>
+            </div>
+          </div>
+        `);
+        $('syHotelDisguise').addEventListener('click', () => {
+          state.missesCount = 0;
+          state.skipNextReveal = true;
+          state.placeCooldownUntil[cdKey] = state.elapsedSec + 60;
+          addLog(`🏨 Förklädnad bytt i ${c.name}! Missar nollställda & nästa ping blockeras.`, 'good');
+          AUDIO().play('right1');
+          closeSyModal();
+        });
+        $('syHotelDecoy').addEventListener('click', () => {
+          const clk = formatClock(state.elapsedSec, state.secPerDay);
+          state.lastPing = { cityId: decoyId, day: clk.day, hh: clk.hh, mm: clk.mm, reason: 'Falsk hotellbokning' };
+          state.placeCooldownUntil[cdKey] = state.elapsedSec + 60;
+          addLog(`🎭 Falskt spår utlagt i ${DATA().CITIES[decoyId].name}! Poliserna luras dit.`, 'good');
+          AUDIO().play('stamp');
+          syncActorMarkers();
+          closeSyModal();
+        });
+        $('syCloseExtra').addEventListener('click', closeSyModal);
+      }
+      return;
+    }
+
+    if (placeKey === 'market') {
+      const items = isPolice
+        ? [
+            { id: 'fastFlight', icon: '⚡', title: 'Snabbrekvisition', desc: 'Halverar restiden på din nästa resa.' },
+            { id: 'hound', icon: '🐕', title: 'Spårhund', desc: 'Dubblar gripanderadien (140 m) i 30 sekunder.' },
+            { id: 'trainTap', icon: '📡', title: 'Tågspaning', desc: 'Avslöjar tjuven nästa gång tjuven åker tåg/båt.' }
+          ]
+        : [
+            { id: 'lockpick', icon: '🔧', title: 'Dyrkset', desc: 'Gör den gröna zonen i Kassaskåpet 2× större nästa gång.' },
+            { id: 'smoke', icon: '💨', title: 'Rökbomb', desc: 'Fryser jagande poliser i 3D-staden i 6 sekunder.' },
+            { id: 'fakePass', icon: '🛂', title: 'Förfalskat pass', desc: 'Gör ditt nästa direktflyg helt osynligt!' }
+          ];
+      showSyModal(`
+        <div class="sy-card-90s" style="max-width:560px;">
+          <h2>🛍️ ${extra.market.name}</h2>
+          <p class="sy-card-sub">Plocka upp 1 taktiskt verktyg till din ryggsäck:</p>
+          <div class="sy-btn-stack">
+            ${items.map(it => `
+              <button type="button" class="sy-brass-btn gold" data-gear="${it.id}">
+                <span>${it.icon} <b>${it.title}</b> — ${it.desc}</span>
+              </button>
+            `).join('')}
+          </div>
+          <div class="sy-modal-actions">
+            <button type="button" class="sy-brass-btn" style="width:auto;" id="syCloseExtra">Stäng basaren</button>
+          </div>
+        </div>
+      `);
+      $('syModalLayer').querySelectorAll('[data-gear]').forEach(b => {
+        b.addEventListener('click', () => {
+          const gid = b.getAttribute('data-gear');
+          state.gear[gid] = (state.gear[gid] || 0) + 1;
+          state.placeCooldownUntil[cdKey] = state.elapsedSec + 55;
+          if (gid === 'trainTap') state.trainTapActive = true;
+          addLog(`🛍️ Skaffade taktiskt verktyg på ${extra.market.name}!`, 'good');
+          AUDIO().play('cash');
+          renderGearStrip();
+          closeSyModal();
+        });
+      });
+      $('syCloseExtra').addEventListener('click', closeSyModal);
+      return;
+    }
+
+    if (placeKey === 'library') {
+      const qObj = getQuestionForCity(cityId);
+      const factLine = (window.GT_COUNTRY_FACTS && window.GT_COUNTRY_FACTS[cityId] && window.GT_COUNTRY_FACTS[cityId].intro)
+        || `${c.name} i ${c.country} är en viktig europeisk knutpunkt känd för ${c.landmark.name}.`;
+      showSyModal(`
+        <div class="sy-card-90s" style="max-width:560px;">
+          <h2>📚 ${extra.library.name}</h2>
+          <div class="sy-quiz-paper" style="font-size:13px;line-height:1.5;">
+            <b>📖 Lokal handbok:</b> ${escapeHtml(factLine)}
+          </div>
+          <div class="sy-btn-stack">
+            <button type="button" class="sy-brass-btn gold" id="syLibGuide">
+              <span>📖 Ta med Guidebok (Stryker 2 felaktiga svar på nästa Frågekort!)</span>
+            </button>
+            ${isPolice ? `<button type="button" class="sy-brass-btn blue" id="syLibArchive">
+              <span>🗂️ Arkivsökning (Stryk 1 falsk målstad från polisens spaningsakt!)</span>
+            </button>` : ''}
+          </div>
+          <div class="sy-modal-actions">
+            <button type="button" class="sy-brass-btn" style="width:auto;" id="syCloseExtra">Lämna biblioteket</button>
+          </div>
+        </div>
+      `);
+      $('syLibGuide').addEventListener('click', () => {
+        state.guideHintReady = true;
+        state.placeCooldownUntil[cdKey] = state.elapsedSec + 50;
+        addLog(`📚 Guidebok plockad i ${c.name} — stryker 2 fel på nästa Frågekort!`, 'good');
+        AUDIO().play('paper');
+        renderGearStrip();
+        closeSyModal();
+      });
+      const archBtn = $('syLibArchive');
+      if (archBtn) {
+        archBtn.addEventListener('click', () => {
+          const fake = state.suspectPool.find(id => !state.realTargets.includes(id) && !state.clearedSuspects.includes(id));
+          if (fake) {
+            state.clearedSuspects.push(fake);
+            addLog(`🗂️ Arkivfynd! ${DATA().CITIES[fake].name} är avskriven som falskt mål!`, 'police');
+          } else {
+            addLog('🗂️ Alla falska mål är redan avskrivna!', 'police');
+          }
+          state.placeCooldownUntil[cdKey] = state.elapsedSec + 60;
+          AUDIO().play('stamp');
+          rebuildCityMarkers();
+          closeSyModal();
+        });
+      }
+      $('syCloseExtra').addEventListener('click', closeSyModal);
+    }
+  }
+
+  function renderGearStrip() {
+    const strip = $('syGearStrip');
+    if (!strip || !state) return;
+    const chips = [];
+    if (state.gear.smoke > 0) chips.push(`<button type="button" class="sy-gear-chip" data-use="smoke">💨 Rökbomb (${state.gear.smoke})</button>`);
+    if (state.gear.lockpick > 0) chips.push(`<span class="sy-gear-chip">🔧 Dyrkset (${state.gear.lockpick})</span>`);
+    if (state.gear.fakePass > 0) chips.push(`<span class="sy-gear-chip">🛂 Falskpass (${state.gear.fakePass})</span>`);
+    if (state.gear.fastFlight > 0) chips.push(`<span class="sy-gear-chip">⚡ Snabbresa (${state.gear.fastFlight})</span>`);
+    if (state.gear.hound > 0) chips.push(`<button type="button" class="sy-gear-chip" data-use="hound">🐕 Spårhund (${state.gear.hound})</button>`);
+    if (state.trainTapActive) chips.push(`<span class="sy-gear-chip">📡 Tågspaning aktiv</span>`);
+    if (state.guideHintReady) chips.push(`<span class="sy-gear-chip">📖 Guidebok redo</span>`);
+    if (state.skipNextReveal) chips.push(`<span class="sy-gear-chip">🎭 Förklädd</span>`);
+    strip.innerHTML = chips.join('');
+
+    strip.querySelectorAll('[data-use]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const u = btn.getAttribute('data-use');
+        if (u === 'smoke' && state.gear.smoke > 0) {
+          state.gear.smoke--;
+          state.policeFrozenUntilSec = state.elapsedSec + 6;
+          addLog('💨 RÖKBOMB! Poliser i staden är bländade i 6 sekunder!', 'good');
+          AUDIO().play('takeoff');
+          renderGearStrip();
+        } else if (u === 'hound' && state.gear.hound > 0) {
+          state.gear.hound--;
+          state.houndUntilSec = state.elapsedSec + 30;
+          addLog('🐕 SPÅRHUND SLÄPPT! Dubbel gripanderadie i 30 sekunder!', 'police');
+          AUDIO().play('bell');
+          renderGearStrip();
+        }
+      });
+    });
+  }
+
   function activateSprintBoost() {
     if (!state || state.playerRole !== 'thief' || state.thief.travel) return;
     if (state.elapsedSec < state.thief.boostCooldownSec) return;
@@ -1232,14 +1568,17 @@ window.GT_SCOTLAND = (function () {
     const rowHtml = (destId, mode) => {
       const d = CITIES[destId];
       const sec = DATA().getTravelSeconds(actor.city, destId, mode);
+      const tInfo = getTransitModeInfo(actor.city, destId, mode);
       const isTarget = state.playerRole === 'thief' && state.realTargets.includes(destId) && !state.collectedTargets.includes(destId);
       const hasPol = state.police.some(p => !p.travel && p.city === destId);
       const badge = mode === 'train'
         ? '<span class="sy-flap-badge stealth">OSYNLIG</span>'
-        : '<span class="sy-flap-badge loud">AVSLÖJAR DIG</span>';
+        : (state.playerRole === 'thief' && state.gear.fakePass > 0
+          ? '<span class="sy-flap-badge stealth">🛂 FALSKPASS · OSYNLIG</span>'
+          : '<span class="sy-flap-badge loud">AVSLÖJAR DIG</span>');
       return `
         <button type="button" class="sy-flap-row" data-to="${destId}" data-mode="${mode}">
-          <span>${mode === 'train' ? '🚂' : '✈️'} ${d.name.toUpperCase()} ${isTarget ? '🎯' : ''}${hasPol ? ' 🚓' : ''} ${badge}</span>
+          <span>${tInfo.icon} ${d.name.toUpperCase()} ${isTarget ? '🎯' : ''}${hasPol ? ' 🚓' : ''} ${badge}</span>
           <span>${sec} SEK</span>
         </button>
       `;
@@ -1326,10 +1665,26 @@ window.GT_SCOTLAND = (function () {
     const fromId = actor.city;
     if (fromId === destId) return;
 
-    const durationSec = DATA().getTravelSeconds(fromId, destId, mode);
+    const tInfo = getTransitModeInfo(fromId, destId, mode);
+    let durationSec = DATA().getTravelSeconds(fromId, destId, mode);
+
+    // Polis-verktyg: Snabbrekvisition halverar restiden!
+    if (actor.id !== 'thief' && actor === getControlledActor() && state.gear.fastFlight > 0) {
+      state.gear.fastFlight--;
+      durationSec = Math.max(4, Math.round(durationSec * 0.5));
+      addLog(`⚡ Snabbrekvisition använd! Halverad restid (${durationSec}s).`, 'police');
+      renderGearStrip();
+    }
+
     actor.travel = { from: fromId, to: destId, mode, startSec: state.elapsedSec, durationSec };
     actor.walkTarget = null;
     actor.pendingAction = null;
+
+    // Logga tjuvens avresa för hotelliggaren!
+    if (actor.id === 'thief') {
+      const clk = formatClock(state.elapsedSec, state.secPerDay);
+      state.thiefVisitLog[fromId] = { lastTo: destId, modeLabel: `${tInfo.icon} ${tInfo.label}`, day: clk.day, hh: clk.hh, mm: clk.mm };
+    }
 
     if (actor === getControlledActor()) {
       state.stats.travels++;
@@ -1338,11 +1693,23 @@ window.GT_SCOTLAND = (function () {
     }
 
     if (actor.id === 'thief' && mode === 'flight') {
-      triggerThiefReveal(destId, `Tog direktflyg mot ${CITIES[destId].name}!`);
-    } else if (actor.id === 'thief' && state.playerRole === 'thief') {
-      addLog(`🚂 Smyger med tåg/båt mot ${CITIES[destId].name} (${durationSec}s).`, 'good');
+      if (state.gear.fakePass > 0) {
+        state.gear.fakePass--;
+        addLog(`🛂 Förfalskat pass använt! Ditt flyg mot ${CITIES[destId].name} hölls helt osynligt!`, 'good');
+        renderGearStrip();
+      } else {
+        triggerThiefReveal(destId, `Tog direktflyg mot ${CITIES[destId].name}!`);
+      }
+    } else if (actor.id === 'thief') {
+      if (state.trainTapActive) {
+        state.trainTapActive = false;
+        triggerThiefReveal(destId, `Tågspaning fångade ${tInfo.label.toLowerCase()} mot ${CITIES[destId].name}!`);
+        renderGearStrip();
+      } else if (state.playerRole === 'thief') {
+        addLog(`${tInfo.icon} Smyger med ${tInfo.label.toLowerCase()} mot ${CITIES[destId].name} (${durationSec}s).`, 'good');
+      }
     } else if (actor.id !== 'thief' && state.playerRole === 'police') {
-      addLog(`🚓 ${actor.short} skickad med ${mode === 'flight' ? 'flyg' : 'tåg'} till ${CITIES[destId].name}.`, 'police');
+      addLog(`🚓 ${actor.short} skickad med ${tInfo.icon} ${tInfo.label.toLowerCase()} till ${CITIES[destId].name}.`, 'police');
     }
 
     updateRouteLines();
@@ -1351,6 +1718,12 @@ window.GT_SCOTLAND = (function () {
 
   function triggerThiefReveal(cityId, reason) {
     if (!state) return;
+    if (state.skipNextReveal) {
+      state.skipNextReveal = false;
+      addLog(`🎭 Din hotellförklädnad blockerade radarpingen (${reason})!`, 'good');
+      renderGearStrip();
+      return;
+    }
     const clk = formatClock(state.elapsedSec, state.secPerDay);
     state.lastPing = { cityId, day: clk.day, hh: clk.hh, mm: clk.mm, reason };
     state.stats.reveals++;
@@ -1511,11 +1884,25 @@ window.GT_SCOTLAND = (function () {
     $('syQuizQ').textContent = qObj.q;
     const box = $('syQuizOpts');
     box.innerHTML = '';
+
+    // Bibliotekets Guidebok stryker automatiskt 2 felaktiga alternativ!
+    let crossOutLeft = state.guideHintReady ? 2 : 0;
+    if (state.guideHintReady) {
+      state.guideHintReady = false;
+      renderGearStrip();
+    }
+
     opts.forEach(o => {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'sy-quiz-opt';
       b.textContent = o.text;
+      if (!o.ok && crossOutLeft > 0) {
+        crossOutLeft--;
+        b.disabled = true;
+        b.style.opacity = '0.35';
+        b.style.textDecoration = 'line-through';
+      }
       b.addEventListener('click', () => {
         if (!state.heistContext || state.heistContext.answered) return;
         if (o.ok) {
@@ -1534,7 +1921,14 @@ window.GT_SCOTLAND = (function () {
 
   function startLockpick() {
     stopLockLoop();
-    lockState = { active: true, pos: 0.06, dir: 1, speed: 0.9, zoneStart: 0.34 + Math.random() * 0.25, zoneWidth: 0.22, hits: 0 };
+    let zoneW = 0.22;
+    if (state && state.gear.lockpick > 0) {
+      state.gear.lockpick--;
+      zoneW = 0.42;
+      addLog('🔧 Dyrkset använt — dubbelt så stor grön zon i kassaskåpet!', 'good');
+      renderGearStrip();
+    }
+    lockState = { active: true, pos: 0.06, dir: 1, speed: 0.9, zoneStart: 0.25 + Math.random() * (0.65 - zoneW), zoneWidth: zoneW, hits: 0 };
     updateLockVisuals();
     if ($('syLockFb')) $('syLockFb').textContent = '';
     lockLastTs = performance.now();
@@ -1732,12 +2126,11 @@ window.GT_SCOTLAND = (function () {
           addLog(`Framme i ${CITIES[destId].name}!`, 'good');
           rebuildCityMarkers();
           renderPanelState();
-          if (state.playerRole === 'thief' && state.realTargets.includes(destId) && !state.collectedTargets.includes(destId)) {
-            switchToView('city', destId);
-          } else if (state.playerRole === 'police' && state.thief.city === destId && !state.thief.travel) {
-            addLog(`🚨 KONTAKT! Tjuven är i ${CITIES[destId].name}! Zoomar in!`, 'alert');
-            switchToView('city', destId);
+          // Hoppa automatiskt in i 3D-staden vid varje ankomst!
+          if (state.playerRole === 'police' && state.thief.city === destId && !state.thief.travel) {
+            addLog(`🚨 KONTAKT! Tjuven är i ${CITIES[destId].name}!`, 'alert');
           }
+          switchToView('city', destId);
         } else {
           if (state.playerRole === 'police' && actor.id !== 'thief') {
             renderPanelState(); // Uppdatera polisflikarna även för icke-valda poliser
@@ -1763,7 +2156,143 @@ window.GT_SCOTLAND = (function () {
 
     syncActorMarkers();
     updateLiveHud(clk);
+    renderMinimap();
     rafId = requestAnimationFrame(gameLoop);
+  }
+
+  // --- Klassisk taktisk radar-minimap i 3D-stadsvyn (grannstäder + poliser + riktningspilar) ---
+  function renderMinimap() {
+    const wrap = $('syMinimapWrap');
+    const canvas = $('syMinimapCanvas');
+    if (!wrap || !canvas || !state) return;
+
+    const show = state.viewMode === 'city' && !state.finished;
+    wrap.classList.toggle('hidden', !show);
+    if (!show) return;
+
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+    const cx = W / 2;
+    const cy = H / 2;
+    const maxR = W / 2 - 12;
+    const RANGE_KM = 1150;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Radarringar & kors
+    ctx.strokeStyle = 'rgba(74, 222, 128, 0.16)';
+    ctx.lineWidth = 1;
+    [0.35, 0.7, 1.0].forEach(f => {
+      ctx.beginPath();
+      ctx.arc(cx, cy, maxR * f, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+    ctx.beginPath();
+    ctx.moveTo(cx - maxR, cy); ctx.lineTo(cx + maxR, cy);
+    ctx.moveTo(cx, cy - maxR); ctx.lineTo(cx, cy + maxR);
+    ctx.stroke();
+
+    // Nord-markering
+    ctx.fillStyle = 'rgba(255, 216, 117, 0.7)';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('N', cx, 11);
+
+    const CITIES = DATA().CITIES;
+    const actor = getControlledActor();
+    if (!actor) return;
+    const origin = CITIES[actor.city].center;
+    const cosLat = Math.max(0.25, Math.cos(origin[1] * Math.PI / 180));
+
+    const projectKm = (lngLat) => {
+      const dxKm = (lngLat[0] - origin[0]) * 111.32 * cosLat;
+      const dyKm = (lngLat[1] - origin[1]) * 111.32;
+      return {
+        x: cx + (dxKm / RANGE_KM) * maxR,
+        y: cy - (dyKm / RANGE_KM) * maxR,
+        distKm: Math.hypot(dxKm, dyKm),
+        angle: Math.atan2(-dyKm, dxKm)
+      };
+    };
+
+    // Rita rutter från nuvarande stad
+    const curCity = CITIES[actor.city];
+    const drawEdge = (toId, color, dashed) => {
+      const target = CITIES[toId];
+      if (!target) return;
+      const p = projectKm(target.center);
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.2;
+      if (dashed) ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      ctx.restore();
+    };
+    curCity.trains.forEach(id => drawEdge(id, 'rgba(52, 211, 153, 0.5)', true));
+    curCity.flights.forEach(id => drawEdge(id, 'rgba(245, 197, 86, 0.35)', false));
+
+    // Rita omkringliggande städer inom radarradien
+    Object.keys(CITIES).forEach(id => {
+      const c = CITIES[id];
+      const p = projectKm(c.center);
+      if (p.distKm > RANGE_KM * 0.96) return;
+      const isCur = id === actor.city;
+      const isTarget = state.playerRole === 'thief'
+        ? (state.realTargets.includes(id) && !state.collectedTargets.includes(id))
+        : (state.suspectPool.includes(id) && !state.clearedSuspects.includes(id));
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, isCur ? 4.5 : isTarget ? 3.8 : 2.6, 0, Math.PI * 2);
+      ctx.fillStyle = isCur ? '#4ade80' : isTarget ? '#f5c556' : '#cbd5e1';
+      ctx.fill();
+
+      ctx.fillStyle = isCur ? '#bbf7d0' : isTarget ? '#fde68a' : 'rgba(226, 232, 240, 0.8)';
+      ctx.font = isCur ? 'bold 9.5px sans-serif' : '8.5px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(c.name, p.x, p.y - 6);
+    });
+
+    // Rita alla poliser (prick om inom radie, klassisk riktningspil på kanten om utanför!)
+    state.police.forEach(pol => {
+      const pos = getActorDisplayCoords(pol);
+      const p = projectKm(pos);
+      if (p.distKm <= RANGE_KM * 0.94) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = '#e0f2fe';
+        ctx.font = 'bold 8.5px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(pol.short[0], p.x, p.y + 3);
+      } else {
+        // Utanför minimap → riktningspil på ytterkanten!
+        const ex = cx + Math.cos(p.angle) * (maxR + 3);
+        const ey = cy + Math.sin(p.angle) * (maxR + 3);
+        ctx.save();
+        ctx.translate(ex, ey);
+        ctx.rotate(p.angle);
+        ctx.beginPath();
+        ctx.moveTo(7, 0);
+        ctx.lineTo(-4, -5);
+        ctx.lineTo(-2, 0);
+        ctx.lineTo(-4, 5);
+        ctx.closePath();
+        ctx.fillStyle = '#38bdf8';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+      }
+    });
   }
 
   function updatePlayerMovement(dt) {
@@ -1801,6 +2330,7 @@ window.GT_SCOTLAND = (function () {
         actor.stuckTimer = 0;
         if (act === 'landmark') openChallengeModal();
         else if (act === 'hub') openDepartureBoardModal();
+        else if (act === 'hotel' || act === 'market' || act === 'library') openExtraPlaceModal(act);
       } else {
         const prev = actor.coords;
         const latRad = actor.coords[1] * Math.PI / 180;
@@ -1832,6 +2362,7 @@ window.GT_SCOTLAND = (function () {
     state.police.forEach((p, idx) => {
       if (p.travel) return;
       if (!state.thief.travel && p.city === state.thief.city) {
+        if (state.elapsedSec < state.policeFrozenUntilSec) return; // Rökbomb fryser polisen!
         const latRad = p.coords[1] * Math.PI / 180;
         const dxM = (state.thief.coords[0] - p.coords[0]) * 111320 * Math.max(0.2, Math.cos(latRad));
         const dyM = (state.thief.coords[1] - p.coords[1]) * 111320;
@@ -1948,7 +2479,8 @@ window.GT_SCOTLAND = (function () {
         ? '🚨 POLIS I STADEN! FLY TILL STATIONEN!'
         : `🚨 TJUVEN I ${DATA().CITIES[state.thief.city].name.toUpperCase()}! GRIP TJUVEN!`;
       $('syChaseDist').textContent = `(${Math.round(minD)} m)`;
-      if (minD <= CAPTURE_DIST_M) {
+      const captureR = state.elapsedSec < state.houndUntilSec ? CAPTURE_DIST_M * 2 : CAPTURE_DIST_M;
+      if (minD <= captureR) {
         endGame(state.playerRole === 'police', `${chaser.name} grep tjuven på gatorna i ${DATA().CITIES[state.thief.city].name}!`);
       }
     }
@@ -2009,7 +2541,8 @@ window.GT_SCOTLAND = (function () {
     if (traveling) {
       const el = state.elapsedSec - actor.travel.startSec;
       const p = Math.min(1, el / actor.travel.durationSec);
-      $('syTravelLabel').textContent = `${actor.travel.mode === 'flight' ? '✈️ Flyg' : '🚂 Tåg/Båt'} → ${CITIES[actor.travel.to].name}`;
+      const tInfo = getTransitModeInfo(actor.travel.from, actor.travel.to, actor.travel.mode);
+      $('syTravelLabel').textContent = `${tInfo.icon} ${tInfo.label} → ${CITIES[actor.travel.to].name}`;
       $('syTravelFill').style.width = `${p * 100}%`;
       $('syTravelEta').textContent = `${Math.max(0, Math.ceil(actor.travel.durationSec - el))} s kvar`;
     } else {
