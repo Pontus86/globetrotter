@@ -519,9 +519,21 @@ window.GT_SCOTLAND = (function () {
           <span id="syNextPingTxt">📡 Ping: Dag 3 · 00:00</span>
           <span id="syMissStrip">Missar: 0/2</span>
         </div>
+        <div class="sy-tickets-strip" id="syTicketsStrip">
+          <span>🎫 Biljetter:</span>
+          <span id="syTicketsVal">🚂 2 · ✈️ 1</span>
+        </div>
         <div id="syPoliceTabs" class="sy-police-tabs hidden"></div>
         <div id="syChaseAlert" class="sy-chase-alert hidden">
           <span id="syChaseMsg">🚨 POLIS I STADEN!</span> <span id="syChaseDist">200 m</span>
+        </div>
+        <div id="syBoardingCard" class="sy-travel-card boarding hidden">
+          <div class="sy-travel-label" id="syBoardingLabel">🚂 Går ombord...</div>
+          <div class="sy-travel-bar"><div class="sy-travel-fill" id="syBoardingFill"></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
+            <span class="sy-travel-eta" id="syBoardingEta">7 s kvar</span>
+            <button type="button" class="sy-brass-btn red" style="width:auto;padding:3px 8px;font-size:10.5px;" id="syCancelBoardingBtn">Avbryt</button>
+          </div>
         </div>
         <div id="syTravelCard" class="sy-travel-card hidden">
           <div class="sy-travel-label" id="syTravelLabel">🚂 Tåg mot Paris...</div>
@@ -590,6 +602,14 @@ window.GT_SCOTLAND = (function () {
       if (state && state.viewMode === 'city') switchToView('globe');
     });
     $('syBtnSprint').addEventListener('click', activateSprintBoost);
+    $('syCancelBoardingBtn').addEventListener('click', () => {
+      const actor = getControlledActor();
+      if (actor && actor.boarding) {
+        actor.boarding = null;
+        addLog('🏃 Avbröt boarding!', '');
+        AUDIO().play('klick');
+      }
+    });
     $('syScannerToggleBtn').addEventListener('click', () => {
       $('syScannerBox').classList.toggle('mobile-open');
     });
@@ -983,8 +1003,10 @@ window.GT_SCOTLAND = (function () {
       clearedSuspects: [],
       suspectPool,
       reconCooldownUntil: {}, // cityId -> elapsedSec (förhindrar oändlig ping-spam som polis)
+      landmarkBonusCooldownUntil: {}, // cityId -> elapsedSec (för biljetter i vanliga städer)
       placeCooldownUntil: {}, // "cityId:hotel|market|library" -> elapsedSec
       thiefVisitLog: {}, // cityId -> { lastTo, modeLabel, day, hh, mm } (för hotelliggaren!)
+      tickets: { train: 2, flight: 1 }, // Tjuvens biljetter — fylls på vid sevärdheter!
       gear: {
         lockpick: 0,      // Tjuv: 2x bredare grön zon i kassaskåp
         smoke: 0,         // Tjuv: fryser jagande poliser i 6s
@@ -1041,6 +1063,7 @@ window.GT_SCOTLAND = (function () {
     $('syRoleTag').textContent = playerRole === 'thief' ? '🕵️ MÄSTERTJUV' : '🚓 POLISCHEF';
     $('syPoliceTabs').classList.toggle('hidden', playerRole !== 'police');
     $('syBtnSprint').classList.toggle('hidden', playerRole !== 'thief');
+    $('syTicketsStrip').classList.toggle('hidden', playerRole !== 'thief');
     renderRadioQuickButtons();
 
     if (playerRole === 'thief') {
@@ -1436,8 +1459,8 @@ window.GT_SCOTLAND = (function () {
     }
 
     const cur = DATA().CITIES[actor.city];
-    if (cur.trains.includes(cityId)) startTravel(actor, cityId, 'train');
-    else if (cur.flights.includes(cityId)) startTravel(actor, cityId, 'flight');
+    if (cur.trains.includes(cityId)) beginBoarding(actor, cityId, 'train');
+    else if (cur.flights.includes(cityId)) beginBoarding(actor, cityId, 'flight');
     else openDepartureBoardModal();
   }
 
@@ -1705,64 +1728,117 @@ window.GT_SCOTLAND = (function () {
     triggerThiefReveal(state.thief.city, 'Sprint-boost aktiverad!');
   }
 
-  // --- Mekanisk Klappertavla (Avgångar) ---
+  // --- Mekanisk Klappertavla (Avgångar med biljettkrav + boarding-tid) ---
   function openDepartureBoardModal() {
     if (!state || state.finished) return;
     const actor = getControlledActor();
-    if (!actor || actor.travel) return;
+    if (!actor || actor.travel || actor.boarding) return;
     const CITIES = DATA().CITIES;
     const c = CITIES[actor.city];
+    const isThief = state.playerRole === 'thief';
     AUDIO().play('flap');
 
     const rowHtml = (destId, mode) => {
       const d = CITIES[destId];
       const sec = DATA().getTravelSeconds(actor.city, destId, mode);
       const tInfo = getTransitModeInfo(actor.city, destId, mode);
-      const isTarget = state.playerRole === 'thief' && state.realTargets.includes(destId) && !state.collectedTargets.includes(destId);
+      const isTarget = isThief && state.realTargets.includes(destId) && !state.collectedTargets.includes(destId);
       const hasPol = state.police.some(p => !p.travel && p.city === destId);
-      const badge = mode === 'train'
-        ? '<span class="sy-flap-badge stealth">OSYNLIG</span>'
-        : (state.playerRole === 'thief' && state.gear.fakePass > 0
-          ? '<span class="sy-flap-badge stealth">🛂 FALSKPASS · OSYNLIG</span>'
-          : '<span class="sy-flap-badge loud">AVSLÖJAR DIG</span>');
+      const hasTicket = !isThief || (mode === 'train' ? state.tickets.train > 0 : state.tickets.flight > 0);
+      const boardSec = isThief ? (mode === 'flight' ? 5 : 7) : 2;
+      const badge = !hasTicket
+        ? '<span class="sy-flap-badge loud">SLUT PÅ BILJETTER</span>'
+        : mode === 'train'
+          ? '<span class="sy-flap-badge stealth">OSYNLIG · 7s BOARDING</span>'
+          : (isThief && state.gear.fakePass > 0
+            ? '<span class="sy-flap-badge stealth">🛂 FALSKPASS · 5s BOARDING</span>'
+            : '<span class="sy-flap-badge loud">AVSLÖJAR DIG · 5s BOARDING</span>');
       return `
-        <button type="button" class="sy-flap-row" data-to="${destId}" data-mode="${mode}">
+        <button type="button" class="sy-flap-row" data-to="${destId}" data-mode="${mode}" ${!hasTicket ? 'disabled style="opacity:0.45;cursor:not-allowed;"' : ''}>
           <span>${tInfo.icon} ${d.name.toUpperCase()} ${isTarget ? '🎯' : ''}${hasPol ? ' 🚓' : ''} ${badge}</span>
-          <span>${sec} SEK</span>
+          <span>${sec}s (+${boardSec}s)</span>
         </button>
       `;
     };
 
+    const ticketBanner = isThief
+      ? `<div style="background:rgba(245,197,86,0.14);border:1px solid #ffd875;border-radius:7px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;display:flex;justify-content:space-between;align-items:center;">
+          <span>🎫 Dina biljetter: <b>🚂 ${state.tickets.train} Tåg/Båt</b> · <b>✈️ ${state.tickets.flight} Flyg</b></span>
+          <span style="font-size:11px;color:#fde68a;">Fyll på vid stadens sevärdhet!</span>
+        </div>`
+      : '';
+
     const html = `
       <div class="sy-card-90s">
         <h2>🚉 Avgångstavla — ${c.name}</h2>
+        ${ticketBanner}
         <p class="sy-card-sub">
-          Välj tåg/båt för att resa helt osynligt, eller direktflyg för att komma fram snabbare mot att din destination avslöjas för poliserna.
+          När du väljer avgång startar en kort <b>boarding på stationen</b> innan avresa. Håll utkik på radarn så ingen polis hinner fram till perrongen!
         </p>
         <div class="sy-flap-board">
-          <div class="sy-flap-head"><span>🚂 TÅG &amp; BÅT (SMYGRUTT)</span><span>RESTID</span></div>
+          <div class="sy-flap-head"><span>🚂 TÅG &amp; BÅT (1 TÅGBILJETT · OSYNLIG)</span><span>RESTID</span></div>
           ${c.trains.map(id => rowHtml(id, 'train')).join('')}
         </div>
         <div class="sy-flap-board">
-          <div class="sy-flap-head"><span>✈️ DIREKTFLYG (SNABBT · RADARPING)</span><span>RESTID</span></div>
+          <div class="sy-flap-head"><span>✈️ DIREKTFLYG (1 FLYGBILJETT · RADARPING)</span><span>RESTID</span></div>
           ${c.flights.map(id => rowHtml(id, 'flight')).join('')}
         </div>
         <div class="sy-modal-actions">
+          ${isThief && state.tickets.train === 0 && state.tickets.flight === 0
+            ? '<button type="button" class="sy-brass-btn gold" style="width:auto;" id="syGoEarnTickets">🏃 Spring till sevärdhet för biljetter!</button>'
+            : '<span></span>'}
           <button type="button" class="sy-brass-btn" style="width:auto;" id="syCloseDep">Stäng tavlan</button>
         </div>
       </div>
     `;
     showSyModal(html);
 
-    $('syModalLayer').querySelectorAll('.sy-flap-row').forEach(btn => {
+    $('syModalLayer').querySelectorAll('.sy-flap-row:not([disabled])').forEach(btn => {
       btn.addEventListener('click', () => {
         const to = btn.getAttribute('data-to');
         const mode = btn.getAttribute('data-mode');
         closeSyModal();
-        startTravel(actor, to, mode);
+        beginBoarding(actor, to, mode);
       });
     });
+    const earnBtn = $('syGoEarnTickets');
+    if (earnBtn) {
+      earnBtn.addEventListener('click', () => {
+        closeSyModal();
+        triggerLandmarkAction();
+      });
+    }
     $('syCloseDep').addEventListener('click', closeSyModal);
+  }
+
+  function beginBoarding(actor, destId, mode) {
+    if (!state || state.finished || actor.travel || actor.boarding) return;
+    if (actor.id === 'thief' && state.playerRole === 'thief') {
+      if (mode === 'train' && state.tickets.train <= 0) {
+        addLog('🎫 Slut på tågbiljetter! Klara stadens sevärdhet för att få nya!', 'alert');
+        return;
+      }
+      if (mode === 'flight' && state.tickets.flight <= 0) {
+        addLog('🎫 Slut på flygbiljetter! Klara stadens sevärdhet för att få nya!', 'alert');
+        return;
+      }
+    }
+    const boardSec = (actor === getControlledActor() && state.playerRole === 'thief')
+      ? (mode === 'flight' ? 5 : 7)
+      : 2;
+    const tInfo = getTransitModeInfo(actor.city, destId, mode);
+    actor.boarding = {
+      to: destId,
+      mode,
+      startSec: state.elapsedSec,
+      durationSec: boardSec
+    };
+    actor.walkTarget = null;
+    actor.walkPath = null;
+    actor.pendingAction = null;
+    updateWalkPathLine(actor);
+    AUDIO().play('flap');
+    addLog(`${tInfo.icon} Boarding mot ${DATA().CITIES[destId].name} (${boardSec}s på stationen)...`, 'good');
   }
 
   // --- Svenskt Uppdragspass ---
@@ -1825,6 +1901,13 @@ window.GT_SCOTLAND = (function () {
       renderGearStrip();
     }
 
+    // Dra 1 biljett för spelartjuven när avresan väl går av stapeln
+    if (actor.id === 'thief' && state.playerRole === 'thief') {
+      if (mode === 'train') state.tickets.train = Math.max(0, state.tickets.train - 1);
+      else state.tickets.flight = Math.max(0, state.tickets.flight - 1);
+    }
+
+    actor.boarding = null;
     actor.travel = { from: fromId, to: destId, mode, startSec: state.elapsedSec, durationSec };
     actor.walkTarget = null;
     actor.pendingAction = null;
@@ -2198,14 +2281,18 @@ window.GT_SCOTLAND = (function () {
         closeSyModal();
       }, 750);
     } else if (isRealTarget) {
+      state.tickets.train += 1;
       setTimeout(() => {
         if (!active || !state || state.finished || matchToken !== myToken) return;
         closeSyModal();
         collectArtifact(cityId, false);
       }, 600);
     } else {
+      // Icke-målstad: ger +2 Tågbiljetter, +1 Flygbiljett & laddar Sprint-boost!
+      state.tickets.train += 2;
+      state.tickets.flight += 1;
       state.thief.boostCooldownSec = 0;
-      addLog(`🎭 Bonus i ${DATA().CITIES[cityId].name}: Sprint-boost fulladdad!`, 'good');
+      addLog(`🎫 Snyggt jobb i ${DATA().CITIES[cityId].name}: +2 🚂 tågbiljetter, +1 ✈️ flygbiljett & full Sprint!`, 'good');
       setTimeout(() => {
         if (!active || !state || state.finished || matchToken !== myToken) return;
         closeSyModal();
@@ -2254,6 +2341,16 @@ window.GT_SCOTLAND = (function () {
         state.revealTriggered[rd] = true;
         const pc = state.thief.travel ? state.thief.travel.to : state.thief.city;
         triggerThiefReveal(pc, `Obligatorisk radarping Dag ${rd}`);
+      }
+    });
+
+    // Pågående boarding på stationen
+    [state.thief, ...state.police].forEach(actor => {
+      if (!actor.boarding) return;
+      if (state.elapsedSec >= actor.boarding.startSec + actor.boarding.durationSec) {
+        const { to, mode } = actor.boarding;
+        actor.boarding = null;
+        startTravel(actor, to, mode);
       }
     });
 
@@ -2459,6 +2556,10 @@ window.GT_SCOTLAND = (function () {
     if (keysDown.has('d') || keysDown.has('arrowright')) sx += 1;
 
     if (sx !== 0 || sy !== 0) {
+      if (actor.boarding) {
+        actor.boarding = null;
+        addLog('🏃 Du sprang iväg från perrongen — boarding avbruten!', '');
+      }
       actor.walkTarget = null;
       actor.walkPath = null;
       actor.pendingAction = null;
@@ -2510,39 +2611,67 @@ window.GT_SCOTLAND = (function () {
     }
   }
 
+  // --- Smarta, genskjutande AI-poliser (3 taktiska roller: Spårare, Genskjutare, Väktare) ---
   function updateAiPolice(dt) {
     const CITIES = DATA().CITIES;
     const pingCity = state.lastPing ? state.lastPing.cityId : null;
+    const activeSuspects = state.suspectPool.filter(id => !state.collectedTargets.includes(id));
+
     state.police.forEach((p, idx) => {
-      if (p.travel) return;
+      if (p.travel || p.boarding) return;
       if (!state.thief.travel && p.city === state.thief.city) {
         if (state.elapsedSec < state.policeFrozenUntilSec) return; // Rökbomb fryser polisen!
         const latRad = p.coords[1] * Math.PI / 180;
         const dxM = (state.thief.coords[0] - p.coords[0]) * 111320 * Math.max(0.2, Math.cos(latRad));
         const dyM = (state.thief.coords[1] - p.coords[1]) * 111320;
         const len = Math.hypot(dxM, dyM) || 1;
-        const step = Math.min(len, PLAYER_BASE_SPEED_MPS * 0.84 * dt);
+        const step = Math.min(len, PLAYER_BASE_SPEED_MPS * 0.88 * dt);
         p.coords = tryStepOnStreet(p.coords, (dxM / len) * step, (dyM / len) * step);
         return;
       }
 
       p.aiCooldown -= dt;
       if (p.aiCooldown > 0) return;
-      p.aiCooldown = 3.5 + Math.random() * 2.5;
+      p.aiCooldown = 3.0 + Math.random() * 2.2;
 
-      const others = state.suspectPool.filter(id => id !== p.city);
-      const goal = (pingCity && idx < 2) ? pingCity : others[Math.floor(Math.random() * others.length)];
+      let goal = null;
+      let radioMsg = '';
+
+      if (idx === 0) {
+        // Polis 1 (Holm — Spåraren): jagar senaste spåret, eller en grannstad om redan på spåret
+        if (pingCity && pingCity !== p.city) {
+          goal = pingCity;
+          radioMsg = `📻 ${p.short}: "Jag tar spåret direkt mot ${CITIES[pingCity].name}!"`;
+        } else {
+          const curEdges = [...CITIES[p.city].trains, ...CITIES[p.city].flights];
+          goal = curEdges[Math.floor(Math.random() * curEdges.length)];
+          if (goal) radioMsg = `📻 ${p.short}: "Tjuven har lämnat ${CITIES[p.city].name} — söker vidare mot ${CITIES[goal].name}!"`;
+        }
+      } else if (idx === 1) {
+        // Polis 2 (Vega — Genskjutaren): stänger av en grannstad/knutpunkt FRAMFÖR tjuvens senaste spår mot misstänkta mål!
+        if (pingCity) {
+          const neighbors = [...CITIES[pingCity].trains, ...CITIES[pingCity].flights].filter(id => id !== p.city);
+          const intercept = neighbors.find(id => activeSuspects.includes(id)) || neighbors[Math.floor(Math.random() * neighbors.length)];
+          goal = intercept || activeSuspects[0];
+          if (goal) radioMsg = `📻 ${p.short}: "Jag genskjuter flyktvägen via ${CITIES[goal].name}!"`;
+        } else {
+          const hubs = ['zurich', 'paris', 'berlin', 'milan'].filter(id => id !== p.city);
+          goal = hubs[Math.floor(Math.random() * hubs.length)];
+          if (goal) radioMsg = `📻 ${p.short}: "Stänger av knutpunkten ${CITIES[goal].name}."`;
+        }
+      } else {
+        // Polis 3 (Lind — Väktaren): vaktar de misstänkta målstäderna!
+        const guardChoices = activeSuspects.filter(id => id !== p.city);
+        goal = guardChoices[Math.floor(Math.random() * guardChoices.length)] || Object.keys(CITIES)[0];
+        if (goal) radioMsg = `📻 ${p.short}: "Jag lägger mig i bakhåll vid ${CITIES[goal].name}."`;
+      }
+
       if (goal && goal !== p.city) {
         const step = bfsNextStep(p.city, goal, true);
         if (step) {
           startTravel(p, step.to, step.mode);
-          if (Math.random() < 0.65) {
-            addLog(
-              pingCity === goal
-                ? `📻 ${p.short}: "Följer spåret mot ${CITIES[step.to].name}!"`
-                : `📻 ${p.short}: "Kollar upp ${CITIES[step.to].name} härnäst."`,
-              'police'
-            );
+          if (radioMsg && Math.random() < 0.72) {
+            addLog(radioMsg, 'police');
           }
         }
       }
@@ -2683,6 +2812,9 @@ window.GT_SCOTLAND = (function () {
     const nextPing = REVEAL_DAYS.find(d => !state.revealTriggered[d]);
     $('syNextPingTxt').textContent = nextPing ? `📡 Ping: Dag ${nextPing} · 00:00` : '📡 Alla pings gjorda';
     $('syMissStrip').textContent = `Missar: ${state.missesCount}/${state.missLimit}`;
+    if (state.playerRole === 'thief' && $('syTicketsVal')) {
+      $('syTicketsVal').textContent = `🚂 ${state.tickets.train} · ✈️ ${state.tickets.flight}`;
+    }
 
     const pill = $('syStealthPill');
     const exposed = state.lastPing && state.lastPing.cityId === state.thief.city && !state.thief.travel;
@@ -2690,9 +2822,19 @@ window.GT_SCOTLAND = (function () {
     pill.className = 'sy-stealth-pill' + (state.playerRole === 'thief' && exposed ? ' exposed' : '');
 
     const traveling = Boolean(actor.travel);
+    const boarding = Boolean(actor.boarding);
     $('syTravelCard').classList.toggle('hidden', !traveling);
-    $('syActionButtons').classList.toggle('hidden', traveling);
-    if (traveling) {
+    $('syBoardingCard').classList.toggle('hidden', !boarding);
+    $('syActionButtons').classList.toggle('hidden', traveling || boarding);
+
+    if (boarding) {
+      const el = state.elapsedSec - actor.boarding.startSec;
+      const p = Math.min(1, el / actor.boarding.durationSec);
+      const tInfo = getTransitModeInfo(actor.city, actor.boarding.to, actor.boarding.mode);
+      $('syBoardingLabel').textContent = `${tInfo.icon} Går ombord: ${CITIES[actor.boarding.to].name}`;
+      $('syBoardingFill').style.width = `${p * 100}%`;
+      $('syBoardingEta').textContent = `${Math.max(0, Math.ceil(actor.boarding.durationSec - el))} s kvar`;
+    } else if (traveling) {
       const el = state.elapsedSec - actor.travel.startSec;
       const p = Math.min(1, el / actor.travel.durationSec);
       const tInfo = getTransitModeInfo(actor.travel.from, actor.travel.to, actor.travel.mode);

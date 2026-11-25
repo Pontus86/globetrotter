@@ -718,3 +718,22 @@ JSON-innehåll, händelselogg som sparning), så att koden går att bygga vidare
     passera 360 grader?
 11. **Ska ett misslyckat svar kunna göras om** (en ny fråga mot ny tid) för att
     få högre stämpelnivå?
+
+---
+
+## 15. Pivot: Scotland Yard 3D & Framtida Steam-utgivning (2026-11-25)
+
+### 15.1 Ny spelkärna (Scotland Yard i realtid)
+- **Asymmetrisk jakt:** 1 tjuv mot 3–4 poliser under **10 kontinuerliga realtidsdagar** (t.ex. 5–15 min per match). Klockan tickar medan man springer i 3D-städer, löser frågekort/kassaskåp/minispel och reser mellan städer.
+- **Synlighet & Risk/Reward:** Polisernas positioner syns alltid (även på tjuvens radar-minimap i 3D-staden). Tjuven syns bara på fasta avslöjandedagar (Dag 3, 6, 8) samt vid frivilliga riskval (direktflyg, snabbkupp, sprint-boost eller efter *X* inställbara missar).
+- **Öppen Polisradio:** Tjuven avlyssnar allt poliserna säger och kan själv kapa radion för att prata eller bluffa. Poliserna diskuterar svaren på frågekort tillsammans.
+- **Levande 3D-städer:** Spelaren rör sig längs stadens riktiga gator mellan Sevärdhet, Station, Hotell, Marknad och Bibliotek.
+
+### 15.2 Färdplan: Webbprototyp → Steam (Godot 4)
+1. **Steg 1 (Nu):** Finslipa och balansera kärnloopen i webbprototypen (`proto/index.html` + `scotland_mode.js`) tills katt-och-råtta-jakten är rolig omgång efter omgång.
+2. **Steg 2 (Steam-version i Godot 4):**
+   - **Motor:** Godot 4 (gratis, 0 % revenue share, äkta 3D-ljus/karaktärer/partiklar, snabb `.exe`).
+   - **Offline-kartor utan API-kostnad:** Förbakade stiliserade 3D-städer från OpenStreetMap-data (kommersiellt tillåtet med attribution) + egen 3D-glob med relief/berg, helt utan beroende av Esri eller publika tile-servrar.
+   - **Steamworks (GodotSteam):** Steam Lobbies (1-klicks *Invite Friend*), Achievements, Steam Cloud och inbyggd röstchatt för polisradion (där tjuven tjuvlyssnar och kan trycka för att kapa frekvensen).
+   - **Publicering:** Steam Direct (\$100 engångsavgift), trailer, spelbar demo till Steam Next Fest.
+
