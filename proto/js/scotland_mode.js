@@ -102,6 +102,21 @@ window.GT_SCOTLAND = (function () {
     'amsterdam--london', 'copenhagen--oslo', 'athens--rome', 'athens--istanbul', 'london--paris'
   ]);
 
+  function getFareKr(fromId, toId, mode) {
+    const c1 = DATA().CITIES[fromId];
+    const c2 = DATA().CITIES[toId];
+    if (!c1 || !c2) return mode === 'flight' ? 1200 : 500;
+    const km = DATA().haversineKm(c1.center, c2.center);
+    if (mode === 'flight') {
+      return Math.round((900 + km * 0.45) / 50) * 50; // ~1100–2000 kr
+    }
+    return Math.round((300 + km * 0.25) / 50) * 50; // ~400–850 kr
+  }
+
+  function formatKr(amount) {
+    return `${Math.round(amount).toLocaleString('sv-SE')} kr`;
+  }
+
   function getTransitModeInfo(fromId, toId, mode) {
     if (mode === 'flight') return { icon: '✈️', label: 'Flyg' };
     const key = [fromId, toId].sort().join('--');
@@ -520,8 +535,8 @@ window.GT_SCOTLAND = (function () {
           <span id="syMissStrip">Missar: 0/2</span>
         </div>
         <div class="sy-tickets-strip" id="syTicketsStrip">
-          <span>🎫 Biljetter:</span>
-          <span id="syTicketsVal">🚂 2 · ✈️ 1</span>
+          <span>💰 Reskassa:</span>
+          <span id="syTicketsVal">1 800 kr</span>
         </div>
         <div id="syPoliceTabs" class="sy-police-tabs hidden"></div>
         <div id="syChaseAlert" class="sy-chase-alert hidden">
@@ -1006,7 +1021,7 @@ window.GT_SCOTLAND = (function () {
       landmarkBonusCooldownUntil: {}, // cityId -> elapsedSec (för biljetter i vanliga städer)
       placeCooldownUntil: {}, // "cityId:hotel|market|library" -> elapsedSec
       thiefVisitLog: {}, // cityId -> { lastTo, modeLabel, day, hh, mm } (för hotelliggaren!)
-      tickets: { train: 2, flight: 1 }, // Tjuvens biljetter — fylls på vid sevärdheter!
+      cash: 1800, // Reskassa i kronor — tjänas vid sevärdheter & används till resor, hotell & marknad!
       gear: {
         lockpick: 0,      // Tjuv: 2x bredare grön zon i kassaskåp
         smoke: 0,         // Tjuv: fryser jagande poliser i 6s
@@ -1557,11 +1572,13 @@ window.GT_SCOTLAND = (function () {
             <h2>🏨 ${extra.hotel.name}</h2>
             <p class="sy-card-sub">Välj en taktisk åtgärd på hotellet medan klockan tickar:</p>
             <div class="sy-btn-stack">
-              <button type="button" class="sy-brass-btn gold" id="syHotelDisguise">
-                <span>🎭 Byt förklädnad (Nollställer missar &amp; döljer nästa radarping!)</span>
+              <button type="button" class="sy-brass-btn gold" id="syHotelDisguise" ${state.cash < 500 ? 'disabled' : ''}>
+                <span>🎭 Byt förklädnad (Nollställer missar &amp; döljer nästa ping)</span>
+                <small>500 kr</small>
               </button>
-              <button type="button" class="sy-brass-btn blue" id="syHotelDecoy">
-                <span>📡 Falsk hotellbokning i ${DATA().CITIES[decoyId].name} (Skickar falskt spår!)</span>
+              <button type="button" class="sy-brass-btn blue" id="syHotelDecoy" ${state.cash < 400 ? 'disabled' : ''}>
+                <span>📡 Falsk hotellbokning i ${DATA().CITIES[decoyId].name} (Falskt spår)</span>
+                <small>400 kr</small>
               </button>
             </div>
             <div class="sy-modal-actions">
@@ -1570,18 +1587,22 @@ window.GT_SCOTLAND = (function () {
           </div>
         `);
         $('syHotelDisguise').addEventListener('click', () => {
+          if (state.cash < 500) return;
+          state.cash -= 500;
           state.missesCount = 0;
           state.skipNextReveal = true;
           state.placeCooldownUntil[cdKey] = state.elapsedSec + 60;
-          addLog(`🏨 Förklädnad bytt i ${c.name}! Missar nollställda & nästa ping blockeras.`, 'good');
-          AUDIO().play('right1');
+          addLog(`🏨 Förklädnad bytt i ${c.name} (-500 kr)! Missar nollställda & nästa ping blockeras.`, 'good');
+          AUDIO().play('cash_out');
           closeSyModal();
         });
         $('syHotelDecoy').addEventListener('click', () => {
+          if (state.cash < 400) return;
+          state.cash -= 400;
           const clk = formatClock(state.elapsedSec, state.secPerDay);
           state.lastPing = { cityId: decoyId, day: clk.day, hh: clk.hh, mm: clk.mm, reason: 'Falsk hotellbokning' };
           state.placeCooldownUntil[cdKey] = state.elapsedSec + 60;
-          addLog(`🎭 Falskt spår utlagt i ${DATA().CITIES[decoyId].name}! Poliserna luras dit.`, 'good');
+          addLog(`🎭 Falskt spår utlagt i ${DATA().CITIES[decoyId].name} (-400 kr)! Poliserna luras dit.`, 'good');
           AUDIO().play('stamp');
           syncActorMarkers();
           closeSyModal();
@@ -1594,25 +1615,29 @@ window.GT_SCOTLAND = (function () {
     if (placeKey === 'market') {
       const items = isPolice
         ? [
-            { id: 'fastFlight', icon: '⚡', title: 'Snabbrekvisition', desc: 'Halverar restiden på din nästa resa.' },
-            { id: 'hound', icon: '🐕', title: 'Spårhund', desc: 'Dubblar gripanderadien (140 m) i 30 sekunder.' },
-            { id: 'trainTap', icon: '📡', title: 'Tågspaning', desc: 'Avslöjar tjuven nästa gång tjuven åker tåg/båt.' }
+            { id: 'fastFlight', icon: '⚡', title: 'Snabbrekvisition', price: 0, desc: 'Halverar restiden på din nästa resa.' },
+            { id: 'hound', icon: '🐕', title: 'Spårhund', price: 0, desc: 'Dubblar gripanderadien (140 m) i 30 sekunder.' },
+            { id: 'trainTap', icon: '📡', title: 'Tågspaning', price: 0, desc: 'Avslöjar tjuven nästa gång tjuven åker tåg/båt.' }
           ]
         : [
-            { id: 'lockpick', icon: '🔧', title: 'Dyrkset', desc: 'Gör den gröna zonen i Kassaskåpet 2× större nästa gång.' },
-            { id: 'smoke', icon: '💨', title: 'Rökbomb', desc: 'Fryser jagande poliser i 3D-staden i 6 sekunder.' },
-            { id: 'fakePass', icon: '🛂', title: 'Förfalskat pass', desc: 'Gör ditt nästa direktflyg helt osynligt!' }
+            { id: 'lockpick', icon: '🔧', title: 'Dyrkset', price: 450, desc: 'Gör den gröna zonen i Kassaskåpet 2× större nästa gång.' },
+            { id: 'smoke', icon: '💨', title: 'Rökbomb', price: 550, desc: 'Fryser jagande poliser i 3D-staden i 6 sekunder.' },
+            { id: 'fakePass', icon: '🛂', title: 'Förfalskat pass', price: 800, desc: 'Gör ditt nästa direktflyg helt osynligt!' }
           ];
       showSyModal(`
         <div class="sy-card-90s" style="max-width:560px;">
           <h2>🛍️ ${extra.market.name}</h2>
-          <p class="sy-card-sub">Plocka upp 1 taktiskt verktyg till din ryggsäck:</p>
+          <p class="sy-card-sub">${isPolice ? 'Hämta 1 polisverktyg:' : `Din reskassa: <b>${formatKr(state.cash)}</b> — köp ett taktiskt verktyg:`}</p>
           <div class="sy-btn-stack">
-            ${items.map(it => `
-              <button type="button" class="sy-brass-btn gold" data-gear="${it.id}">
-                <span>${it.icon} <b>${it.title}</b> — ${it.desc}</span>
-              </button>
-            `).join('')}
+            ${items.map(it => {
+              const canAfford = isPolice || state.cash >= it.price;
+              return `
+                <button type="button" class="sy-brass-btn gold" data-gear="${it.id}" data-price="${it.price}" ${!canAfford ? 'disabled' : ''}>
+                  <span>${it.icon} <b>${it.title}</b> — ${it.desc}</span>
+                  <small>${it.price > 0 ? formatKr(it.price) : 'GRATIS'}</small>
+                </button>
+              `;
+            }).join('')}
           </div>
           <div class="sy-modal-actions">
             <button type="button" class="sy-brass-btn" style="width:auto;" id="syCloseExtra">Stäng basaren</button>
@@ -1622,11 +1647,14 @@ window.GT_SCOTLAND = (function () {
       $('syModalLayer').querySelectorAll('[data-gear]').forEach(b => {
         b.addEventListener('click', () => {
           const gid = b.getAttribute('data-gear');
+          const price = Number(b.getAttribute('data-price')) || 0;
+          if (!isPolice && state.cash < price) return;
+          if (!isPolice) state.cash -= price;
           state.gear[gid] = (state.gear[gid] || 0) + 1;
           state.placeCooldownUntil[cdKey] = state.elapsedSec + 55;
           if (gid === 'trainTap') state.trainTapActive = true;
-          addLog(`🛍️ Skaffade taktiskt verktyg på ${extra.market.name}!`, 'good');
-          AUDIO().play('cash');
+          addLog(`🛍️ Köpte verktyg på ${extra.market.name}${price > 0 ? ` (-${formatKr(price)})` : ''}!`, 'good');
+          AUDIO().play('cash_out');
           renderGearStrip();
           closeSyModal();
         });
@@ -1728,7 +1756,7 @@ window.GT_SCOTLAND = (function () {
     triggerThiefReveal(state.thief.city, 'Sprint-boost aktiverad!');
   }
 
-  // --- Mekanisk Klappertavla (Avgångar med biljettkrav + boarding-tid) ---
+  // --- Mekanisk Klappertavla (Avgångar med biljettpris i kr + boarding-tid) ---
   function openDepartureBoardModal() {
     if (!state || state.finished) return;
     const actor = getControlledActor();
@@ -1741,51 +1769,53 @@ window.GT_SCOTLAND = (function () {
     const rowHtml = (destId, mode) => {
       const d = CITIES[destId];
       const sec = DATA().getTravelSeconds(actor.city, destId, mode);
+      const fare = getFareKr(actor.city, destId, mode);
       const tInfo = getTransitModeInfo(actor.city, destId, mode);
       const isTarget = isThief && state.realTargets.includes(destId) && !state.collectedTargets.includes(destId);
       const hasPol = state.police.some(p => !p.travel && p.city === destId);
-      const hasTicket = !isThief || (mode === 'train' ? state.tickets.train > 0 : state.tickets.flight > 0);
+      const canAfford = !isThief || state.cash >= fare;
       const boardSec = isThief ? (mode === 'flight' ? 5 : 7) : 2;
-      const badge = !hasTicket
-        ? '<span class="sy-flap-badge loud">SLUT PÅ BILJETTER</span>'
+      const badge = !canAfford
+        ? `<span class="sy-flap-badge loud">SAKNAR ${formatKr(fare - state.cash)}</span>`
         : mode === 'train'
           ? '<span class="sy-flap-badge stealth">OSYNLIG · 7s BOARDING</span>'
           : (isThief && state.gear.fakePass > 0
             ? '<span class="sy-flap-badge stealth">🛂 FALSKPASS · 5s BOARDING</span>'
             : '<span class="sy-flap-badge loud">AVSLÖJAR DIG · 5s BOARDING</span>');
       return `
-        <button type="button" class="sy-flap-row" data-to="${destId}" data-mode="${mode}" ${!hasTicket ? 'disabled style="opacity:0.45;cursor:not-allowed;"' : ''}>
+        <button type="button" class="sy-flap-row" data-to="${destId}" data-mode="${mode}" ${!canAfford ? 'disabled style="opacity:0.45;cursor:not-allowed;"' : ''}>
           <span>${tInfo.icon} ${d.name.toUpperCase()} ${isTarget ? '🎯' : ''}${hasPol ? ' 🚓' : ''} ${badge}</span>
-          <span>${sec}s (+${boardSec}s)</span>
+          <span>${isThief ? formatKr(fare) + ' · ' : ''}${sec}s (+${boardSec}s)</span>
         </button>
       `;
     };
 
-    const ticketBanner = isThief
+    const cheapestTrain = Math.min(...c.trains.map(id => getFareKr(actor.city, id, 'train')), 9999);
+    const cashBanner = isThief
       ? `<div style="background:rgba(245,197,86,0.14);border:1px solid #ffd875;border-radius:7px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;display:flex;justify-content:space-between;align-items:center;">
-          <span>🎫 Dina biljetter: <b>🚂 ${state.tickets.train} Tåg/Båt</b> · <b>✈️ ${state.tickets.flight} Flyg</b></span>
-          <span style="font-size:11px;color:#fde68a;">Fyll på vid stadens sevärdhet!</span>
+          <span>💰 Din reskassa: <b>${formatKr(state.cash)}</b></span>
+          <span style="font-size:11px;color:#fde68a;">Tjäna +900 kr vid stadens sevärdhet!</span>
         </div>`
       : '';
 
     const html = `
       <div class="sy-card-90s">
         <h2>🚉 Avgångstavla — ${c.name}</h2>
-        ${ticketBanner}
+        ${cashBanner}
         <p class="sy-card-sub">
-          När du väljer avgång startar en kort <b>boarding på stationen</b> innan avresa. Håll utkik på radarn så ingen polis hinner fram till perrongen!
+          Tåg/båt är billigt och osynligt. Direktflyg är snabbt men dyrt och avslöjar din destination. Boarding tar 5–7 s på perrongen!
         </p>
         <div class="sy-flap-board">
-          <div class="sy-flap-head"><span>🚂 TÅG &amp; BÅT (1 TÅGBILJETT · OSYNLIG)</span><span>RESTID</span></div>
+          <div class="sy-flap-head"><span>🚂 TÅG &amp; BÅT (BILLIGT · OSYNLIG)</span><span>PRIS · TID</span></div>
           ${c.trains.map(id => rowHtml(id, 'train')).join('')}
         </div>
         <div class="sy-flap-board">
-          <div class="sy-flap-head"><span>✈️ DIREKTFLYG (1 FLYGBILJETT · RADARPING)</span><span>RESTID</span></div>
+          <div class="sy-flap-head"><span>✈️ DIREKTFLYG (DYRT · SNABBT · RADARPING)</span><span>PRIS · TID</span></div>
           ${c.flights.map(id => rowHtml(id, 'flight')).join('')}
         </div>
         <div class="sy-modal-actions">
-          ${isThief && state.tickets.train === 0 && state.tickets.flight === 0
-            ? '<button type="button" class="sy-brass-btn gold" style="width:auto;" id="syGoEarnTickets">🏃 Spring till sevärdhet för biljetter!</button>'
+          ${isThief && state.cash < cheapestTrain
+            ? '<button type="button" class="sy-brass-btn gold" style="width:auto;" id="syGoEarnTickets">🏃 Spring till sevärdhet och tjäna pengar (+900 kr)!</button>'
             : '<span></span>'}
           <button type="button" class="sy-brass-btn" style="width:auto;" id="syCloseDep">Stäng tavlan</button>
         </div>
@@ -1814,12 +1844,9 @@ window.GT_SCOTLAND = (function () {
   function beginBoarding(actor, destId, mode) {
     if (!state || state.finished || actor.travel || actor.boarding) return;
     if (actor.id === 'thief' && state.playerRole === 'thief') {
-      if (mode === 'train' && state.tickets.train <= 0) {
-        addLog('🎫 Slut på tågbiljetter! Klara stadens sevärdhet för att få nya!', 'alert');
-        return;
-      }
-      if (mode === 'flight' && state.tickets.flight <= 0) {
-        addLog('🎫 Slut på flygbiljetter! Klara stadens sevärdhet för att få nya!', 'alert');
+      const fare = getFareKr(actor.city, destId, mode);
+      if (state.cash < fare) {
+        addLog(`💰 Inte nog med pengar (${formatKr(fare)} krävs)! Klara stadens sevärdhet för +900 kr!`, 'alert');
         return;
       }
     }
@@ -1901,10 +1928,11 @@ window.GT_SCOTLAND = (function () {
       renderGearStrip();
     }
 
-    // Dra 1 biljett för spelartjuven när avresan väl går av stapeln
+    // Dra biljettpriset i kronor för spelartjuven när avresan går av stapeln
     if (actor.id === 'thief' && state.playerRole === 'thief') {
-      if (mode === 'train') state.tickets.train = Math.max(0, state.tickets.train - 1);
-      else state.tickets.flight = Math.max(0, state.tickets.flight - 1);
+      const fare = getFareKr(fromId, destId, mode);
+      state.cash = Math.max(0, state.cash - fare);
+      AUDIO().play('cash_out');
     }
 
     actor.boarding = null;
@@ -2281,18 +2309,19 @@ window.GT_SCOTLAND = (function () {
         closeSyModal();
       }, 750);
     } else if (isRealTarget) {
-      state.tickets.train += 1;
+      state.cash += 600;
+      AUDIO().play('cash_in');
       setTimeout(() => {
         if (!active || !state || state.finished || matchToken !== myToken) return;
         closeSyModal();
         collectArtifact(cityId, false);
       }, 600);
     } else {
-      // Icke-målstad: ger +2 Tågbiljetter, +1 Flygbiljett & laddar Sprint-boost!
-      state.tickets.train += 2;
-      state.tickets.flight += 1;
+      // Icke-målstad: ger +900 kr till reskassan & laddar Sprint-boost!
+      state.cash += 900;
       state.thief.boostCooldownSec = 0;
-      addLog(`🎫 Snyggt jobb i ${DATA().CITIES[cityId].name}: +2 🚂 tågbiljetter, +1 ✈️ flygbiljett & full Sprint!`, 'good');
+      AUDIO().play('cash_in');
+      addLog(`💰 Snyggt jobb i ${DATA().CITIES[cityId].name}: +900 kr till reskassan & full Sprint!`, 'good');
       setTimeout(() => {
         if (!active || !state || state.finished || matchToken !== myToken) return;
         closeSyModal();
@@ -2804,7 +2833,7 @@ window.GT_SCOTLAND = (function () {
 
     if ($('hudDay')) $('hudDay').innerHTML = `<span class="cal-top">DAG</span><span class="cal-num"><b>${clk.day}</b>/${TOTAL_DAYS}</span>`;
     if ($('hudTime')) $('hudTime').innerHTML = `<span class="watch-label">REALTID</span><span class="watch-digits"><b>${clk.hh}:${clk.mm}</b></span>`;
-    if ($('hudCash')) $('hudCash').innerHTML = `<div class="wallet-card-css" aria-hidden="true"><span>SY</span></div><div class="wallet-text"><span class="wallet-amount"><b>${state.collectedTargets.length} / 3</b></span></div>`;
+    if ($('hudCash')) $('hudCash').innerHTML = `<div class="wallet-card-css" aria-hidden="true"><span>GT</span></div><div class="wallet-text"><span class="wallet-amount"><b>${state.playerRole === 'thief' ? formatKr(state.cash) : `${state.collectedTargets.length}/3 MÅL`}</b></span></div>`;
     if ($('dockStampCount')) $('dockStampCount').textContent = `${state.collectedTargets.length}/3`;
     if ($('dockGlobeDist')) $('dockGlobeDist').textContent = state.viewMode === 'city' ? 'GLOB' : '3D-STAD';
     if ($('dockBackpackCount')) $('dockBackpackCount').textContent = 'RES';
@@ -2813,7 +2842,7 @@ window.GT_SCOTLAND = (function () {
     $('syNextPingTxt').textContent = nextPing ? `📡 Ping: Dag ${nextPing} · 00:00` : '📡 Alla pings gjorda';
     $('syMissStrip').textContent = `Missar: ${state.missesCount}/${state.missLimit}`;
     if (state.playerRole === 'thief' && $('syTicketsVal')) {
-      $('syTicketsVal').textContent = `🚂 ${state.tickets.train} · ✈️ ${state.tickets.flight}`;
+      $('syTicketsVal').textContent = formatKr(state.cash);
     }
 
     const pill = $('syStealthPill');
