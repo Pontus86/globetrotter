@@ -16,6 +16,7 @@ body.scotland-active #mpOpponentBar {
   height: 100%;
   z-index: 2;
   display: none;
+  background: radial-gradient(circle at 50% 45%, #0c1b33 0%, #050a14 70%, #020409 100%);
 }
 body.scotland-active #scotlandMapLayer {
   display: block;

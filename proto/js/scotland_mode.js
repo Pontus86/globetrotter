@@ -422,6 +422,17 @@ window.GT_SCOTLAND = (function () {
 
     map.on('style.load', () => {
       try { map.setProjection({ type: 'globe' }); } catch (e) {}
+      try {
+        map.setSky({
+          'sky-color': '#091426',
+          'sky-horizon-blend': 0.55,
+          'horizon-color': '#2b588c',
+          'horizon-fog-blend': 0.75,
+          'fog-color': '#10243d',
+          'fog-ground-blend': 0.4,
+          'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 5, 0.85, 9, 0]
+        });
+      } catch (e) {}
       setupMapLayers();
       detectMapCollisionLayers();
       mapReady = true;
@@ -440,6 +451,61 @@ window.GT_SCOTLAND = (function () {
   }
 
   function setupMapLayers() {
+    // 1. Fotorealistisk satellitglob (Esri World Imagery, gratis utan nyckel) + 3D-berg/terräng (AWS Terrarium DEM)
+    try {
+      const styleLayers = (map.getStyle() && map.getStyle().layers) || [];
+      const beforeLayer = styleLayers.find(l => {
+        const id = (l.id || '').toLowerCase();
+        return id.includes('boundary') || id.includes('admin') || l.type === 'symbol';
+      });
+      const beforeId = beforeLayer ? beforeLayer.id : undefined;
+
+      map.addSource('sy-satellite', {
+        type: 'raster',
+        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+        tileSize: 256,
+        maxzoom: 17,
+        attribution: 'Imagery © Esri'
+      });
+
+      map.addLayer({
+        id: 'sy-satellite-layer',
+        type: 'raster',
+        source: 'sy-satellite',
+        paint: {
+          'raster-opacity': ['interpolate', ['linear'], ['zoom'], 0, 1, 11.2, 0.96, 13.6, 0],
+          'raster-saturation': 0.12,
+          'raster-contrast': 0.08
+        }
+      }, beforeId);
+
+      // Riktig höjddata (3D-berg & dramatisk höjdskuggning över Alperna, Skanderna m.m.)
+      map.addSource('sy-terrain', {
+        type: 'raster-dem',
+        tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+        tileSize: 256,
+        maxzoom: 13,
+        encoding: 'terrarium'
+      });
+
+      map.addLayer({
+        id: 'sy-hillshade-layer',
+        type: 'hillshade',
+        source: 'sy-terrain',
+        maxzoom: 13.5,
+        paint: {
+          'hillshade-exaggeration': 0.65,
+          'hillshade-shadow-color': '#0b1524',
+          'hillshade-highlight-color': '#fff4d6',
+          'hillshade-accent-color': '#3b5240'
+        }
+      }, beforeId);
+
+      map.setTerrain({ source: 'sy-terrain', exaggeration: 1.85 });
+    } catch (e) {
+      console.warn('Satellit/terränglager kunde inte laddas:', e);
+    }
+
     const CITIES = DATA().CITIES;
     const ids = Object.keys(CITIES);
     const trains = [];
@@ -786,6 +852,8 @@ window.GT_SCOTLAND = (function () {
 
     if (mode === 'city') {
       $('syBtnToggleViewTxt').textContent = '🌍 Zooma ut till 3D-Glob';
+      // Stäng av 3D-terräng i stadsvyn så alla 3D-byggnader står spikrakt på gatan
+      try { map.setTerrain(null); } catch (e) {}
       map.flyTo({
         center: actor && actor.city === targetId && !actor.travel ? actor.coords : city.center,
         zoom: 16.0,
@@ -804,7 +872,10 @@ window.GT_SCOTLAND = (function () {
     } else {
       $('syBtnToggleViewTxt').textContent = '🏙️ Gå in i 3D-staden';
       clearCityPois();
-      map.flyTo({ center: city.center, zoom: 3.8, pitch: 15, bearing: 0, duration: 950 });
+      try {
+        if (map.getSource('sy-terrain')) map.setTerrain({ source: 'sy-terrain', exaggeration: 1.85 });
+      } catch (e) {}
+      map.flyTo({ center: city.center, zoom: 3.8, pitch: 28, bearing: 0, duration: 950 });
     }
 
     rebuildCityMarkers();
