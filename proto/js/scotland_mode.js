@@ -520,76 +520,57 @@ window.GT_SCOTLAND = (function () {
     const overlayHtml = `
       <div id="syDangerVignette" class="sy-danger-vignette hidden"></div>
 
-      <div id="syMinimapWrap" class="sy-minimap-wrap hidden" title="Klicka för att zooma ut till 3D-globen">
-        <canvas id="syMinimapCanvas" width="168" height="168"></canvas>
-        <div class="sy-minimap-label">RADAR · POLISER</div>
+      <div id="syChaseAlert" class="sy-chase-alert hidden">
+        <span id="syChaseMsg">🚨 POLIS I STADEN!</span> <span id="syChaseDist">200 m</span>
       </div>
 
+      <div id="syMinimapWrap" class="sy-minimap-wrap hidden" title="Klicka för att zooma ut till 3D-globen">
+        <canvas id="syMinimapCanvas" width="136" height="136"></canvas>
+        <div class="sy-minimap-label">RADAR</div>
+      </div>
+
+      <!-- Slimmad botten-list (håller 85%+ av 3D-kartan helt öppen!) -->
       <aside id="syCompassPanel" class="sy-compass-panel hidden">
-        <div class="sy-panel-top">
-          <span class="sy-role-tag" id="syRoleTag">🕵️ TJUV</span>
+        <div class="sy-bar-meta">
           <span class="sy-stealth-pill" id="syStealthPill">DOLD</span>
+          <span id="syNextPingTxt">📡 D3</span>
+          <span id="syMissStrip">⚠️ 0/2</span>
         </div>
-        <div class="sy-ping-strip">
-          <span id="syNextPingTxt">📡 Ping: Dag 3 · 00:00</span>
-          <span id="syMissStrip">Missar: 0/2</span>
-        </div>
-        <div class="sy-tickets-strip" id="syTicketsStrip">
-          <span>💰 Reskassa:</span>
-          <span id="syTicketsVal">1 800 kr</span>
-        </div>
+
         <div id="syPoliceTabs" class="sy-police-tabs hidden"></div>
-        <div id="syChaseAlert" class="sy-chase-alert hidden">
-          <span id="syChaseMsg">🚨 POLIS I STADEN!</span> <span id="syChaseDist">200 m</span>
-        </div>
-        <div id="syBoardingCard" class="sy-travel-card boarding hidden">
-          <div class="sy-travel-label" id="syBoardingLabel">🚂 Går ombord...</div>
+
+        <div id="syBoardingCard" class="sy-bar-inline-progress hidden">
+          <span id="syBoardingLabel">🚂 Ombord...</span>
           <div class="sy-travel-bar"><div class="sy-travel-fill" id="syBoardingFill"></div></div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
-            <span class="sy-travel-eta" id="syBoardingEta">7 s kvar</span>
-            <button type="button" class="sy-brass-btn red" style="width:auto;padding:3px 8px;font-size:10.5px;" id="syCancelBoardingBtn">Avbryt</button>
-          </div>
+          <span class="sy-travel-eta" id="syBoardingEta">7s</span>
+          <button type="button" class="sy-pill-btn red" id="syCancelBoardingBtn">✕</button>
         </div>
-        <div id="syTravelCard" class="sy-travel-card hidden">
-          <div class="sy-travel-label" id="syTravelLabel">🚂 Tåg mot Paris...</div>
+
+        <div id="syTravelCard" class="sy-bar-inline-progress hidden">
+          <span id="syTravelLabel">🚂 Resa...</span>
           <div class="sy-travel-bar"><div class="sy-travel-fill" id="syTravelFill"></div></div>
-          <div class="sy-travel-eta" id="syTravelEta">12 s kvar</div>
+          <span class="sy-travel-eta" id="syTravelEta">12s</span>
         </div>
-        <div class="sy-btn-stack" id="syActionButtons">
-          <button class="sy-brass-btn gold" id="syBtnLandmark">
-            <span id="syBtnLandmarkTxt">🏃 Spring till sevärdhet</span>
-            <small id="syBtnLandmarkDist">–</small>
-          </button>
-          <button class="sy-brass-btn blue" id="syBtnDepartures">
-            <span id="syBtnDeparturesTxt">🚉 Spring till stationen</span>
-            <small id="syBtnHubDist">–</small>
-          </button>
-          <div class="sy-mini-places-row">
-            <button type="button" class="sy-mini-place-btn" id="syBtnHotel" title="Spring till Hotellet">🏨 Hotell</button>
-            <button type="button" class="sy-mini-place-btn" id="syBtnMarket" title="Spring till Marknaden">🛍️ Marknad</button>
-            <button type="button" class="sy-mini-place-btn" id="syBtnLibrary" title="Spring till Biblioteket">📚 Bibliotek</button>
-          </div>
+
+        <div class="sy-bar-actions" id="syActionButtons">
+          <button type="button" class="sy-pill-btn gold hidden" id="syBtnNearby">✦ [E] Öppna</button>
+          <button type="button" class="sy-pill-btn red" id="syBtnSprint" title="Avslöja dig frivilligt för +70% fart i 10s">⚡ Sprint</button>
           <div class="sy-gear-strip" id="syGearStrip"></div>
-          <button class="sy-brass-btn" id="syBtnToggleView">
-            <span id="syBtnToggleViewTxt">🏙️ Gå in i 3D-staden</span>
-            <small>🌍/🏙️</small>
-          </button>
-          <button class="sy-brass-btn red" id="syBtnSprint">
-            <span id="syBtnSprintTxt">⚡ Sprint-boost (Avslöjar dig)</span>
-            <small>10s</small>
-          </button>
-        </div>
-        <div class="sy-hint-note">
-          <b>WASD / Piltangenter</b> eller klicka på gatan. Ta dig till <b>stationen</b> för att resa vidare, eller <b>sevärdheten</b> för Frågekort/Kassaskåp/Minispel.
         </div>
       </aside>
 
-      <button type="button" id="syScannerToggleBtn" class="sy-scanner-toggle hidden" title="Visa/dölj Polisscanner">📻 RADIO</button>
+      <!-- Hopfällbar 1-rads Polisradio-ticker -->
+      <button type="button" id="syRadioTicker" class="sy-radio-ticker hidden" title="Klicka eller tryck R för att öppna Polisradion">
+        <span class="sy-led">●</span>
+        <span class="sy-radio-ticker-text" id="syRadioTickerTxt">📻 Polisradio aktiv...</span>
+        <span class="sy-radio-ticker-key">R</span>
+      </button>
 
+      <!-- Utfällbar Polisscanner -->
       <aside id="syScannerBox" class="sy-scanner-box hidden">
         <div class="sy-scanner-head">
           <span>📻 POLISSCANNER · 148.2 MHz</span>
-          <span class="sy-led">● LIVE</span>
+          <button type="button" id="syCloseScannerBtn" style="background:none;border:none;color:#ffd875;cursor:pointer;font-weight:800;">✕</button>
         </div>
         <div class="sy-scanner-lcd" id="syScannerLcd"></div>
         <div class="sy-scanner-quick" id="syScannerQuick"></div>
@@ -607,12 +588,12 @@ window.GT_SCOTLAND = (function () {
     wrap.innerHTML = overlayHtml;
     stage.appendChild(wrap);
 
-    $('syBtnLandmark').addEventListener('click', triggerLandmarkAction);
-    $('syBtnDepartures').addEventListener('click', triggerHubAction);
-    $('syBtnHotel').addEventListener('click', () => triggerExtraPlaceAction('hotel'));
-    $('syBtnMarket').addEventListener('click', () => triggerExtraPlaceAction('market'));
-    $('syBtnLibrary').addEventListener('click', () => triggerExtraPlaceAction('library'));
-    $('syBtnToggleView').addEventListener('click', toggleView);
+    $('syBtnNearby').addEventListener('click', () => {
+      const actor = getControlledActor();
+      if (!actor || actor.travel) return;
+      const near = markers.pois.find(mk => mk._poiMeta && DATA().distanceMeters(actor.coords, mk._poiMeta.coords) <= INTERACT_DIST_M);
+      if (near) near._poiMeta.onClick();
+    });
     $('syMinimapWrap').addEventListener('click', () => {
       if (state && state.viewMode === 'city') switchToView('globe');
     });
@@ -625,8 +606,11 @@ window.GT_SCOTLAND = (function () {
         AUDIO().play('klick');
       }
     });
-    $('syScannerToggleBtn').addEventListener('click', () => {
-      $('syScannerBox').classList.toggle('mobile-open');
+    $('syRadioTicker').addEventListener('click', () => {
+      $('syScannerBox').classList.toggle('hidden');
+    });
+    $('syCloseScannerBtn').addEventListener('click', () => {
+      $('syScannerBox').classList.add('hidden');
     });
 
     $('syScannerForm').addEventListener('submit', (e) => {
@@ -653,6 +637,10 @@ window.GT_SCOTLAND = (function () {
             const near = markers.pois.find(mk => mk._poiMeta && DATA().distanceMeters(actor.coords, mk._poiMeta.coords) <= INTERACT_DIST_M);
             if (near) near._poiMeta.onClick();
           }
+        } else if (k === 'r' && state && $('syModalLayer').classList.contains('hidden')) {
+          $('syScannerBox').classList.toggle('hidden');
+        } else if (k === 'escape' && !$('syScannerBox').classList.contains('hidden')) {
+          $('syScannerBox').classList.add('hidden');
         }
       });
       window.addEventListener('keyup', (e) => {
@@ -904,8 +892,9 @@ window.GT_SCOTLAND = (function () {
     $('syCompassPanel').classList.add('hidden');
     $('syMinimapWrap').classList.add('hidden');
     $('syScannerBox').classList.add('hidden');
-    $('syScannerToggleBtn').classList.add('hidden');
+    $('syRadioTicker').classList.add('hidden');
     $('syDangerVignette').classList.add('hidden');
+    $('syChaseAlert').classList.add('hidden');
     initMapIfNeeded();
 
     const html = `
@@ -1072,13 +1061,12 @@ window.GT_SCOTLAND = (function () {
 
     closeSyModal();
     $('syCompassPanel').classList.remove('hidden');
-    $('syScannerBox').classList.remove('hidden');
-    $('syScannerToggleBtn').classList.remove('hidden');
+    $('syScannerBox').classList.add('hidden');
+    $('syRadioTicker').classList.remove('hidden');
     $('syDangerVignette').classList.add('hidden');
-    $('syRoleTag').textContent = playerRole === 'thief' ? '🕵️ MÄSTERTJUV' : '🚓 POLISCHEF';
+    $('syChaseAlert').classList.add('hidden');
     $('syPoliceTabs').classList.toggle('hidden', playerRole !== 'police');
     $('syBtnSprint').classList.toggle('hidden', playerRole !== 'thief');
-    $('syTicketsStrip').classList.toggle('hidden', playerRole !== 'thief');
     renderRadioQuickButtons();
 
     if (playerRole === 'thief') {
@@ -1112,12 +1100,10 @@ window.GT_SCOTLAND = (function () {
     document.body.classList.remove('scotland-active');
     if ($('syCompassPanel')) $('syCompassPanel').classList.add('hidden');
     if ($('syMinimapWrap')) $('syMinimapWrap').classList.add('hidden');
-    if ($('syScannerBox')) {
-      $('syScannerBox').classList.add('hidden');
-      $('syScannerBox').classList.remove('mobile-open');
-    }
-    if ($('syScannerToggleBtn')) $('syScannerToggleBtn').classList.add('hidden');
+    if ($('syScannerBox')) $('syScannerBox').classList.add('hidden');
+    if ($('syRadioTicker')) $('syRadioTicker').classList.add('hidden');
     if ($('syDangerVignette')) $('syDangerVignette').classList.add('hidden');
+    if ($('syChaseAlert')) $('syChaseAlert').classList.add('hidden');
     restoreClassicHud();
     if (window.GT && window.GT.openStartScreen) window.GT.openStartScreen();
   }
@@ -1137,6 +1123,9 @@ window.GT_SCOTLAND = (function () {
     const lcd = $('syScannerLcd');
     if (lcd) {
       lcd.innerHTML = state.feed.map(i => `<div class="sy-log-line ${i.type}">${escapeHtml(i.text)}</div>`).join('');
+    }
+    if ($('syRadioTickerTxt')) {
+      $('syRadioTickerTxt').textContent = text;
     }
   }
 
@@ -1201,7 +1190,6 @@ window.GT_SCOTLAND = (function () {
     AUDIO().play('paper');
 
     if (mode === 'city') {
-      $('syBtnToggleViewTxt').textContent = '🌍 Zooma ut till 3D-Glob';
       // Stäng av 3D-terräng i stadsvyn så alla 3D-byggnader står spikrakt på gatan
       try { map.setTerrain(null); } catch (e) {}
       map.flyTo({
@@ -1227,7 +1215,6 @@ window.GT_SCOTLAND = (function () {
         }
       });
     } else {
-      $('syBtnToggleViewTxt').textContent = '🏙️ Gå in i 3D-staden';
       clearCityPois();
       try {
         if (map.getSource('sy-terrain')) map.setTerrain({ source: 'sy-terrain', exaggeration: 1.15 });
@@ -2839,11 +2826,8 @@ window.GT_SCOTLAND = (function () {
     if ($('dockBackpackCount')) $('dockBackpackCount').textContent = 'RES';
 
     const nextPing = REVEAL_DAYS.find(d => !state.revealTriggered[d]);
-    $('syNextPingTxt').textContent = nextPing ? `📡 Ping: Dag ${nextPing} · 00:00` : '📡 Alla pings gjorda';
-    $('syMissStrip').textContent = `Missar: ${state.missesCount}/${state.missLimit}`;
-    if (state.playerRole === 'thief' && $('syTicketsVal')) {
-      $('syTicketsVal').textContent = formatKr(state.cash);
-    }
+    $('syNextPingTxt').textContent = nextPing ? `📡 D${nextPing}` : '📡 Klar';
+    $('syMissStrip').textContent = `⚠️ ${state.missesCount}/${state.missLimit}`;
 
     const pill = $('syStealthPill');
     const exposed = state.lastPing && state.lastPing.cityId === state.thief.city && !state.thief.travel;
@@ -2860,41 +2844,40 @@ window.GT_SCOTLAND = (function () {
       const el = state.elapsedSec - actor.boarding.startSec;
       const p = Math.min(1, el / actor.boarding.durationSec);
       const tInfo = getTransitModeInfo(actor.city, actor.boarding.to, actor.boarding.mode);
-      $('syBoardingLabel').textContent = `${tInfo.icon} Går ombord: ${CITIES[actor.boarding.to].name}`;
+      $('syBoardingLabel').textContent = `${tInfo.icon} ${CITIES[actor.boarding.to].name}`;
       $('syBoardingFill').style.width = `${p * 100}%`;
-      $('syBoardingEta').textContent = `${Math.max(0, Math.ceil(actor.boarding.durationSec - el))} s kvar`;
+      $('syBoardingEta').textContent = `${Math.max(0, Math.ceil(actor.boarding.durationSec - el))}s`;
     } else if (traveling) {
       const el = state.elapsedSec - actor.travel.startSec;
       const p = Math.min(1, el / actor.travel.durationSec);
       const tInfo = getTransitModeInfo(actor.travel.from, actor.travel.to, actor.travel.mode);
-      $('syTravelLabel').textContent = `${tInfo.icon} ${tInfo.label} → ${CITIES[actor.travel.to].name}`;
+      $('syTravelLabel').textContent = `${tInfo.icon} ${CITIES[actor.travel.to].name}`;
       $('syTravelFill').style.width = `${p * 100}%`;
-      $('syTravelEta').textContent = `${Math.max(0, Math.ceil(actor.travel.durationSec - el))} s kvar`;
+      $('syTravelEta').textContent = `${Math.max(0, Math.ceil(actor.travel.durationSec - el))}s`;
     } else {
-      const dLm = Math.round(DATA().distanceMeters(actor.coords, c.landmark.coords));
-      const dHub = Math.round(DATA().distanceMeters(actor.coords, c.hub.coords));
-      const isTarget = state.realTargets.includes(actor.city) && !state.collectedTargets.includes(actor.city);
-
-      $('syBtnLandmarkDist').textContent = `${dLm} m`;
-      $('syBtnHubDist').textContent = `${dHub} m`;
-      $('syBtnLandmarkTxt').textContent = dLm <= INTERACT_DIST_M
-        ? (state.playerRole === 'police' ? '🔍 Spaning / Minispel nu' : isTarget ? `🔓 Stjäl ${c.landmark.artifact}` : '🎮 Frågekort / Minispel')
-        : `🏃 ${c.landmark.name}`;
-      $('syBtnDeparturesTxt').textContent = (dHub <= INTERACT_DIST_M || (state.playerRole === 'police' && state.viewMode === 'globe'))
-        ? '✈️ Öppna Klappertavla (Res)'
-        : `🚉 Spring till ${c.hub.name}`;
+      const nearBtn = $('syBtnNearby');
+      const nearPoi = state.viewMode === 'city'
+        ? markers.pois.find(mk => mk._poiMeta && DATA().distanceMeters(actor.coords, mk._poiMeta.coords) <= INTERACT_DIST_M)
+        : null;
+      if (nearBtn) {
+        nearBtn.classList.toggle('hidden', !nearPoi);
+        if (nearPoi) {
+          const tip = nearPoi._poiMeta.el.querySelector('.sy-sparkle-tip');
+          nearBtn.textContent = `✦ [E] ${tip ? tip.textContent : 'Öppna'}`;
+        }
+      }
 
       if (state.playerRole === 'thief') {
         const sb = $('syBtnSprint');
         if (state.elapsedSec < actor.boostUntilSec) {
           sb.disabled = true;
-          $('syBtnSprintTxt').textContent = `⚡ Sprint aktiv (${Math.ceil(actor.boostUntilSec - state.elapsedSec)}s)`;
+          sb.textContent = `⚡ ${Math.ceil(actor.boostUntilSec - state.elapsedSec)}s`;
         } else if (state.elapsedSec < actor.boostCooldownSec) {
           sb.disabled = true;
-          $('syBtnSprintTxt').textContent = `⚡ Sprint laddar (${Math.ceil(actor.boostCooldownSec - state.elapsedSec)}s)`;
+          sb.textContent = `⚡ (${Math.ceil(actor.boostCooldownSec - state.elapsedSec)}s)`;
         } else {
           sb.disabled = false;
-          $('syBtnSprintTxt').textContent = '⚡ Sprint-boost (Avslöjar dig)';
+          sb.textContent = '⚡ Sprint';
         }
       }
     }

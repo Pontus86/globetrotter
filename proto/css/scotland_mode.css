@@ -43,107 +43,23 @@ body.scotland-active .travel-dock {
   100% { box-shadow: inset 0 0 95px rgba(40, 145, 235, 0.48); }
 }
 
-/* Vänster 90-tals taktil kompass- & uppdragspanel */
-.sy-compass-panel {
-  position: absolute;
-  left: 16px;
-  bottom: 16px;
-  width: 318px;
-  max-height: calc(100% - 145px);
-  z-index: 24;
-  background: linear-gradient(180deg, rgba(36, 26, 17, 0.94) 0%, rgba(22, 15, 9, 0.96) 100%);
-  border: 2px solid #c59b48;
-  border-radius: 10px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 232, 170, 0.25);
-  color: #f6ead4;
-  padding: 11px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  overflow-y: auto;
-  font-family: 'Lora', Georgia, serif;
-}
-
-.sy-panel-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(212, 166, 74, 0.35);
-  padding-bottom: 6px;
-}
-.sy-role-tag {
-  font-family: 'Special Elite', 'Courier New', monospace;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: #ffd875;
-}
-.sy-stealth-pill {
-  font-family: 'Special Elite', 'Courier New', monospace;
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 99px;
-  background: rgba(45, 138, 86, 0.25);
-  border: 1px solid #52c480;
-  color: #9ff0bf;
-}
-.sy-stealth-pill.exposed {
-  background: rgba(190, 35, 45, 0.32);
-  border-color: #ff6b6b;
-  color: #ffc2c2;
-}
-
-.sy-ping-strip {
-  font-family: 'Courier New', monospace;
-  font-size: 11px;
-  color: #d9c59e;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(212, 166, 74, 0.25);
-  border-radius: 5px;
-  padding: 5px 8px;
-  display: flex;
-  justify-content: space-between;
-}
-
-.sy-police-tabs {
-  display: flex;
-  gap: 5px;
-}
-.sy-police-tab {
-  flex: 1;
-  background: rgba(255, 245, 220, 0.07);
-  border: 1px solid rgba(212, 166, 74, 0.3);
-  color: #efe2c6;
-  border-radius: 6px;
-  padding: 6px 4px;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  text-align: center;
-}
-.sy-police-tab.active {
-  background: linear-gradient(180deg, #27588c, #183b61);
-  border-color: #7cc4fa;
-  color: #fff;
-}
-.sy-police-tab small {
-  display: block;
-  font-size: 9.5px;
-  font-weight: 400;
-  color: #cbb894;
-  margin-top: 2px;
-}
-
+/* Centrerad röd siren-banner högst upp i mitten ENDAST under pågående jakt i samma stad */
 .sy-chase-alert {
-  background: linear-gradient(135deg, #991b1b, #dc2626);
-  border: 1.5px solid #fecaca;
-  border-radius: 7px;
-  padding: 8px 10px;
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 28;
+  background: linear-gradient(135deg, rgba(153, 27, 27, 0.95), rgba(220, 38, 38, 0.95));
+  border: 2px solid #fecaca;
+  border-radius: 99px;
+  padding: 7px 18px;
   color: #fff;
-  font-size: 12px;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 13px;
   font-weight: 800;
-  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
   animation: syPulse 0.7s infinite alternate;
 }
 @keyframes syPulse {
@@ -151,33 +67,118 @@ body.scotland-active .travel-dock {
   to { filter: brightness(1.18); }
 }
 
-.sy-travel-card {
-  background: rgba(28, 52, 78, 0.65);
-  border: 1px solid #60a5fa;
-  border-radius: 7px;
-  padding: 9px 10px;
-}
-.sy-travel-card.boarding {
-  background: rgba(120, 68, 12, 0.72);
-  border-color: #ffd875;
-}
-.sy-tickets-strip {
+/* Slimmad 90-tals botten-list (istället för stor vänsterpanel — 85%+ av kartan är nu helt fri!) */
+.sy-compass-panel {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  max-width: calc(100% - 380px);
+  z-index: 24;
+  background: linear-gradient(180deg, rgba(34, 24, 15, 0.92) 0%, rgba(20, 14, 9, 0.95) 100%);
+  border: 2px solid #c59b48;
+  border-radius: 99px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 232, 170, 0.25);
+  color: #f6ead4;
+  padding: 6px 14px;
   display: flex;
-  justify-content: space-between;
+  flex-direction: row;
   align-items: center;
+  gap: 10px;
+  font-family: 'Lora', Georgia, serif;
+  white-space: nowrap;
+}
+
+.sy-bar-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #e6d3ad;
+}
+
+.sy-stealth-pill {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: rgba(45, 138, 86, 0.28);
+  border: 1px solid #52c480;
+  color: #9ff0bf;
+}
+.sy-stealth-pill.exposed {
+  background: rgba(190, 35, 45, 0.36);
+  border-color: #ff6b6b;
+  color: #ffc2c2;
+}
+
+.sy-bar-divider {
+  width: 1px;
+  height: 22px;
+  background: rgba(212, 166, 74, 0.35);
+}
+
+.sy-police-tabs {
+  display: flex;
+  gap: 5px;
+}
+.sy-police-tab {
+  background: rgba(255, 245, 220, 0.08);
+  border: 1px solid rgba(212, 166, 74, 0.35);
+  color: #efe2c6;
+  border-radius: 99px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sy-police-tab.active {
+  background: linear-gradient(180deg, #27588c, #183b61);
+  border-color: #7cc4fa;
+  color: #fff;
+}
+.sy-police-tab small {
+  font-size: 10px;
+  font-weight: 400;
+  color: #cbb894;
+  margin-left: 4px;
+}
+
+.sy-bar-inline-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fef3c7;
+}
+.sy-travel-bar { width: 96px; height: 7px; background: rgba(0,0,0,0.45); border-radius: 99px; overflow: hidden; }
+.sy-travel-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #38bdf8, #ffd875); transition: width 0.12s linear; }
+.sy-travel-eta { font-family: 'Courier New', monospace; font-size: 11px; color: #bae6fd; }
+
+.sy-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sy-pill-btn {
+  padding: 5px 11px;
+  border-radius: 99px;
+  border: 1.5px solid #c59b48;
+  background: linear-gradient(180deg, #4b3621 0%, #2e2012 100%);
+  color: #fff2d6;
+  font-family: 'Lora', Georgia, serif;
   font-size: 11.5px;
   font-weight: 700;
-  color: #fde68a;
-  background: rgba(245, 197, 86, 0.12);
-  border: 1px solid rgba(245, 197, 86, 0.35);
-  border-radius: 5px;
-  padding: 5px 8px;
+  cursor: pointer;
+  transition: filter 0.12s, transform 0.08s;
 }
-.sy-travel-label { font-size: 12.5px; font-weight: 700; color: #e0f2fe; margin-bottom: 5px; }
-.sy-travel-bar { height: 7px; background: rgba(0,0,0,0.45); border-radius: 99px; overflow: hidden; }
-.sy-travel-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #38bdf8, #ffd875); transition: width 0.12s linear; }
-.sy-travel-eta { font-family: 'Courier New', monospace; font-size: 11px; color: #bae6fd; margin-top: 4px; }
+.sy-pill-btn:hover { filter: brightness(1.18); border-color: #ffd875; }
+.sy-pill-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.sy-pill-btn.gold { background: linear-gradient(180deg, #e0ad48 0%, #b37d1e 100%); border-color: #ffeaad; color: #1d1205; }
+.sy-pill-btn.red { background: linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%); border-color: #fca5a5; color: #fff; }
 
 .sy-btn-stack {
   display: flex;
@@ -204,47 +205,23 @@ body.scotland-active .travel-dock {
 .sy-brass-btn:hover { filter: brightness(1.16); border-color: #ffd875; }
 .sy-brass-btn:active { transform: scale(0.98); }
 .sy-brass-btn:disabled { opacity: 0.48; cursor: not-allowed; }
-.sy-brass-btn.gold {
-  background: linear-gradient(180deg, #e0ad48 0%, #b37d1e 100%);
-  border-color: #ffeaad;
-  color: #1d1205;
-}
-.sy-brass-btn.blue {
-  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
-  border-color: #93c5fd;
-  color: #fff;
-}
-.sy-brass-btn.red {
-  background: linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%);
-  border-color: #fca5a5;
-  color: #fff;
-}
-.sy-brass-btn small {
-  font-family: 'Courier New', monospace;
-  font-size: 11px;
-  opacity: 0.85;
-}
+.sy-brass-btn.gold { background: linear-gradient(180deg, #e0ad48 0%, #b37d1e 100%); border-color: #ffeaad; color: #1d1205; }
+.sy-brass-btn.blue { background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%); border-color: #93c5fd; color: #fff; }
+.sy-brass-btn.red  { background: linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%); border-color: #fca5a5; color: #fff; }
+.sy-brass-btn small { font-family: 'Courier New', monospace; font-size: 11px; opacity: 0.85; }
 
-.sy-hint-note {
-  font-size: 10.8px;
-  color: #c2ae89;
-  line-height: 1.38;
-  border-top: 1px solid rgba(212, 166, 74, 0.22);
-  padding-top: 6px;
-}
-
-/* Taktisk radar-minimap i 3D-staden (visar grannstäder + poliser + riktningspilar) */
+/* Taktisk radar-minimap i nedre vänstra hörnet (klassisk 3D-spel-placering!) */
 .sy-minimap-wrap {
   position: absolute;
   left: 16px;
-  top: 104px;
-  width: 174px;
-  height: 174px;
+  bottom: 16px;
+  width: 142px;
+  height: 142px;
   z-index: 24;
   border-radius: 50%;
   background: radial-gradient(circle at 50% 50%, #10201a 0%, #091310 75%, #050a08 100%);
-  border: 3px solid #c59b48;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.65), inset 0 0 18px rgba(0, 0, 0, 0.8);
+  border: 2.5px solid #c59b48;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.65), inset 0 0 16px rgba(0, 0, 0, 0.8);
   cursor: pointer;
   overflow: hidden;
   display: grid;
@@ -252,53 +229,74 @@ body.scotland-active .travel-dock {
 }
 .sy-minimap-wrap:hover { border-color: #ffd875; }
 .sy-minimap-wrap canvas {
-  width: 168px;
-  height: 168px;
+  width: 136px;
+  height: 136px;
   display: block;
 }
 .sy-minimap-label {
   position: absolute;
-  bottom: 5px;
+  bottom: 4px;
   left: 50%;
   transform: translateX(-50%);
   font-family: 'Special Elite', 'Courier New', monospace;
-  font-size: 9px;
+  font-size: 8.5px;
   color: #ffd875;
   background: rgba(8, 14, 11, 0.85);
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 99px;
   pointer-events: none;
   white-space: nowrap;
 }
 
-/* Höger 90-tals Polisscanner / Radio */
-.sy-scanner-toggle {
-  display: none;
+/* Hopfällbar 1-rads Polisradio-ticker nere till höger ovanför dockan */
+.sy-radio-ticker {
   position: absolute;
-  right: 14px;
-  top: 90px;
-  z-index: 26;
-  background: linear-gradient(180deg, #3a2b1c, #20160d);
-  border: 1.5px solid #c59b48;
-  color: #ffd875;
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-family: 'Special Elite', 'Courier New', monospace;
+  right: 16px;
+  bottom: 92px;
+  max-width: 310px;
+  z-index: 25;
+  background: linear-gradient(180deg, rgba(28, 22, 16, 0.92), rgba(16, 12, 9, 0.95));
+  border: 1.5px solid #9c7a3e;
+  border-radius: 99px;
+  padding: 6px 12px;
+  color: #e6d7b9;
+  font-family: 'Courier New', monospace;
   font-size: 11px;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
   cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
 }
+.sy-radio-ticker:hover { border-color: #ffd875; }
+.sy-radio-ticker-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 225px;
+}
+.sy-radio-ticker-key {
+  font-size: 9.5px;
+  color: #ffd875;
+  background: rgba(255, 216, 117, 0.15);
+  border: 1px solid rgba(255, 216, 117, 0.35);
+  border-radius: 4px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+/* Utfällbar Polisscanner (dold som standard tills man klickar eller trycker R!) */
 .sy-scanner-box {
   position: absolute;
   right: 16px;
-  top: 96px;
-  width: 288px;
-  max-height: calc(100% - 215px);
-  z-index: 24;
+  bottom: 130px;
+  width: 300px;
+  max-height: 310px;
+  z-index: 28;
   background: linear-gradient(180deg, #231c15 0%, #14100c 100%);
-  border: 2px solid #8c6d3b;
+  border: 2px solid #c59b48;
   border-radius: 10px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 226, 150, 0.18);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 226, 150, 0.18);
   padding: 9px 10px;
   display: flex;
   flex-direction: column;
@@ -792,10 +790,11 @@ body.scotland-active .travel-dock {
 }
 
 @media (max-width: 860px) {
-  .sy-scanner-toggle { display: block; }
-  .sy-scanner-box { display: none; top: 128px; right: 12px; width: calc(100% - 24px); max-height: 45vh; z-index: 30; }
-  .sy-scanner-box.mobile-open { display: flex; }
-  .sy-compass-panel { width: calc(100% - 24px); left: 12px; bottom: 72px; max-height: 38vh; }
+  .sy-compass-panel { max-width: calc(100% - 24px); bottom: 76px; flex-wrap: wrap; border-radius: 14px; justify-content: center; }
+  .sy-minimap-wrap { width: 108px; height: 108px; bottom: 132px; left: 10px; }
+  .sy-minimap-wrap canvas { width: 104px; height: 104px; }
+  .sy-radio-ticker { right: 10px; bottom: 132px; max-width: 210px; }
+  .sy-scanner-box { right: 10px; bottom: 170px; width: calc(100% - 20px); }
   .sy-quiz-opts { grid-template-columns: 1fr; }
 }
 
