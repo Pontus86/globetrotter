@@ -30,6 +30,8 @@ var noir_facades: Array[Texture2D] = []
 var facade_albedo_tex: Texture2D
 var facade_emit_tex: Texture2D
 var roof_tex: Texture2D
+var sat_roof_tex: Texture2D
+var current_tile_bounds: Array[float] = [-800.0, 800.0, -800.0, 800.0]
 var fog_cloud_plane: MeshInstance3D
 
 func _ready() -> void:
@@ -144,8 +146,10 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 	city_root.add_child(ground)
 
 	var map_tex: Texture2D = _load_city_map_texture(city_id)
+	sat_roof_tex = _load_city_sat_texture(city_id)
 	if map_tex != null and osm.has("tile_bounds"):
 		var tb: Array = osm["tile_bounds"]
+		current_tile_bounds = [float(tb[0]), float(tb[1]), float(tb[2]), float(tb[3])]
 		var tb_w: float = float(tb[1]) - float(tb[0])
 		var tb_d: float = float(tb[3]) - float(tb[2])
 		var tb_cx: float = (float(tb[0]) + float(tb[1])) * 0.5
@@ -533,6 +537,20 @@ func _load_city_map_texture(city_id: String) -> Texture2D:
 			return ImageTexture.create_from_image(img)
 	return null
 
+func _load_city_sat_texture(city_id: String) -> Texture2D:
+	var res_path: String = "res://assets/maps_sat/%s.jpg" % city_id
+	if ResourceLoader.exists(res_path):
+		var tex: Texture2D = load(res_path) as Texture2D
+		if tex != null:
+			return tex
+	if FileAccess.file_exists(res_path):
+		var img := Image.new()
+		var err: Error = img.load(ProjectSettings.globalize_path(res_path))
+		if err == OK:
+			img.generate_mipmaps()
+			return ImageTexture.create_from_image(img)
+	return null
+
 func _commit_surface(st: SurfaceTool, color: Color, rough: float, use_vertex_color: bool = false) -> void:
 	var mesh: ArrayMesh = st.commit()
 	if mesh.get_surface_count() > 0:
@@ -548,13 +566,31 @@ func _commit_surface(st: SurfaceTool, color: Color, rough: float, use_vertex_col
 		mi.material_override = mat
 		city_root.add_child(mi)
 
-func _height_to_color(h: float) -> Color:
-	# Varma, mättade, glada ORANGE / medelhavs-terrakotta-hus (högre hus = djupare bränd orange!)
-	var c0 := Color.html("#ffbe6b")  # 0m: solgul varm aprikos
-	var c10 := Color.html("#ff9240") # 10m: mättad glad orange
-	var c22 := Color.html("#f26a2e") # 22m: kraftig medelhavs-terrakotta
-	var c40 := Color.html("#d94b20") # 40m: intensiv bränd orange-röd
-	var c75 := Color.html("#b8361c") # 75m+: djup varm kopparröd
+func _height_to_color(h: float, city_id: String = "") -> Color:
+	# Autentisk europeisk arkitekturpalett per stad (soliga, varma och stadstypiska fasader!)
+	var cid: String = city_id if city_id != "" else current_city_id
+	var c0 := Color.html("#ffbe6b")
+	var c10 := Color.html("#ff9240")
+	var c22 := Color.html("#f26a2e")
+	var c40 := Color.html("#d94b20")
+	var c75 := Color.html("#b8361c")
+
+	if cid == "paris":
+		# Paris: klassisk varm Haussmann-kalksten & gräddgul sandsten
+		c0 = Color.html("#f7e3c0"); c10 = Color.html("#edd0a2"); c22 = Color.html("#deb780"); c40 = Color.html("#c89b66"); c75 = Color.html("#a9845c")
+	elif cid == "stockholm" or cid == "copenhagen" or cid == "oslo":
+		# Skandinavien: Gamla Stans varma senapsgula, ockra & tegelröda hus
+		c0 = Color.html("#f6ca72"); c10 = Color.html("#e99c4e"); c22 = Color.html("#d46a38"); c40 = Color.html("#b84c2c"); c75 = Color.html("#943c26")
+	elif cid == "amsterdam" or cid == "london" or cid == "brussels":
+		# Nordvästra Europa: varmt rödbrunt kanal- & viktorianskt tegel + sandsten
+		c0 = Color.html("#e6a674"); c10 = Color.html("#cf7848"); c22 = Color.html("#b35532"); c40 = Color.html("#963f26"); c75 = Color.html("#783424")
+	elif cid == "athens":
+		# Aten: soligt medelhavsvitt, varm kalksten & aprikos
+		c0 = Color.html("#fff3dc"); c10 = Color.html("#f6e0b8"); c22 = Color.html("#e8c492"); c40 = Color.html("#d4a472"); c75 = Color.html("#bc885c")
+	elif cid == "prague" or cid == "vienna" or cid == "zurich":
+		# Centraleuropa: varm barock-aprikos, honungsgult & terrakotta
+		c0 = Color.html("#fde09b"); c10 = Color.html("#f5ba70"); c22 = Color.html("#e48e4c"); c40 = Color.html("#c96b38"); c75 = Color.html("#a6522c")
+
 	if h <= 10.0:
 		return c0.lerp(c10, clampf(h / 10.0, 0.0, 1.0))
 	elif h <= 22.0:
@@ -779,10 +815,16 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 		var rmi := MeshInstance3D.new()
 		rmi.mesh = rmesh
 		var rmat := StandardMaterial3D.new()
-		rmat.vertex_color_use_as_albedo = true
-		if roof_tex != null:
-			rmat.albedo_texture = roof_tex
-		rmat.roughness = 0.88
+		if sat_roof_tex != null:
+			# RIKTIG fotorealistisk satellit-taktextur mappad 1:1 över varje hus i staden!
+			rmat.albedo_texture = sat_roof_tex
+			rmat.albedo_color = Color(1.0, 0.96, 0.90)
+			rmat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+		else:
+			rmat.vertex_color_use_as_albedo = true
+			if roof_tex != null:
+				rmat.albedo_texture = roof_tex
+		rmat.roughness = 0.86
 		rmat.cull_mode = BaseMaterial3D.CULL_DISABLED
 		rmi.material_override = rmat
 		chunk_node.add_child(rmi)
@@ -874,10 +916,17 @@ func _roof_triangle(surface: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, ti
 	var normal := (b-a).cross(c-a).normalized()
 	if normal.y < 0:
 		normal = -normal
+	var tb_w: float = maxf(1.0, current_tile_bounds[1] - current_tile_bounds[0])
+	var tb_d: float = maxf(1.0, current_tile_bounds[3] - current_tile_bounds[2])
 	for point in [a,b,c]:
 		surface.set_normal(normal)
 		surface.set_color(tint)
-		surface.set_uv(Vector2(point.x, point.z) / 5.0)
+		if sat_roof_tex != null:
+			var u: float = clampf((point.x - current_tile_bounds[0]) / tb_w, 0.0, 1.0)
+			var v: float = clampf((point.z - current_tile_bounds[2]) / tb_d, 0.0, 1.0)
+			surface.set_uv(Vector2(u, v))
+		else:
+			surface.set_uv(Vector2(point.x, point.z) / 5.0)
 		surface.add_vertex(point)
 
 func _add_noir_entrance(parent: Node3D, position: Vector3) -> void:
