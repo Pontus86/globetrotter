@@ -156,8 +156,8 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 		var pmat := StandardMaterial3D.new()
 		pmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		pmat.albedo_texture = map_tex
-		# Ljus, krispig dagtidskarta (aldrig mörk eller utbränd!)
-		pmat.albedo_color = Color(0.92, 0.90, 0.86)
+		# Varm, solig dagtidskarta
+		pmat.albedo_color = Color(1.0, 0.94, 0.84)
 		pmat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 		plane_mi.material_override = pmat
 		city_root.add_child(plane_mi)
@@ -336,7 +336,7 @@ func _build_fog_of_war_clouds() -> void:
 shader_type spatial;
 render_mode unshaded, blend_mix, depth_draw_never, cull_disabled;
 
-uniform vec3 fog_color : source_color = vec3(0.86, 0.91, 0.97);
+uniform vec3 fog_color : source_color = vec3(1.0, 0.90, 0.74);
 uniform float inner_radius = 300.0;
 uniform float outer_radius = 520.0;
 
@@ -546,12 +546,12 @@ func _commit_surface(st: SurfaceTool, color: Color, rough: float, use_vertex_col
 		city_root.add_child(mi)
 
 func _height_to_color(h: float) -> Color:
-	# Solig, glad europeisk ORANGE / terrakotta-palett i dagtid (högre hus = djupare orange-tegel!)
-	var c0 := Color.html("#f5cfa0")  # 0m: solig varm aprikos-sandsten
-	var c10 := Color.html("#eeaa6b") # 10m: glad varm orange-ockra
-	var c22 := Color.html("#df8348") # 22m: rik terrakotta-orange
-	var c40 := Color.html("#c86335") # 40m: djup bränd orange-tegel
-	var c75 := Color.html("#a85232") # 75m+: varm koppar-terrakotta
+	# Varma, mättade, glada ORANGE / medelhavs-terrakotta-hus (högre hus = djupare bränd orange!)
+	var c0 := Color.html("#ffbe6b")  # 0m: solgul varm aprikos
+	var c10 := Color.html("#ff9240") # 10m: mättad glad orange
+	var c22 := Color.html("#f26a2e") # 22m: kraftig medelhavs-terrakotta
+	var c40 := Color.html("#d94b20") # 40m: intensiv bränd orange-röd
+	var c75 := Color.html("#b8361c") # 75m+: djup varm kopparröd
 	if h <= 10.0:
 		return c0.lerp(c10, clampf(h / 10.0, 0.0, 1.0))
 	elif h <= 22.0:
@@ -647,9 +647,9 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 		var base_col: Color = _height_to_color(h)
 		var col_bot: Color = base_col.darkened(0.16)
 		var col_top: Color = base_col.lightened(0.06)
-		# Soliga, glada europeiska terrakotta-/tegeltak!
-		var roof_tint: Color = Color(0.84, 0.42, 0.24) if rng.randf() < 0.75 else Color(0.76, 0.48, 0.30)
-		var col_roof: Color = base_col.lerp(roof_tint, 0.58)
+		# Intensiva, varma europeiska tegeltak på de 45-gradiga spetsiga taken!
+		var roof_tint: Color = Color(0.92, 0.32, 0.14) if rng.randf() < 0.75 else Color(0.96, 0.46, 0.18)
+		var col_roof: Color = base_col.lerp(roof_tint, 0.65)
 
 		var n: int = pts2.size()
 		for i in range(n):
