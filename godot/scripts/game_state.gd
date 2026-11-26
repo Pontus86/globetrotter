@@ -421,10 +421,10 @@ func end_game(won: bool, summary: String) -> void:
 	game_ended.emit(won, summary)
 
 func get_clock() -> Dictionary:
-	var f := elapsed_sec / sec_per_day
-	var day := mini(TOTAL_DAYS, int(floor(f)) + 1)
-	var frac := f - floor(f)
-	var mins := int(floor(frac * 24.0 * 60.0))
+	var f: float = elapsed_sec / sec_per_day
+	var day: int = mini(TOTAL_DAYS, int(floorf(f)) + 1)
+	var frac: float = f - floorf(f)
+	var mins: int = int(floorf(frac * 24.0 * 60.0))
 	return {
 		"day": day,
 		"hh": "%02d" % int(mins / 60),
@@ -432,11 +432,13 @@ func get_clock() -> Dictionary:
 	}
 
 func haversine_km(a: Array, b: Array) -> float:
-	var lat1 := deg_to_rad(float(a[1]))
-	var lat2 := deg_to_rad(float(b[1]))
-	var dlat := lat2 - lat1
-	var dlon := deg_to_rad(float(b[0]) - float(a[0]))
-	var x := pow(sin(dlat * 0.5), 2) + cos(lat1) * cos(lat2) * pow(sin(dlon * 0.5), 2)
+	var lat1: float = deg_to_rad(float(a[1]))
+	var lat2: float = deg_to_rad(float(b[1]))
+	var dlat: float = lat2 - lat1
+	var dlon: float = deg_to_rad(float(b[0]) - float(a[0]))
+	var s1: float = sin(dlat * 0.5)
+	var s2: float = sin(dlon * 0.5)
+	var x: float = s1 * s1 + cos(lat1) * cos(lat2) * s2 * s2
 	return 2.0 * 6371.0 * asin(sqrt(clampf(x, 0.0, 1.0)))
 
 func get_travel_seconds(from_id: String, to_id: String, mode: String) -> float:
