@@ -9,6 +9,7 @@ extends Node3D
 const CHUNK_SIZE: float = 180.0
 const CHUNK_LOAD_RADIUS: int = 2   # 5x5 chunks = 900x900m synfält runt spelaren!
 const CHUNK_UNLOAD_RADIUS: int = 3 # Avlasta chunks >540m bort för 144 FPS
+const CityLifeScript = preload("res://scripts/city_life.gd")
 
 var pois: Dictionary = {}
 var city_root: Node3D
@@ -22,6 +23,7 @@ var loaded_chunks: Dictionary = {}   # Vector2i -> Node3D (byggd mesh + hitbox)
 var chunk_clear_pts: Array[Vector2] = []
 var building_polys_2d: Array[PackedVector2Array] = []
 var chunk_seed: int = 0
+var light_budget_elapsed: float = 0.0
 var noir_facades: Array[Texture2D] = []
 var facade_albedo_tex: Texture2D
 var facade_emit_tex: Texture2D
@@ -165,10 +167,11 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 		plane_mi.mesh = pm
 		plane_mi.position = Vector3(tb_cx, 0.02, tb_cz)
 		var pmat := StandardMaterial3D.new()
-		pmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		pmat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
 		pmat.albedo_texture = map_tex
 		# Film Noir skymningston på stadskartan (behaglig regntung kvällsblå)
-		pmat.albedo_color = Color(0.62, 0.64, 0.70)
+		pmat.albedo_color = Color(0.32, 0.36, 0.38)
+		pmat.roughness = 0.72
 		pmat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 		plane_mi.material_override = pmat
 		city_root.add_child(plane_mi)
@@ -243,6 +246,11 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 
 	# 8. Drivande Noir Fog-of-War-moln utanför de inladdade hus-chunksen!
 	_build_fog_of_war_clouds()
+
+	# 9. Levande stad: bilar med strålkastare, gående fotgängare och varma europeiska gatlyktor!
+	var life: Node3D = CityLifeScript.new()
+	city_root.add_child(life)
+	life.populate_from_roads(osm.get("roads", []), city_id)
 
 func _build_fog_of_war_clouds() -> void:
 	fog_cloud_plane = MeshInstance3D.new()
@@ -526,6 +534,7 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 	var rs := SurfaceTool.new()
 	rs.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var col_faces := PackedVector3Array()
+	var entrance_count: int = 0
 
 	for b_raw in b_list:
 		var b: Dictionary = b_raw
@@ -558,6 +567,8 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 			h = min_h + rng.randf_range(10.0, 24.0)
 		var wall_variant: int = rng.randi_range(0, wall_surfaces.size() - 1)
 		var ws: SurfaceTool = wall_surfaces[wall_variant]
+		var building_seed: float = fposmod(center2.x * 0.1031 + center2.y * 0.11369, 1.0)
+		ws.set_uv2(Vector2(building_seed, 0.0))
 		var base_col: Color = _height_to_color(h)
 		if not noir_facades.is_empty():
 			base_col = Color.WHITE.darkened(rng.randf_range(0.0, 0.12))
@@ -582,6 +593,13 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 			var v1 := Vector3(c.x, min_h, c.y)
 			var v2 := Vector3(c.x, h, c.y)
 			var v3 := Vector3(a.x, h, a.y)
+			if entrance_count < 2 and i == 0 and min_h < 0.5 and edge_len > 8.0 and building_seed < 0.30:
+				var midpoint := (a + c) * 0.5
+				var outside: Vector3 = norm
+				if Geometry2D.is_point_in_polygon(midpoint + Vector2(norm.x,norm.z), pts2):
+					outside = -norm
+				_add_noir_entrance(chunk_node, Vector3(midpoint.x, 3.2, midpoint.y) + outside * 0.8)
+				entrance_count += 1
 
 			wall_counts[wall_variant] += 3
 			ws.set_normal(norm); ws.set_color(col_bot); ws.set_uv(Vector2(0.0, v_rep)); ws.add_vertex(v0)
@@ -602,14 +620,7 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 				col_faces.append(cv0); col_faces.append(cv1); col_faces.append(cv2)
 				col_faces.append(cv0); col_faces.append(cv2); col_faces.append(cv3)
 
-		var tris: PackedInt32Array = Geometry2D.triangulate_polygon(pts2)
-		for i in range(0, tris.size(), 3):
-			var ta: Vector2 = pts2[tris[i]]
-			var tb: Vector2 = pts2[tris[i + 1]]
-			var tc: Vector2 = pts2[tris[i + 2]]
-			rs.set_normal(Vector3.UP); rs.set_color(col_roof); rs.set_uv(ta / 18.0); rs.add_vertex(Vector3(ta.x, h, ta.y))
-			rs.set_normal(Vector3.UP); rs.set_color(col_roof); rs.set_uv(tb / 18.0); rs.add_vertex(Vector3(tb.x, h, tb.y))
-			rs.set_normal(Vector3.UP); rs.set_color(col_roof); rs.set_uv(tc / 18.0); rs.add_vertex(Vector3(tc.x, h, tc.y))
+		_build_noir_roof(rs, pts2, h, col_roof, building_seed)
 
 	for variant in range(wall_surfaces.size()):
 		if wall_counts[variant] == 0:
@@ -632,7 +643,13 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 			wmat.roughness = 0.84
 			wmat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 			wmat.cull_mode = BaseMaterial3D.CULL_DISABLED
-			wmi.material_override = wmat
+			if not noir_facades.is_empty():
+				var night_mat := ShaderMaterial.new()
+				night_mat.shader = preload("res://assets/noir/window_lights.gdshader")
+				night_mat.set_shader_parameter("facade", noir_facades[variant])
+				wmi.material_override = night_mat
+			else:
+				wmi.material_override = wmat
 			chunk_node.add_child(wmi)
 
 	var rmesh: ArrayMesh = rs.commit()
@@ -659,6 +676,117 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 		chunk_node.add_child(sb)
 
 	return chunk_node
+
+func _build_noir_roof(surface: SurfaceTool, footprint: PackedVector2Array, height: float, tint: Color, seed: float) -> void:
+	# A raised inner ridge on convex footprints gives true hip roofs, no false
+	# triangles across courtyards. Tall blocks/complex outlines retain flat roofs.
+	# Ignore tiny facade recesses for the roof outline; deep courtyards remain flat.
+	var hull := Geometry2D.convex_hull(footprint)
+	if hull.size() > 1 and hull[0].is_equal_approx(hull[-1]):
+		hull.remove_at(hull.size()-1)
+	var original_area := _outline_area(footprint)
+	var hull_area := _outline_area(hull)
+	if hull_area > 0.0 and original_area / hull_area > 0.94:
+		footprint = hull
+	var convex := true
+	var direction: float = 0.0
+	var center := Vector2.ZERO
+	var longest := Vector2.RIGHT
+	var longest_length := 0.0
+	for i in range(footprint.size()):
+		center += footprint[i]
+		var edge := footprint[(i+1)%footprint.size()] - footprint[i]
+		var next := footprint[(i+2)%footprint.size()] - footprint[(i+1)%footprint.size()]
+		var cross: float = edge.cross(next)
+		if absf(cross) > 0.01:
+			if direction != 0.0 and signf(cross) != direction:
+				convex = false
+			direction = signf(cross)
+		if edge.length() > longest_length:
+			longest_length = edge.length()
+			longest = edge.normalized()
+	center /= float(footprint.size())
+	var half_width := 10000.0
+	var half_length := 0.0
+	for i in range(footprint.size()):
+		var a := footprint[i]
+		var b := footprint[(i+1)%footprint.size()]
+		half_width = minf(half_width, center.distance_to(Geometry2D.get_closest_point_to_segment(center,a,b)))
+		half_length = maxf(half_length, absf((a-center).dot(longest)))
+	if convex and footprint.size() <= 16 and height < 48.0 and half_width > 2.5 and seed < 0.84:
+		var rise := clampf(half_width * 0.65, 1.8, 7.0)
+		var ridge_half := maxf(0.0, half_length - half_width * 1.3) * 0.5
+		# Two clipped ridge endpoints stay inside the footprint.
+		var end_a := center - longest * ridge_half
+		var end_b := center + longest * ridge_half
+		if not Geometry2D.is_point_in_polygon(end_a, footprint) or not Geometry2D.is_point_in_polygon(end_b, footprint):
+			end_a = center
+			end_b = center
+		for i in range(footprint.size()):
+			var a := footprint[i]
+			var b := footprint[(i+1)%footprint.size()]
+			var ra := end_a if (a-center).dot(longest) < 0 else end_b
+			var rb := end_a if (b-center).dot(longest) < 0 else end_b
+			_roof_triangle(surface, Vector3(a.x,height,a.y), Vector3(b.x,height,b.y), Vector3(rb.x,height+rise,rb.y), tint)
+			if ra.distance_squared_to(rb) > 0.01:
+				_roof_triangle(surface, Vector3(a.x,height,a.y), Vector3(rb.x,height+rise,rb.y), Vector3(ra.x,height+rise,ra.y), tint)
+	else:
+		var triangles := Geometry2D.triangulate_polygon(footprint)
+		for i in range(0,triangles.size(),3):
+			var a := footprint[triangles[i]]
+			var b := footprint[triangles[i+1]]
+			var c := footprint[triangles[i+2]]
+			_roof_triangle(surface,Vector3(a.x,height,a.y),Vector3(b.x,height,b.y),Vector3(c.x,height,c.y),tint)
+
+func _outline_area(points: PackedVector2Array) -> float:
+	var area := 0.0
+	for index in range(points.size()):
+		area += points[index].cross(points[(index+1)%points.size()])
+	return absf(area) * 0.5
+
+func _roof_triangle(surface: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, tint: Color) -> void:
+	var normal := (b-a).cross(c-a).normalized()
+	if normal.y < 0:
+		normal = -normal
+	for point in [a,b,c]:
+		surface.set_normal(normal)
+		surface.set_color(tint)
+		surface.set_uv(Vector2(point.x, point.z) / 5.0)
+		surface.add_vertex(point)
+
+func _add_noir_entrance(parent: Node3D, position: Vector3) -> void:
+	var light := OmniLight3D.new()
+	light.position = position
+	light.light_color = Color(1.0, 0.69, 0.34)
+	light.light_energy = 2.2
+	light.omni_range = 13.0
+	light.shadow_enabled = false
+	light.distance_fade_enabled = true
+	light.distance_fade_begin = 90.0
+	light.distance_fade_length = 50.0
+	parent.add_child(light)
+	light.add_to_group("noir_entrance_lights")
+	var fixture := MeshInstance3D.new()
+	var bulb := SphereMesh.new()
+	bulb.radius = 0.18
+	bulb.height = 0.36
+	fixture.mesh = bulb
+	fixture.position = position
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.9,0.65,0.3)
+	material.emission_enabled = true
+	material.emission = Color(1.0,0.60,0.20)
+	material.emission_energy_multiplier = 1.7
+	fixture.material_override = material
+	parent.add_child(fixture)
+
+func _update_noir_light_budget() -> void:
+	if not is_instance_valid(focus_target):
+		return
+	var lights: Array[Node] = get_tree().get_nodes_in_group("noir_entrance_lights")
+	lights.sort_custom(func(a, b): return a.global_position.distance_squared_to(focus_target.global_position) < b.global_position.distance_squared_to(focus_target.global_position))
+	for index in range(lights.size()):
+		lights[index].visible = index < 8 and lights[index].global_position.distance_squared_to(focus_target.global_position) < 19600.0
 
 func _update_building_chunks(center_pos: Vector3, max_build_per_frame: int = 2) -> void:
 	if chunk_data.is_empty() or city_root == null:
@@ -807,7 +935,7 @@ func _add_osm_poi_marker(pkey: String, title: String, center: Vector3, col: Colo
 	city_root.add_child(poi_light)
 
 	var lbl := Label3D.new()
-	lbl.text = title
+	lbl.text = NoirVisuals.clean(title)
 	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	lbl.font_size = 44
 	lbl.pixel_size = 0.055
@@ -815,6 +943,13 @@ func _add_osm_poi_marker(pkey: String, title: String, center: Vector3, col: Colo
 	lbl.modulate = Color(1.0, 0.94, 0.62)
 	lbl.outline_size = 10
 	city_root.add_child(lbl)
+	var symbol := Sprite3D.new()
+	symbol.texture = NoirVisuals.icon(pkey)
+	symbol.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	symbol.pixel_size = 0.10
+	symbol.position = Vector3(center.x, top_y + 14.0, center.z)
+	symbol.modulate = Color("d2be8b")
+	city_root.add_child(symbol)
 
 	pois[pkey] = {
 		"pos": Vector3(center.x, 0.1, center.z),
@@ -1115,6 +1250,10 @@ func get_police_spawn_pos() -> Vector3:
 	return Vector3(120.0, 0.1, -120.0)
 
 func _process(delta: float) -> void:
+	light_budget_elapsed += delta
+	if light_budget_elapsed > 0.25:
+		light_budget_elapsed = 0.0
+		_update_noir_light_budget()
 	if is_visible_in_tree() and focus_target != null:
 		if not chunk_data.is_empty():
 			_update_building_chunks(focus_target.global_position, 2)
