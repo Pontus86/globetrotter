@@ -22,6 +22,7 @@ var loaded_chunks: Dictionary = {}   # Vector2i -> Node3D (byggd mesh + hitbox)
 var chunk_clear_pts: Array[Vector2] = []
 var building_polys_2d: Array[PackedVector2Array] = []
 var chunk_seed: int = 0
+var noir_facades: Array[Texture2D] = []
 var facade_albedo_tex: Texture2D
 var facade_emit_tex: Texture2D
 var roof_tex: Texture2D
@@ -29,6 +30,12 @@ var fog_cloud_plane: MeshInstance3D
 
 func _ready() -> void:
 	_generate_noir_textures()
+	for key in ["facade_brick", "facade_stone"]:
+		var path: String = "res://assets/noir/" + key + ".png"
+		if ResourceLoader.exists(path):
+			noir_facades.append(load(path))
+	if ResourceLoader.exists("res://assets/noir/roof_slate.png"):
+		roof_tex = load("res://assets/noir/roof_slate.png")
 
 func _generate_noir_textures() -> void:
 	# 1. Realistisk europeisk sten-/tegelfasad (128x128px = ~16x16m): mörka glasfönster + få diskreta tända fönster!
@@ -197,18 +204,15 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 			_build_flat_polygons(waters_arr, 0.14, Color(0.20, 0.52, 0.78), 0.18)
 		_build_roads(osm.get("roads", []))
 
-	# Rensa bara OSM-huset direkt under stadens ikoniska 3D-monument (landmark) så de inte krockar!
+	# Behåll ALLA riktiga OSM 3D-monument & building:part orörda (ingen rensning under landmark!)
 	var osm_pois: Dictionary = osm.get("pois", {})
 	var poi_clear_pts: Array[Vector2] = []
-	if osm_pois.has("landmark"):
-		var lm_a: Array = osm_pois["landmark"]
-		poi_clear_pts.append(Vector2(float(lm_a[0]), float(lm_a[1])))
 
-	# 5. Riktiga 3D-byggnader (Chunk-streamade 180x180m)
+	# 5. Riktiga 3D-byggnader + building:part + relation-multipolygoner (Chunk-streamade 180x180m)
 	var buildings_arr: Array = osm.get("buildings", [])
 	_build_osm_buildings(buildings_arr, rng, poi_clear_pts)
 
-	# 6. 5 POI-platser: Monumentet får sin faktiska 3D-modell; Station, Hotell, Marknad & Bibliotek tilldelas ett VERKLIGT närliggande 3D-hus på kartan!
+	# 6. Alla 5 POI-platser kopplas till VERKLIGA 3D-byggnader / riktiga OSM-monument på kartan!
 	var poi_defs := [
 		["landmark", String(city_data.get("landmark", {}).get("name", "Sevärdhet")), Color(0.98, 0.80, 0.28)],
 		["hub", String(city_data.get("hub", {}).get("name", "Centralstationen")), Color(0.35, 0.72, 0.98)],
@@ -223,15 +227,12 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 		var pcol: Color = pd[2]
 		var pt_arr: Array = osm_pois.get(pkey, [0.0, 0.0])
 		var target_pos := Vector3(float(pt_arr[0]), 0.0, float(pt_arr[1]))
-		if pkey == "landmark":
-			_add_osm_poi_marker(pkey, ptitle, target_pos, pcol, city_id, {})
+		var picked: Dictionary = _pick_nearest_real_building(target_pos, buildings_arr, used_bldg_indices)
+		if not picked.is_empty():
+			var bc: Vector2 = picked["center"]
+			_add_osm_poi_marker(pkey, ptitle, Vector3(bc.x, 0.0, bc.y), pcol, city_id, picked)
 		else:
-			var picked: Dictionary = _pick_nearest_real_building(target_pos, buildings_arr, used_bldg_indices)
-			if not picked.is_empty():
-				var bc: Vector2 = picked["center"]
-				_add_osm_poi_marker(pkey, ptitle, Vector3(bc.x, 0.0, bc.y), pcol, city_id, picked)
-			else:
-				_add_osm_poi_marker(pkey, ptitle, target_pos, pcol, city_id, {})
+			_add_osm_poi_marker(pkey, ptitle, target_pos, pcol, city_id, {})
 
 	# 7. Osynliga stadsmurar vid kartgränsen
 	var margin: float = 12.0
@@ -515,8 +516,13 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = chunk_seed ^ (ck.x * 73856093) ^ (ck.y * 19349663)
 
-	var ws := SurfaceTool.new()
-	ws.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var wall_surfaces: Array[SurfaceTool] = []
+	var wall_counts: Array[int] = []
+	for variant in range(maxi(1, noir_facades.size())):
+		var surface := SurfaceTool.new()
+		surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+		wall_surfaces.append(surface)
+		wall_counts.append(0)
 	var rs := SurfaceTool.new()
 	rs.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var col_faces := PackedVector3Array()
@@ -546,10 +552,15 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 		if too_close:
 			continue
 
+		var min_h: float = float(b.get("mh", 0.0))
 		var h: float = float(b.get("h", 0.0))
-		if h <= 0.5:
-			h = rng.randf_range(10.0, 26.0)
+		if h <= min_h + 0.5:
+			h = min_h + rng.randf_range(10.0, 24.0)
+		var wall_variant: int = rng.randi_range(0, wall_surfaces.size() - 1)
+		var ws: SurfaceTool = wall_surfaces[wall_variant]
 		var base_col: Color = _height_to_color(h)
+		if not noir_facades.is_empty():
+			base_col = Color.WHITE.darkened(rng.randf_range(0.0, 0.12))
 		var col_bot: Color = base_col.darkened(0.24)
 		var col_top: Color = base_col
 		# Realistiska europeiska tak: varmt tegelrött eller patinerad zink/skiffer (aldrig kolsvart!)
@@ -565,25 +576,31 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 				continue
 			var edge_len: float = edge.length()
 			var u_rep: float = edge_len / 16.0
-			var v_rep: float = h / 16.0
+			var v_rep: float = (h - min_h) / 16.0
 			var norm := Vector3(edge.y, 0.0, -edge.x).normalized()
-			var v0 := Vector3(a.x, 0.0, a.y)
-			var v1 := Vector3(c.x, 0.0, c.y)
+			var v0 := Vector3(a.x, min_h, a.y)
+			var v1 := Vector3(c.x, min_h, c.y)
 			var v2 := Vector3(c.x, h, c.y)
 			var v3 := Vector3(a.x, h, a.y)
 
+			wall_counts[wall_variant] += 3
 			ws.set_normal(norm); ws.set_color(col_bot); ws.set_uv(Vector2(0.0, v_rep)); ws.add_vertex(v0)
 			ws.set_normal(norm); ws.set_color(col_bot); ws.set_uv(Vector2(u_rep, v_rep)); ws.add_vertex(v1)
 			ws.set_normal(norm); ws.set_color(col_top); ws.set_uv(Vector2(u_rep, 0.0)); ws.add_vertex(v2)
 
+			wall_counts[wall_variant] += 3
 			ws.set_normal(norm); ws.set_color(col_bot); ws.set_uv(Vector2(0.0, v_rep)); ws.add_vertex(v0)
 			ws.set_normal(norm); ws.set_color(col_top); ws.set_uv(Vector2(u_rep, 0.0)); ws.add_vertex(v2)
 			ws.set_normal(norm); ws.set_color(col_top); ws.set_uv(Vector2(0.0, 0.0)); ws.add_vertex(v3)
 
-			var cv2 := Vector3(c.x, 8.0, c.y)
-			var cv3 := Vector3(a.x, 8.0, a.y)
-			col_faces.append(v0); col_faces.append(v1); col_faces.append(cv2)
-			col_faces.append(v0); col_faces.append(cv2); col_faces.append(cv3)
+			# Lägg bara kollision på delar som når ner till marknivå (så man kan gå under brovalv & Eiffeltornets valv!)
+			if min_h < 4.5:
+				var cv0 := Vector3(a.x, 0.0, a.y)
+				var cv1 := Vector3(c.x, 0.0, c.y)
+				var cv2 := Vector3(c.x, 8.0, c.y)
+				var cv3 := Vector3(a.x, 8.0, a.y)
+				col_faces.append(cv0); col_faces.append(cv1); col_faces.append(cv2)
+				col_faces.append(cv0); col_faces.append(cv2); col_faces.append(cv3)
 
 		var tris: PackedInt32Array = Geometry2D.triangulate_polygon(pts2)
 		for i in range(0, tris.size(), 3):
@@ -594,24 +611,29 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 			rs.set_normal(Vector3.UP); rs.set_color(col_roof); rs.set_uv(tb / 18.0); rs.add_vertex(Vector3(tb.x, h, tb.y))
 			rs.set_normal(Vector3.UP); rs.set_color(col_roof); rs.set_uv(tc / 18.0); rs.add_vertex(Vector3(tc.x, h, tc.y))
 
-	var wmesh: ArrayMesh = ws.commit()
-	if wmesh.get_surface_count() > 0:
-		var wmi := MeshInstance3D.new()
-		wmi.mesh = wmesh
-		var wmat := StandardMaterial3D.new()
-		wmat.vertex_color_use_as_albedo = true
-		if facade_albedo_tex != null:
-			wmat.albedo_texture = facade_albedo_tex
-		if facade_emit_tex != null:
-			wmat.emission_enabled = true
-			wmat.emission_texture = facade_emit_tex
-			wmat.emission = Color(0.96, 0.84, 0.62)
-			wmat.emission_energy_multiplier = 0.48
-		wmat.roughness = 0.84
-		wmat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-		wmat.cull_mode = BaseMaterial3D.CULL_DISABLED
-		wmi.material_override = wmat
-		chunk_node.add_child(wmi)
+	for variant in range(wall_surfaces.size()):
+		if wall_counts[variant] == 0:
+			continue
+		var wmesh: ArrayMesh = wall_surfaces[variant].commit()
+		if wmesh.get_surface_count() > 0:
+			var wmi := MeshInstance3D.new()
+			wmi.mesh = wmesh
+			var wmat := StandardMaterial3D.new()
+			wmat.vertex_color_use_as_albedo = true
+			if not noir_facades.is_empty():
+				wmat.albedo_texture = noir_facades[variant]
+			elif facade_albedo_tex != null:
+				wmat.albedo_texture = facade_albedo_tex
+			if noir_facades.is_empty() and facade_emit_tex != null:
+				wmat.emission_enabled = true
+				wmat.emission_texture = facade_emit_tex
+				wmat.emission = Color(0.96, 0.84, 0.62)
+				wmat.emission_energy_multiplier = 0.48
+			wmat.roughness = 0.84
+			wmat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+			wmat.cull_mode = BaseMaterial3D.CULL_DISABLED
+			wmi.material_override = wmat
+			chunk_node.add_child(wmi)
 
 	var rmesh: ArrayMesh = rs.commit()
 	if rmesh.get_surface_count() > 0:
@@ -760,12 +782,12 @@ func _add_osm_poi_marker(pkey: String, title: String, center: Vector3, col: Colo
 	city_root.add_child(ring)
 
 	var top_y: float = 22.0
-	if pkey == "landmark":
-		top_y = _build_landmark_visual(city_id, center)
-	elif not real_bldg.is_empty():
-		# Använd det VERKLIGA 3D-huset på kartan — ingen påhittad byggnad mitt i gatan!
-		top_y = float(real_bldg["h"]) + 2.0
+	if not real_bldg.is_empty():
+		# Använd det VERKLIGA OSM 3D-monumentet / 3D-huset (Colosseum, Sagrada Família, Stadshuset, Hotell, Bibliotek...)!
+		top_y = float(real_bldg["h"]) + 4.0
 		_highlight_real_poi_building(real_bldg["pts"], float(real_bldg["h"]), col)
+	elif pkey == "landmark":
+		top_y = _build_landmark_visual(city_id, center)
 	else:
 		if pkey == "hub":
 			top_y = _build_station_building(center)
