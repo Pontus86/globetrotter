@@ -1,98 +1,235 @@
 extends Node3D
 
-## Interaktiv 3D-Jordglob (NASA Blue Marble) med 3D-stadsmarkörer, ruttbågar och rörliga aktörer
+## Fullständig 3D-Jordglob (NASA Blue Marble + 3D-berg via normalmap + molnlager + 3D-ruttbågar + klickbara städer)
 
-const GLOBE_RADIUS := 10.0
+const GLOBE_RADIUS: float = 10.0
 
 var globe_pivot: Node3D
+var clouds_mesh: MeshInstance3D
 var camera: Camera3D
 var markers_root: Node3D
-var thief_marker: MeshInstance3D
+var routes_mesh: MeshInstance3D
+var active_routes_mesh: MeshInstance3D
+
+var thief_marker: Node3D
+var thief_label: Label3D
 var police_markers: Dictionary = {}
 var ping_marker: MeshInstance3D
+var city_hitboxes: Dictionary = {} # StaticBody3D -> city_id
 
-var rot_y := -0.2
-var rot_x := 0.82
-var zoom_dist := 18.5
-var dragging := false
+var rot_y: float = PI + 0.18
+var rot_x: float = 0.82
+var zoom_dist: float = 17.5
+var dragging: bool = false
+var drag_moved: float = 0.0
 
 func _ready() -> void:
 	globe_pivot = Node3D.new()
 	add_child(globe_pivot)
 
-	# Jordklotet med NASA Blue Marble-texturen
+	# 1. Jordklot med NASA Blue Marble + Normalmap (berg!) + Roughness (havsblänk!)
 	var sphere_inst := MeshInstance3D.new()
 	var sm := SphereMesh.new()
 	sm.radius = GLOBE_RADIUS
 	sm.height = GLOBE_RADIUS * 2.0
-	sm.radial_segments = 64
-	sm.rings = 32
+	sm.radial_segments = 72
+	sm.rings = 36
 	sphere_inst.mesh = sm
 
 	var mat := StandardMaterial3D.new()
-	var tex = load("res://assets/globe/earth_day.jpg")
-	if tex:
-		mat.albedo_texture = tex
+	var tex_day: Texture2D = load("res://assets/globe/earth_day.jpg") as Texture2D
+	var tex_norm: Texture2D = load("res://assets/globe/earth_normal.jpg") as Texture2D
+	var tex_spec: Texture2D = load("res://assets/globe/earth_spec.jpg") as Texture2D
+	if tex_day != null:
+		mat.albedo_texture = tex_day
 	else:
 		mat.albedo_color = Color(0.14, 0.36, 0.56)
-	mat.roughness = 0.72
+	if tex_norm != null:
+		mat.normal_enabled = true
+		mat.normal_texture = tex_norm
+		mat.normal_scale = 2.2
+	if tex_spec != null:
+		mat.roughness_texture = tex_spec
+		mat.roughness = 0.65
+		mat.metallic = 0.12
 	sphere_inst.material_override = mat
 	globe_pivot.add_child(sphere_inst)
+
+	# 2. Sakta roterande 3D-molnlager
+	var tex_clouds: Texture2D = load("res://assets/globe/earth_clouds.png") as Texture2D
+	if tex_clouds != null:
+		clouds_mesh = MeshInstance3D.new()
+		var cm := SphereMesh.new()
+		cm.radius = GLOBE_RADIUS + 0.08
+		cm.height = (GLOBE_RADIUS + 0.08) * 2.0
+		cm.radial_segments = 48
+		cm.rings = 24
+		clouds_mesh.mesh = cm
+		var cmat := StandardMaterial3D.new()
+		cmat.albedo_texture = tex_clouds
+		cmat.albedo_color = Color(1.0, 1.0, 1.0, 0.32)
+		cmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		cmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		clouds_mesh.material_override = cmat
+		globe_pivot.add_child(clouds_mesh)
+
+	# 3. Atmosfärglöd
+	var atmo := MeshInstance3D.new()
+	var am := SphereMesh.new()
+	am.radius = GLOBE_RADIUS + 0.32
+	am.height = (GLOBE_RADIUS + 0.32) * 2.0
+	atmo.mesh = am
+	var amat := StandardMaterial3D.new()
+	amat.albedo_color = Color(0.28, 0.62, 1.0, 0.08)
+	amat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	amat.cull_mode = BaseMaterial3D.CULL_FRONT
+	amat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	atmo.material_override = amat
+	globe_pivot.add_child(atmo)
+
+	# 4. Statiska 3D-ruttlinjer (tåg + flyg) och aktiva reslinjer
+	routes_mesh = MeshInstance3D.new()
+	globe_pivot.add_child(routes_mesh)
+
+	active_routes_mesh = MeshInstance3D.new()
+	globe_pivot.add_child(active_routes_mesh)
 
 	markers_root = Node3D.new()
 	globe_pivot.add_child(markers_root)
 
 	camera = Camera3D.new()
-	camera.position = Vector3(0, 0, zoom_dist)
+	camera.position = Vector3(0.0, 0.0, zoom_dist)
 	add_child(camera)
 
-	GameState.match_started.connect(_rebuild_markers)
-	_rebuild_markers()
+	GameState.match_started.connect(_rebuild_all)
+	GameState.target_updated.connect(_rebuild_all)
+	_rebuild_all()
 
-func _lat_lon_to_vec3(lon_deg: float, lat_deg: float, radius: float = GLOBE_RADIUS + 0.12) -> Vector3:
-	var lat := deg_to_rad(lat_deg)
-	var lon := deg_to_rad(lon_deg)
-	# Matchar standard equirectangular UV-mappning på SphereMesh i Godot 4
-	var x := radius * cos(lat) * sin(lon + PI * 0.5)
-	var y := radius * sin(lat)
-	var z := radius * cos(lat) * cos(lon + PI * 0.5)
+func _lat_lon_to_vec3(lon_deg: float, lat_deg: float, radius: float = GLOBE_RADIUS + 0.14) -> Vector3:
+	var lat: float = deg_to_rad(lat_deg)
+	var lon: float = deg_to_rad(lon_deg)
+	var angle: float = lon + PI
+	var x: float = radius * cos(lat) * sin(angle)
+	var y: float = radius * sin(lat)
+	var z: float = radius * cos(lat) * cos(angle)
 	return Vector3(x, y, z)
 
-func _rebuild_markers() -> void:
-	for c in markers_root.get_children():
-		c.queue_free()
-	police_markers.clear()
+func _rebuild_all() -> void:
+	_rebuild_static_routes()
+	_rebuild_markers()
 
-	# Stadsmarkörer
+func _rebuild_static_routes() -> void:
+	var im := ImmediateMesh.new()
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	routes_mesh.mesh = im
+	routes_mesh.material_override = mat
+
+	var seen: Dictionary = {}
+	im.surface_begin(Mesh.PRIMITIVE_LINES)
 	for cid in GameState.cities.keys():
 		var c: Dictionary = GameState.cities[cid]
-		var pos := _lat_lon_to_vec3(float(c["center"][0]), float(c["center"][1]))
-		var is_target := GameState.real_targets.has(cid) and not GameState.collected_targets.has(cid)
-		var dot := _make_sphere(0.18 if is_target else 0.12, Color(0.98, 0.80, 0.25) if is_target else Color(0.92, 0.90, 0.82))
+		var a: Vector3 = _lat_lon_to_vec3(float(c["center"][0]), float(c["center"][1]), GLOBE_RADIUS + 0.11).normalized()
+		for t in c["trains"]:
+			var tid: String = String(t)
+			var k: String = ("%s--%s:t" % [cid, tid]) if String(cid) < tid else ("%s--%s:t" % [tid, cid])
+			if seen.has(k) or not GameState.cities.has(tid):
+				continue
+			seen[k] = true
+			var b: Vector3 = _lat_lon_to_vec3(float(GameState.cities[tid]["center"][0]), float(GameState.cities[tid]["center"][1]), GLOBE_RADIUS + 0.11).normalized()
+			_draw_arc_lines(im, a, b, GLOBE_RADIUS + 0.12, 0.12, Color(0.22, 0.85, 0.58), 10)
+		for f in c["flights"]:
+			var fid: String = String(f)
+			var k2: String = ("%s--%s:f" % [cid, fid]) if String(cid) < fid else ("%s--%s:f" % [fid, cid])
+			if seen.has(k2) or not GameState.cities.has(fid):
+				continue
+			seen[k2] = true
+			var b2: Vector3 = _lat_lon_to_vec3(float(GameState.cities[fid]["center"][0]), float(GameState.cities[fid]["center"][1]), GLOBE_RADIUS + 0.11).normalized()
+			_draw_arc_lines(im, a, b2, GLOBE_RADIUS + 0.12, 0.35, Color(0.95, 0.78, 0.32), 12)
+	im.surface_end()
+
+func _draw_arc_lines(im: ImmediateMesh, va: Vector3, vb: Vector3, base_r: float, lift: float, col: Color, steps: int) -> void:
+	for i in range(steps):
+		var t0: float = float(i) / float(steps)
+		var t1: float = float(i + 1) / float(steps)
+		var p0: Vector3 = va.slerp(vb, t0) * (base_r + sin(t0 * PI) * lift)
+		var p1: Vector3 = va.slerp(vb, t1) * (base_r + sin(t1 * PI) * lift)
+		im.surface_set_color(col)
+		im.surface_add_vertex(p0)
+		im.surface_set_color(col)
+		im.surface_add_vertex(p1)
+
+func _rebuild_markers() -> void:
+	for ch in markers_root.get_children():
+		ch.queue_free()
+	police_markers.clear()
+	city_hitboxes.clear()
+
+	for cid in GameState.cities.keys():
+		var c: Dictionary = GameState.cities[cid]
+		var pos: Vector3 = _lat_lon_to_vec3(float(c["center"][0]), float(c["center"][1]))
+		var is_target: bool = false
+		if GameState.player_role == "thief":
+			is_target = GameState.real_targets.has(cid) and not GameState.collected_targets.has(cid)
+		else:
+			is_target = GameState.suspect_pool.has(cid) and not GameState.cleared_suspects.has(cid)
+
+		var dot := _make_sphere(0.20 if is_target else 0.13, Color(0.98, 0.80, 0.25) if is_target else Color(0.92, 0.90, 0.82))
 		dot.position = pos
 		markers_root.add_child(dot)
 
+		# Klickbar hitbox på globen (lager 2 så dolda stadshus aldrig blockerar!)
+		var sb := StaticBody3D.new()
+		sb.collision_layer = 2
+		sb.collision_mask = 0
+		sb.position = pos
+		var cs := CollisionShape3D.new()
+		var sp := SphereShape3D.new()
+		sp.radius = 0.36
+		cs.shape = sp
+		sb.add_child(cs)
+		markers_root.add_child(sb)
+		city_hitboxes[sb] = String(cid)
+
 		var lbl := Label3D.new()
-		lbl.text = String(c["name"])
+		lbl.text = (("🎯 " if GameState.player_role == "thief" else "❓ ") if is_target else "") + String(c["name"])
 		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		lbl.font_size = 24
-		lbl.pixel_size = 0.008
-		lbl.position = pos * 1.035
+		lbl.pixel_size = 0.0085
+		lbl.position = pos * 1.036
 		lbl.modulate = Color(1.0, 0.92, 0.55) if is_target else Color(0.95, 0.95, 0.95)
+		lbl.outline_size = 6
 		markers_root.add_child(lbl)
 
-	# Tjuvmarkör (röd/guld)
-	thief_marker = _make_sphere(0.28, Color(0.95, 0.22, 0.22))
+	# Tjuvmarkör
+	thief_marker = Node3D.new()
+	thief_marker.add_child(_make_sphere(0.26, Color(0.92, 0.20, 0.20)))
+	thief_label = Label3D.new()
+	thief_label.text = "🕵️"
+	thief_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	thief_label.font_size = 42
+	thief_label.pixel_size = 0.012
+	thief_label.position = Vector3(0.0, 0.45, 0.0)
+	thief_marker.add_child(thief_label)
 	markers_root.add_child(thief_marker)
 
-	# Polismarkörer (blå)
+	# Polismarkörer
 	for p in GameState.police:
-		var pm := _make_sphere(0.25, Color(0.22, 0.72, 0.98))
-		markers_root.add_child(pm)
-		police_markers[p["id"]] = pm
+		var pn := Node3D.new()
+		pn.add_child(_make_sphere(0.23, Color(0.20, 0.72, 0.98)))
+		var pl := Label3D.new()
+		pl.text = "🚓 " + String(p["short"])
+		pl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		pl.font_size = 30
+		pl.pixel_size = 0.010
+		pl.position = Vector3(0.0, 0.42, 0.0)
+		pn.add_child(pl)
+		markers_root.add_child(pn)
+		police_markers[p["id"]] = { "node": pn, "label": pl }
 
-	# Senaste radarping (pulserande röd ring)
-	ping_marker = _make_sphere(0.36, Color(1.0, 0.3, 0.3, 0.55))
+	# Senaste radarping
+	ping_marker = _make_sphere(0.36, Color(1.0, 0.28, 0.28, 0.55))
 	ping_marker.visible = false
 	markers_root.add_child(ping_marker)
 
@@ -106,6 +243,8 @@ func _make_sphere(r: float, col: Color) -> MeshInstance3D:
 	m.albedo_color = col
 	m.emission_enabled = true
 	m.emission = col * 0.45
+	if col.a < 0.99:
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mi.material_override = m
 	return mi
 
@@ -113,45 +252,125 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
 	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			dragging = event.pressed
-		elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
+		var mb: InputEventMouseButton = event
+		if mb.button_index == MOUSE_BUTTON_LEFT:
+			if mb.pressed:
+				dragging = true
+				drag_moved = 0.0
+			else:
+				dragging = false
+				if drag_moved < 8.0:
+					_try_click_city(mb.position)
+		elif mb.button_index == MOUSE_BUTTON_WHEEL_UP:
 			zoom_dist = clampf(zoom_dist - 1.2, 12.2, 26.0)
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			zoom_dist = clampf(zoom_dist + 1.2, 12.2, 26.0)
 	elif event is InputEventMouseMotion and dragging:
-		rot_y += event.relative.x * 0.007
-		rot_x = clampf(rot_x + event.relative.y * 0.007, -1.2, 1.35)
+		var mm: InputEventMouseMotion = event
+		drag_moved += mm.relative.length()
+		rot_y += mm.relative.x * 0.007
+		rot_x = clampf(rot_x + mm.relative.y * 0.007, -1.2, 1.35)
 
-func _process(_delta: float) -> void:
+func _try_click_city(screen_pos: Vector2) -> void:
+	if not GameState.active or GameState.finished:
+		return
+	var from: Vector3 = camera.project_ray_origin(screen_pos)
+	var to: Vector3 = from + camera.project_ray_normal(screen_pos) * 60.0
+	var query := PhysicsRayQueryParameters3D.create(from, to)
+	query.collision_mask = 2
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+	if not hit.is_empty() and city_hitboxes.has(hit["collider"]):
+		var cid: String = city_hitboxes[hit["collider"]]
+		GameState.handle_globe_city_click(cid)
+
+func _process(delta: float) -> void:
 	if not visible or not GameState.active:
 		return
 	globe_pivot.rotation = Vector3(rot_x, rot_y, 0.0)
 	camera.position.z = lerpf(camera.position.z, zoom_dist, 0.15)
+	if clouds_mesh != null:
+		clouds_mesh.rotate_y(delta * 0.012)
 
-	if thief_marker and not GameState.thief.is_empty():
-		thief_marker.position = _actor_globe_pos(GameState.thief, GLOBE_RADIUS + 0.25)
+	# Tjuvmarkör (synlig för tjuven alltid; för polischef bara om polis i samma stad)
+	var police_with_thief: bool = false
+	for p in GameState.police:
+		if p["travel"] == null and GameState.thief.get("travel") == null and p["city"] == GameState.thief.get("city"):
+			police_with_thief = true
+	var show_thief: bool = GameState.player_role == "thief" or police_with_thief
+	if thief_marker != null and not GameState.thief.is_empty():
+		thief_marker.visible = show_thief
+		if show_thief:
+			thief_marker.position = _actor_globe_pos(GameState.thief, GLOBE_RADIUS + 0.25)
+			thief_label.text = GameState.get_actor_icon(GameState.thief, "🕵️")
 
 	for p in GameState.police:
 		if police_markers.has(p["id"]):
-			police_markers[p["id"]].position = _actor_globe_pos(p, GLOBE_RADIUS + 0.24)
+			var entry: Dictionary = police_markers[p["id"]]
+			var pn: Node3D = entry["node"]
+			var pl: Label3D = entry["label"]
+			pn.position = _actor_globe_pos(p, GLOBE_RADIUS + 0.24)
+			pl.text = "%s %s" % [GameState.get_actor_icon(p, "🚓"), String(p["short"])]
 
-	if ping_marker:
+	if ping_marker != null:
 		if not GameState.last_ping.is_empty():
 			var pc: Dictionary = GameState.cities[GameState.last_ping["city_id"]]
 			ping_marker.visible = true
+			var pulse: float = 1.0 + sin(Time.get_ticks_msec() * 0.008) * 0.22
+			ping_marker.scale = Vector3(pulse, pulse, pulse)
 			ping_marker.position = _lat_lon_to_vec3(float(pc["center"][0]), float(pc["center"][1]), GLOBE_RADIUS + 0.22)
 		else:
 			ping_marker.visible = false
 
+	_update_active_route_arcs(show_thief)
+
+func _update_active_route_arcs(show_thief: bool) -> void:
+	var im := ImmediateMesh.new()
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	var has_any: bool = false
+
+	if show_thief and not GameState.thief.is_empty() and GameState.thief.get("travel") != null:
+		var t: Dictionary = GameState.thief["travel"]
+		var a: Array = GameState.cities[t["from"]]["center"]
+		var b: Array = GameState.cities[t["to"]]["center"]
+		var va: Vector3 = _lat_lon_to_vec3(float(a[0]), float(a[1]), GLOBE_RADIUS + 0.16).normalized()
+		var vb: Vector3 = _lat_lon_to_vec3(float(b[0]), float(b[1]), GLOBE_RADIUS + 0.16).normalized()
+		var lift: float = 0.52 if String(t["mode"]) == "flight" else 0.16
+		if not has_any:
+			im.surface_begin(Mesh.PRIMITIVE_LINES)
+			has_any = true
+		_draw_arc_lines(im, va, vb, GLOBE_RADIUS + 0.18, lift, Color(1.0, 0.25, 0.25), 14)
+
+	for p in GameState.police:
+		if p.get("travel") != null:
+			var pt: Dictionary = p["travel"]
+			var pa: Array = GameState.cities[pt["from"]]["center"]
+			var pb: Array = GameState.cities[pt["to"]]["center"]
+			var pva: Vector3 = _lat_lon_to_vec3(float(pa[0]), float(pa[1]), GLOBE_RADIUS + 0.16).normalized()
+			var pvb: Vector3 = _lat_lon_to_vec3(float(pb[0]), float(pb[1]), GLOBE_RADIUS + 0.16).normalized()
+			var plift: float = 0.52 if String(pt["mode"]) == "flight" else 0.16
+			if not has_any:
+				im.surface_begin(Mesh.PRIMITIVE_LINES)
+				has_any = true
+			_draw_arc_lines(im, pva, pvb, GLOBE_RADIUS + 0.18, plift, Color(0.25, 0.80, 1.0), 14)
+
+	if has_any:
+		im.surface_end()
+		active_routes_mesh.mesh = im
+		active_routes_mesh.material_override = mat
+	else:
+		active_routes_mesh.mesh = null
+
 func _actor_globe_pos(actor: Dictionary, radius: float) -> Vector3:
 	if actor["travel"] != null:
 		var t: Dictionary = actor["travel"]
-		var frac := clampf((GameState.elapsed_sec - float(t["start_sec"])) / float(t["duration_sec"]), 0.0, 1.0)
+		var frac: float = clampf((GameState.elapsed_sec - float(t["start_sec"])) / float(t["duration_sec"]), 0.0, 1.0)
 		var a: Array = GameState.cities[t["from"]]["center"]
 		var b: Array = GameState.cities[t["to"]]["center"]
-		var va := _lat_lon_to_vec3(float(a[0]), float(a[1]), radius).normalized()
-		var vb := _lat_lon_to_vec3(float(b[0]), float(b[1]), radius).normalized()
-		return va.slerp(vb, frac) * (radius + sin(frac * PI) * 0.45)
+		var va: Vector3 = _lat_lon_to_vec3(float(a[0]), float(a[1]), radius).normalized()
+		var vb: Vector3 = _lat_lon_to_vec3(float(b[0]), float(b[1]), radius).normalized()
+		var lift: float = 0.52 if String(t["mode"]) == "flight" else 0.16
+		return va.slerp(vb, frac) * (radius + sin(frac * PI) * lift)
 	var c: Dictionary = GameState.cities[actor["city"]]
 	return _lat_lon_to_vec3(float(c["center"][0]), float(c["center"][1]), radius)

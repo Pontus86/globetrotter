@@ -61,7 +61,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Stockholm i Sverige är en historisk europeisk knutpunkt känd för Stadshuset."
     },
     "oslo": {
       "id": "oslo",
@@ -123,7 +124,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Oslo i Norge är en historisk europeisk knutpunkt känd för Kungliga slottet."
     },
     "copenhagen": {
       "id": "copenhagen",
@@ -188,7 +190,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Köpenhamn i Danmark är en historisk europeisk knutpunkt känd för Nyhavn."
     },
     "london": {
       "id": "london",
@@ -255,7 +258,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "London i Storbritannien är en historisk europeisk knutpunkt känd för Big Ben & Westminster."
     },
     "amsterdam": {
       "id": "amsterdam",
@@ -321,7 +325,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Amsterdam i Nederländerna är en historisk europeisk knutpunkt känd för Rijksmuseum."
     },
     "brussels": {
       "id": "brussels",
@@ -386,7 +391,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Bryssel i Belgien är en historisk europeisk knutpunkt känd för Grand-Place."
     },
     "paris": {
       "id": "paris",
@@ -452,7 +458,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Paris i Frankrike är en historisk europeisk knutpunkt känd för Eiffeltornet."
     },
     "berlin": {
       "id": "berlin",
@@ -518,7 +525,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Berlin i Tyskland är en historisk europeisk knutpunkt känd för Brandenburger Tor."
     },
     "prague": {
       "id": "prague",
@@ -582,7 +590,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Prag i Tjeckien är en historisk europeisk knutpunkt känd för Karlsbron."
     },
     "vienna": {
       "id": "vienna",
@@ -646,7 +655,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Wien i Österrike är en historisk europeisk knutpunkt känd för Stephansdom."
     },
     "zurich": {
       "id": "zurich",
@@ -712,7 +722,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Zürich i Schweiz är en historisk europeisk knutpunkt känd för Grossmünster."
     },
     "milan": {
       "id": "milan",
@@ -777,7 +788,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Milano i Italien är en historisk europeisk knutpunkt känd för Duomo di Milano."
     },
     "rome": {
       "id": "rome",
@@ -842,7 +854,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Rom i Italien är en historisk europeisk knutpunkt känd för Colosseum."
     },
     "barcelona": {
       "id": "barcelona",
@@ -906,7 +919,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Barcelona i Spanien är en historisk europeisk knutpunkt känd för Sagrada Família."
     },
     "madrid": {
       "id": "madrid",
@@ -970,7 +984,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Madrid i Spanien är en historisk europeisk knutpunkt känd för Museo del Prado."
     },
     "lisbon": {
       "id": "lisbon",
@@ -1032,7 +1047,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Lissabon i Portugal är en historisk europeisk knutpunkt känd för Praça do Comércio."
     },
     "athens": {
       "id": "athens",
@@ -1097,7 +1113,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Aten i Grekland är en historisk europeisk knutpunkt känd för Akropolis."
     },
     "istanbul": {
       "id": "istanbul",
@@ -1160,7 +1177,8 @@
           ],
           "correct": 0
         }
-      ]
+      ],
+      "fact": "Istanbul i Turkiet är en historisk europeisk knutpunkt känd för Hagia Sofia."
     }
   },
   "police": [

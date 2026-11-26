@@ -1,0 +1,17 @@
+78098b89c88a74ebe8c20117b8754620
+::res://::1795685502
+::res://assets/::1795685104
+::res://assets/globe/::1795685104
+earth_day.jpg::CompressedTexture2D::580176207721221665::1795208815::1795685504::1::::<><><>0<>0<>5e9f0f06ffb31b2a66516215e2df2b6c<>res://.godot/imported/earth_day.jpg-4ccc4eda129633bdf313758d71fcb3c1.ctex::
+::res://data/::1795685104
+cities.json::JSON::-1::1795685104::0::1::::<><><>0<>0<><>::
+::res://scenes/::1795685330
+main.tscn::PackedScene::-1::1795685330::0::1::::<><><>0<>0<><>::res://scripts/main.gd
+::res://scripts/::1795685328
+city_builder.gd::GDScript::6039163559636216827::1795685242::0::1::::<>Node3D<><>0<>0<><>::
+game_state.gd::GDScript::6585709109820556295::1795685175::0::1::::<>Node<><>0<>0<><>::
+globe_3d.gd::GDScript::3498684662567601562::1795685176::0::1::::<>Node3D<><>0<>0<><>::
+hud.gd::GDScript::1071934800730160058::1795685326::0::1::::<>CanvasLayer<><>0<>0<><>::
+main.gd::GDScript::1181684339320460296::1795685328::0::1::::<>Node3D<><>0<>0<><>::
+player_controller.gd::GDScript::3752542699283286464::1795685243::0::1::::<>CharacterBody3D<><>0<>0<><>::
+police_unit.gd::GDScript::1498599282992296777::1795685245::0::1::::<>CharacterBody3D<><>0<>0<><>::

@@ -66,7 +66,11 @@ func _ready() -> void:
 	add_child(vis_ring)
 
 func _physics_process(_delta: float) -> void:
-	if not visible or not GameState.active or GameState.finished or target_player == null:
+	if not is_visible_in_tree() or not GameState.active or GameState.finished or target_player == null:
+		velocity = Vector3.ZERO
+		return
+	if police_data.get("travel") != null or String(police_data.get("city", "")) != GameState.current_city_id or String(GameState.thief.get("city", "")) != GameState.current_city_id:
+		velocity = Vector3.ZERO
 		return
 	if GameState.elapsed_sec < GameState.police_frozen_until:
 		velocity = Vector3.ZERO
