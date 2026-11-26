@@ -81,8 +81,9 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 		plane_mi.mesh = pm
 		plane_mi.position = Vector3(tb_cx, 0.02, tb_cz)
 		var pmat := StandardMaterial3D.new()
+		pmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		pmat.albedo_texture = map_tex
-		pmat.roughness = 0.96
+		pmat.albedo_color = Color(0.86, 0.84, 0.80) # Hindrar överexponering så gator & namn syns knivskarpt!
 		pmat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 		plane_mi.material_override = pmat
 		city_root.add_child(plane_mi)
@@ -331,16 +332,27 @@ func _commit_surface(st: SurfaceTool, color: Color, rough: float, use_vertex_col
 		mi.material_override = mat
 		city_root.add_child(mi)
 
+func _height_to_color(h: float) -> Color:
+	# Exakt samma höjd-interpolerade europeiska husfärger som webbversionen (högre hus = mörkare!)
+	var c0 := Color.html("#ead8bc") # 0m: ljus sandsten
+	var c10 := Color.html("#dfbe99") # 10m: varm ockra
+	var c22 := Color.html("#cfa078") # 22m: varm terrakotta
+	var c40 := Color.html("#b9835e") # 40m: mörkt tegelrödbrunt
+	var c75 := Color.html("#8e9bab") # 75m+: skiffergråblå
+	if h <= 10.0:
+		return c0.lerp(c10, clampf(h / 10.0, 0.0, 1.0))
+	elif h <= 22.0:
+		return c10.lerp(c22, clampf((h - 10.0) / 12.0, 0.0, 1.0))
+	elif h <= 40.0:
+		return c22.lerp(c40, clampf((h - 22.0) / 18.0, 0.0, 1.0))
+	else:
+		return c40.lerp(c75, clampf((h - 40.0) / 35.0, 0.0, 1.0))
+
 func _build_osm_buildings(buildings: Array, rng: RandomNumberGenerator, clear_pts: Array[Vector2]) -> void:
-	var wall_sts: Array[SurfaceTool] = []
-	var roof_sts: Array[SurfaceTool] = []
-	for _i in range(PALETTE.size()):
-		var ws := SurfaceTool.new()
-		ws.begin(Mesh.PRIMITIVE_TRIANGLES)
-		wall_sts.append(ws)
-		var rs := SurfaceTool.new()
-		rs.begin(Mesh.PRIMITIVE_TRIANGLES)
-		roof_sts.append(rs)
+	var ws := SurfaceTool.new()
+	ws.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rs := SurfaceTool.new()
+	rs.begin(Mesh.PRIMITIVE_TRIANGLES)
 
 	var col_faces := PackedVector3Array()
 
@@ -372,13 +384,11 @@ func _build_osm_buildings(buildings: Array, rng: RandomNumberGenerator, clear_pt
 
 		var h: float = float(b.get("h", 0.0))
 		if h <= 0.5:
-			h = rng.randf_range(9.5, 20.5)
-		var pal_idx: int = rng.randi() % PALETTE.size()
-		var base_col: Color = PALETTE[pal_idx]
-		var col_bot: Color = base_col.darkened(0.34) # MapLibre-lik vertikal skugggradient vid gatan!
-		var col_top: Color = base_col.lightened(0.05)
-		var ws: SurfaceTool = wall_sts[pal_idx]
-		var rs: SurfaceTool = roof_sts[pal_idx]
+			h = rng.randf_range(10.0, 26.0)
+		var base_col: Color = _height_to_color(h)
+		var col_bot: Color = base_col.darkened(0.32) # MapLibre-lik vertikal skugggradient vid gatan!
+		var col_top: Color = base_col
+		var col_roof: Color = base_col.darkened(0.12)
 
 		# Extrudera väggar med vertikal skugggradient + samla osynliga kollisionstrianglar!
 		var n: int = pts2.size()
@@ -424,23 +434,24 @@ func _build_osm_buildings(buildings: Array, rng: RandomNumberGenerator, clear_pt
 			col_faces.append(cv2)
 			col_faces.append(cv3)
 
-		# Takpolygon
+		# Takpolygon (med husets höjdfärg!)
 		var tris: PackedInt32Array = Geometry2D.triangulate_polygon(pts2)
 		for i in range(0, tris.size(), 3):
 			var ta: Vector2 = pts2[tris[i]]
 			var tb: Vector2 = pts2[tris[i + 1]]
 			var tc: Vector2 = pts2[tris[i + 2]]
 			rs.set_normal(Vector3.UP)
+			rs.set_color(col_roof)
 			rs.add_vertex(Vector3(ta.x, h, ta.y))
 			rs.set_normal(Vector3.UP)
+			rs.set_color(col_roof)
 			rs.add_vertex(Vector3(tb.x, h, tb.y))
 			rs.set_normal(Vector3.UP)
+			rs.set_color(col_roof)
 			rs.add_vertex(Vector3(tc.x, h, tc.y))
 
-	for idx in range(PALETTE.size()):
-		var base_col: Color = PALETTE[idx]
-		_commit_surface(wall_sts[idx], base_col, 0.80, true)
-		_commit_surface(roof_sts[idx], base_col.darkened(0.22), 0.88, false)
+	_commit_surface(ws, Color.WHITE, 0.82, true)
+	_commit_surface(rs, Color.WHITE, 0.88, true)
 
 	# 1 gemensam StaticBody3D med ConcavePolygonShape3D för ALLA hus i staden!
 	if col_faces.size() >= 3:

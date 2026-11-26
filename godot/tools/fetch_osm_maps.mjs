@@ -187,7 +187,7 @@ out skel qt;`;
       if (pts.length >= 4 && pts[0][0] === pts[pts.length - 1][0] && pts[0][1] === pts[pts.length - 1][1]) {
         pts.pop();
       }
-      if (pts.length >= 3 && pts.length <= 40) {
+      if (pts.length >= 3 && pts.length <= 120) {
         // Skip buildings outside our bounds
         const [fx, fz] = pts[0];
         if (fx >= minX - 40 && fx <= maxX + 40 && fz >= minZ - 40 && fz <= maxZ + 40) {
@@ -216,14 +216,14 @@ out skel qt;`;
     }
   }
 
-  // Cap buildings to max 950 closest to center so Godot builds each city in <80ms
-  if (buildings.length > 950) {
+  // Cap buildings to max 3000 so whole city (including hub & landmarks) is densely filled!
+  if (buildings.length > 3000) {
     buildings.sort((a, b) => {
       const da = a.pts[0][0] * a.pts[0][0] + a.pts[0][1] * a.pts[0][1];
       const db = b.pts[0][0] * b.pts[0][0] + b.pts[0][1] * b.pts[0][1];
       return da - db;
     });
-    buildings.length = 950;
+    buildings.length = 3000;
   }
 
   // Compute real POI locations snapped to actual roads so player/police never spawn inside a building!

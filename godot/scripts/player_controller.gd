@@ -24,7 +24,7 @@ var city_builder: Node3D
 var ui_blocking_input: bool = false
 
 var cam_yaw: float = -0.22
-var cam_dist: float = 205.0
+var cam_dist: float = 185.0
 var rotating_cam: bool = false
 var has_click_target: bool = false
 var click_target: Vector3 = Vector3.ZERO
@@ -97,8 +97,9 @@ func _update_camera_transform() -> void:
 	if cam_pivot == null or camera == null:
 		return
 	cam_pivot.rotation.y = cam_yaw
-	camera.position = Vector3(0.0, cam_dist * 0.90, cam_dist * 0.65)
-	camera.rotation_degrees = Vector3(-56.0, 0.0, 0.0)
+	# Låg 3D-vinkel (~34° ner mot marken = motsvarar MapLibre pitch 56° i webbversionen!)
+	camera.position = Vector3(0.0, cam_dist * 0.56, cam_dist * 0.82)
+	camera.rotation_degrees = Vector3(-34.0, 0.0, 0.0)
 
 func _apply_role_color() -> void:
 	if runner_fig == null:

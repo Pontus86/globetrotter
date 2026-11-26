@@ -1,4 +1,4 @@
-﻿# Bakar ihop riktiga OpenStreetMap / Carto Voyager kartbrickor (zoom 16) till 1 högupplöst JPG per stad
+# Bakar ihop riktiga OpenStreetMap / Carto Voyager kartbrickor (zoom 16) till 1 högupplöst JPG per stad
 # samt sparar exakta lokala meter-koordinater (tile_bounds) i godot/data/maps/<city_id>.json så husen linjerar på millimetern!
 
 Add-Type -AssemblyName System.Drawing
