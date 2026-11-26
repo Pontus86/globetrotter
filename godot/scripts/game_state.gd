@@ -245,7 +245,7 @@ func _tick_actor_transit(actor: Dictionary, is_thief: bool) -> void:
 		var b: Dictionary = actor["boarding"]
 		if elapsed_sec >= float(b["start_sec"]) + float(b["duration_sec"]):
 			actor["boarding"] = null
-			_start_travel(actor, String(b["to"]), String(b["mode"]), is_thief, bool(b.get("emergency", false)))
+			_start_travel(actor, String(b["to"]), String(b["mode"]), is_thief, bool(b.get("emergency", false)), bool(b.get("use_item", false)))
 	if actor["travel"] != null:
 		var t: Dictionary = actor["travel"]
 		if elapsed_sec >= float(t["start_sec"]) + float(t["duration_sec"]):
@@ -268,7 +268,7 @@ func _tick_actor_transit(actor: Dictionary, is_thief: bool) -> void:
 			if not is_thief:
 				target_updated.emit()
 
-func begin_actor_boarding(actor: Dictionary, dest_id: String, mode: String, emergency: bool = false) -> bool:
+func begin_actor_boarding(actor: Dictionary, dest_id: String, mode: String, emergency: bool = false, use_item: bool = false) -> bool:
 	if finished or actor["travel"] != null or actor["boarding"] != null:
 		return false
 	var is_thief_player: bool = (actor["id"] == "thief" and player_role == "thief")
@@ -283,7 +283,8 @@ func begin_actor_boarding(actor: Dictionary, dest_id: String, mode: String, emer
 		"mode": mode,
 		"start_sec": elapsed_sec,
 		"duration_sec": dur,
-		"emergency": emergency
+		"emergency": emergency,
+		"use_item": use_item
 	}
 	AudioMgr.play_sound("flap")
 	var tinfo: Dictionary = get_transit_mode_info(String(actor["city"]), dest_id, mode)
@@ -297,7 +298,7 @@ func cancel_controlled_boarding() -> void:
 		AudioMgr.play_sound("klick")
 		add_radio("🏃 Avbröt boarding!", "")
 
-func _start_travel(actor: Dictionary, dest_id: String, mode: String, is_thief: bool, emergency: bool = false) -> void:
+func _start_travel(actor: Dictionary, dest_id: String, mode: String, is_thief: bool, emergency: bool = false, use_item: bool = false) -> void:
 	var from_id: String = String(actor["city"])
 	if from_id == dest_id:
 		return
@@ -305,7 +306,7 @@ func _start_travel(actor: Dictionary, dest_id: String, mode: String, is_thief: b
 	var tinfo: Dictionary = get_transit_mode_info(from_id, dest_id, mode)
 	var controlled: Dictionary = get_controlled_actor()
 
-	if not is_thief and actor["id"] == controlled["id"] and int(gear["fast_flight"]) > 0:
+	if not is_thief and actor["id"] == controlled["id"] and use_item and int(gear["fast_flight"]) > 0:
 		gear["fast_flight"] = int(gear["fast_flight"]) - 1
 		dur = maxf(4.0, roundf(dur * 0.5))
 		add_radio("⚡ Snabbrekvisition använd! Halverad restid (%ds)." % int(dur), "police")
@@ -343,7 +344,7 @@ func _start_travel(actor: Dictionary, dest_id: String, mode: String, is_thief: b
 
 	# Balanserad regel: Flyg & Nödflykt avslöjar AVGÅNGSSTADEN (inte destinationen!)
 	if is_thief and (mode == "flight" or emergency):
-		if mode == "flight" and int(gear["fake_pass"]) > 0:
+		if mode == "flight" and use_item and int(gear["fake_pass"]) > 0:
 			gear["fake_pass"] = int(gear["fake_pass"]) - 1
 			add_radio("🛂 Förfalskat pass använt — ditt flyg från %s hölls osynligt!" % cities[from_id]["name"], "good")
 		else:
