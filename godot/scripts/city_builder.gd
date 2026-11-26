@@ -58,41 +58,60 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 	var cx: float = (min_x + max_x) * 0.5
 	var cz: float = (min_z + max_z) * 0.5
 
-	# 1. Kartgrund (varm MapLibre Liberty-stil med mark-collider)
+	# 1. Kartgrund med RIKTIG högupplöst OpenStreetMap / Carto Voyager-karttextur!
 	var ground := StaticBody3D.new()
-	var g_mesh := MeshInstance3D.new()
-	var g_box := BoxMesh.new()
-	g_box.size = Vector3(width, 2.0, depth)
-	g_mesh.mesh = g_box
-	g_mesh.position = Vector3(cx, -1.0, cz)
-	var g_mat := StandardMaterial3D.new()
-	g_mat.albedo_color = Color(0.82, 0.78, 0.71)
-	g_mat.roughness = 0.96
-	g_mesh.material_override = g_mat
-	ground.add_child(g_mesh)
-
 	var g_col := CollisionShape3D.new()
 	var g_shape := BoxShape3D.new()
-	g_shape.size = Vector3(width, 2.0, depth)
+	g_shape.size = Vector3(width + 300.0, 2.0, depth + 300.0)
 	g_col.shape = g_shape
 	g_col.position = Vector3(cx, -1.0, cz)
 	ground.add_child(g_col)
 	city_root.add_child(ground)
 
-	# 2. Riktiga Parker (gröna polygoner + 3D-träd!)
-	var parks_arr: Array = osm.get("parks", [])
-	if parks_arr.size() > 0:
-		_build_flat_polygons(parks_arr, 0.08, Color(0.46, 0.68, 0.42), 0.92)
-		_build_park_trees(parks_arr, rng)
+	var map_tex: Texture2D = _load_city_map_texture(city_id)
+	if map_tex != null and osm.has("tile_bounds"):
+		var tb: Array = osm["tile_bounds"]
+		var tb_w: float = float(tb[1]) - float(tb[0])
+		var tb_d: float = float(tb[3]) - float(tb[2])
+		var tb_cx: float = (float(tb[0]) + float(tb[1])) * 0.5
+		var tb_cz: float = (float(tb[2]) + float(tb[3])) * 0.5
+		var plane_mi := MeshInstance3D.new()
+		var pm := PlaneMesh.new()
+		pm.size = Vector2(tb_w, tb_d)
+		plane_mi.mesh = pm
+		plane_mi.position = Vector3(tb_cx, 0.02, tb_cz)
+		var pmat := StandardMaterial3D.new()
+		pmat.albedo_texture = map_tex
+		pmat.roughness = 0.96
+		pmat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+		plane_mi.material_override = pmat
+		city_root.add_child(plane_mi)
 
-	# 3. Riktigt Vatten & Floder (klarblått med havsglans!)
-	var waters_arr: Array = osm.get("waters", [])
-	if waters_arr.size() > 0:
-		_build_flat_polygons(waters_arr, 0.14, Color(0.20, 0.52, 0.78), 0.18)
-
-	# 4. Riktiga Gator, Boulevarder, Broar & Flodband
-	var roads_arr: Array = osm.get("roads", [])
-	_build_roads(roads_arr)
+		# Samla road_points för ev. polis-spawns utan att rita klumpiga fula extragator över kartbilden
+		for r_raw in osm.get("roads", []):
+			var r: Dictionary = r_raw
+			var pts: Array = r.get("pts", [])
+			if pts.size() >= 2 and int(r.get("b", 0)) != 2:
+				road_points.append(Vector3(float(pts[0][0]), 0.1, float(pts[0][1])))
+	else:
+		# Fallback utan kartbild: rita vektorlager
+		var g_mesh := MeshInstance3D.new()
+		var g_box := BoxMesh.new()
+		g_box.size = Vector3(width, 2.0, depth)
+		g_mesh.mesh = g_box
+		g_mesh.position = Vector3(cx, -1.0, cz)
+		var g_mat := StandardMaterial3D.new()
+		g_mat.albedo_color = Color(0.82, 0.78, 0.71)
+		g_mat.roughness = 0.96
+		g_mesh.material_override = g_mat
+		ground.add_child(g_mesh)
+		var parks_arr: Array = osm.get("parks", [])
+		if parks_arr.size() > 0:
+			_build_flat_polygons(parks_arr, 0.08, Color(0.46, 0.68, 0.42), 0.92)
+		var waters_arr: Array = osm.get("waters", [])
+		if waters_arr.size() > 0:
+			_build_flat_polygons(waters_arr, 0.14, Color(0.20, 0.52, 0.78), 0.18)
+		_build_roads(osm.get("roads", []))
 
 	# Samla POI-positioner först så vi kan rensa ev. överlappande hus vid spawn
 	var osm_pois: Dictionary = osm.get("pois", {})
@@ -284,13 +303,29 @@ func _build_park_trees(parks: Array, rng: RandomNumberGenerator) -> void:
 			city_root.add_child(crown)
 			tree_count += 1
 
-func _commit_surface(st: SurfaceTool, color: Color, rough: float) -> void:
+func _load_city_map_texture(city_id: String) -> Texture2D:
+	var res_path: String = "res://assets/maps/%s.jpg" % city_id
+	if ResourceLoader.exists(res_path):
+		var tex: Texture2D = load(res_path) as Texture2D
+		if tex != null:
+			return tex
+	if FileAccess.file_exists(res_path):
+		var img := Image.new()
+		var err: Error = img.load(ProjectSettings.globalize_path(res_path))
+		if err == OK:
+			return ImageTexture.create_from_image(img)
+	return null
+
+func _commit_surface(st: SurfaceTool, color: Color, rough: float, use_vertex_color: bool = false) -> void:
 	var mesh: ArrayMesh = st.commit()
 	if mesh.get_surface_count() > 0:
 		var mi := MeshInstance3D.new()
 		mi.mesh = mesh
 		var mat := StandardMaterial3D.new()
-		mat.albedo_color = color
+		if use_vertex_color:
+			mat.vertex_color_use_as_albedo = true
+		else:
+			mat.albedo_color = color
 		mat.roughness = rough
 		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 		mi.material_override = mat
@@ -339,10 +374,13 @@ func _build_osm_buildings(buildings: Array, rng: RandomNumberGenerator, clear_pt
 		if h <= 0.5:
 			h = rng.randf_range(9.5, 20.5)
 		var pal_idx: int = rng.randi() % PALETTE.size()
+		var base_col: Color = PALETTE[pal_idx]
+		var col_bot: Color = base_col.darkened(0.34) # MapLibre-lik vertikal skugggradient vid gatan!
+		var col_top: Color = base_col.lightened(0.05)
 		var ws: SurfaceTool = wall_sts[pal_idx]
 		var rs: SurfaceTool = roof_sts[pal_idx]
 
-		# Extrudera väggar + samla kollisionstrianglar
+		# Extrudera väggar med vertikal skugggradient + samla osynliga kollisionstrianglar!
 		var n: int = pts2.size()
 		for i in range(n):
 			var a: Vector2 = pts2[i]
@@ -357,17 +395,23 @@ func _build_osm_buildings(buildings: Array, rng: RandomNumberGenerator, clear_pt
 			var v3 := Vector3(a.x, h, a.y)
 
 			ws.set_normal(norm)
+			ws.set_color(col_bot)
 			ws.add_vertex(v0)
 			ws.set_normal(norm)
+			ws.set_color(col_bot)
 			ws.add_vertex(v1)
 			ws.set_normal(norm)
+			ws.set_color(col_top)
 			ws.add_vertex(v2)
 
 			ws.set_normal(norm)
+			ws.set_color(col_bot)
 			ws.add_vertex(v0)
 			ws.set_normal(norm)
+			ws.set_color(col_top)
 			ws.add_vertex(v2)
 			ws.set_normal(norm)
+			ws.set_color(col_top)
 			ws.add_vertex(v3)
 
 			# Kollisionsvägg (höjd 8m räcker för CharacterBody3D!)
@@ -395,8 +439,8 @@ func _build_osm_buildings(buildings: Array, rng: RandomNumberGenerator, clear_pt
 
 	for idx in range(PALETTE.size()):
 		var base_col: Color = PALETTE[idx]
-		_commit_surface(wall_sts[idx], base_col, 0.80)
-		_commit_surface(roof_sts[idx], base_col.darkened(0.28), 0.88)
+		_commit_surface(wall_sts[idx], base_col, 0.80, true)
+		_commit_surface(roof_sts[idx], base_col.darkened(0.22), 0.88, false)
 
 	# 1 gemensam StaticBody3D med ConcavePolygonShape3D för ALLA hus i staden!
 	if col_faces.size() >= 3:
