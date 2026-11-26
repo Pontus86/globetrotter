@@ -156,8 +156,8 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 		var pmat := StandardMaterial3D.new()
 		pmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		pmat.albedo_texture = map_tex
-		# Varm, solig dagtidskarta
-		pmat.albedo_color = Color(1.0, 0.94, 0.84)
+		# Varm, dämpad dagtidskarta utan bländning/överexponering
+		pmat.albedo_color = Color(0.78, 0.72, 0.64)
 		pmat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 		plane_mi.material_override = pmat
 		city_root.add_child(plane_mi)

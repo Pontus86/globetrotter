@@ -37,27 +37,24 @@ func _ready() -> void:
 	e_res.background_mode = Environment.BG_SKY
 	e_res.sky = sky
 	e_res.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e_res.ambient_light_color = Color(1.0, 0.86, 0.64)
-	e_res.ambient_light_energy = 0.68
+	e_res.ambient_light_color = Color(0.95, 0.78, 0.56)
+	e_res.ambient_light_energy = 0.34
 	e_res.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	e_res.tonemap_exposure = 1.02
+	e_res.tonemap_exposure = 0.76
 	e_res.adjustment_enabled = true
-	e_res.adjustment_saturation = 1.32
-	e_res.adjustment_contrast = 1.08
-	e_res.glow_enabled = true
-	e_res.glow_intensity = 0.22
-	e_res.glow_bloom = 0.08
-	e_res.glow_hdr_threshold = 1.08
+	e_res.adjustment_saturation = 1.38
+	e_res.adjustment_contrast = 1.12
+	e_res.glow_enabled = false
 	e_res.fog_enabled = true
-	e_res.fog_light_color = Color(1.0, 0.86, 0.62)
-	e_res.fog_density = 0.00022
+	e_res.fog_light_color = Color(0.92, 0.76, 0.54)
+	e_res.fog_density = 0.00020
 	env.environment = e_res
 	add_child(env)
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-42.0, 34.0, 0.0)
-	sun.light_color = Color(1.0, 0.86, 0.56) # Rik, varm gyllene sommarsol!
-	sun.light_energy = 1.25
+	sun.light_color = Color(1.0, 0.82, 0.52) # Varm gyllene sol utan överexponering!
+	sun.light_energy = 0.74
 	sun.shadow_enabled = true
 	add_child(sun)
 
