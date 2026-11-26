@@ -27,10 +27,10 @@ func _ready() -> void:
 
 	var col := CollisionShape3D.new()
 	var shape := CapsuleShape3D.new()
-	shape.radius = 2.0
-	shape.height = 6.0
+	shape.radius = 1.05
+	shape.height = 5.0
 	col.shape = shape
-	col.position = Vector3(0.0, 3.0, 0.0)
+	col.position = Vector3(0.0, 2.5, 0.0)
 	add_child(col)
 
 	var lbl := Label3D.new()

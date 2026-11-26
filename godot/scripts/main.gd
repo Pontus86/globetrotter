@@ -181,10 +181,10 @@ func _spawn_ai_thief() -> CharacterBody3D:
 
 	var col := CollisionShape3D.new()
 	var sh := CapsuleShape3D.new()
-	sh.radius = 2.0
-	sh.height = 6.0
+	sh.radius = 1.05
+	sh.height = 5.0
 	col.shape = sh
-	col.position = Vector3(0.0, 3.0, 0.0)
+	col.position = Vector3(0.0, 2.5, 0.0)
 	th.add_child(col)
 
 	var lbl := Label3D.new()

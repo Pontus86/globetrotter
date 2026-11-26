@@ -15,6 +15,7 @@ var city_root: Node3D
 var current_city_id: String = ""
 var city_bounds: Array[float] = [-400.0, 400.0, -400.0, 400.0]
 var road_points: Array[Vector3] = []
+var wide_road_points: Array[Vector3] = []
 var focus_target: Node3D
 var chunk_data: Dictionary = {}      # Vector2i -> Array[Dictionary] (råa hus i chunken)
 var loaded_chunks: Dictionary = {}   # Vector2i -> Node3D (byggd mesh + hitbox)
@@ -94,6 +95,7 @@ func build_city(city_id: String) -> void:
 	current_city_id = city_id
 	pois.clear()
 	road_points.clear()
+	wide_road_points.clear()
 	chunk_data.clear()
 	loaded_chunks.clear()
 	chunk_clear_pts.clear()
@@ -164,13 +166,17 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 		plane_mi.material_override = pmat
 		city_root.add_child(plane_mi)
 
-		# Samla road_points från ALLA noder på riktiga gator så vi alltid kan spawna på närmaste fria gata!
+		# Samla road_points (särskilt breda gator w >= 7.0!) så man aldrig spawnar i hus eller trånga gränder!
 		for r_raw in osm.get("roads", []):
 			var r: Dictionary = r_raw
 			var pts: Array = r.get("pts", [])
+			var rw: float = float(r.get("w", 6.0))
 			if int(r.get("b", 0)) != 2:
 				for pt in pts:
-					road_points.append(Vector3(float(pt[0]), 0.1, float(pt[1])))
+					var vp := Vector3(float(pt[0]), 0.1, float(pt[1]))
+					road_points.append(vp)
+					if rw >= 7.0:
+						wide_road_points.append(vp)
 	else:
 		# Fallback utan kartbild: rita vektorlager
 		var g_mesh := MeshInstance3D.new()
@@ -191,33 +197,41 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 			_build_flat_polygons(waters_arr, 0.14, Color(0.20, 0.52, 0.78), 0.18)
 		_build_roads(osm.get("roads", []))
 
-	# Samla POI-positioner först så vi kan rensa ev. överlappande hus vid spawn
+	# Rensa bara OSM-huset direkt under stadens ikoniska 3D-monument (landmark) så de inte krockar!
 	var osm_pois: Dictionary = osm.get("pois", {})
 	var poi_clear_pts: Array[Vector2] = []
-	for pk in ["landmark", "hub", "precinct", "hotel", "market", "library"]:
-		if osm_pois.has(pk):
-			var arr: Array = osm_pois[pk]
-			poi_clear_pts.append(Vector2(float(arr[0]), float(arr[1])))
+	if osm_pois.has("landmark"):
+		var lm_a: Array = osm_pois["landmark"]
+		poi_clear_pts.append(Vector2(float(lm_a[0]), float(lm_a[1])))
 
-	# 5. Riktiga 3D-byggnader (sammanslagna per färgpalett + 1 snabb ConcavePolygonShape3D)
+	# 5. Riktiga 3D-byggnader (Chunk-streamade 180x180m)
 	var buildings_arr: Array = osm.get("buildings", [])
 	_build_osm_buildings(buildings_arr, rng, poi_clear_pts)
 
-	# 6. 5 glittrande POI-platser på sina verkliga koordinater
+	# 6. 5 POI-platser: Monumentet får sin faktiska 3D-modell; Station, Hotell, Marknad & Bibliotek tilldelas ett VERKLIGT närliggande 3D-hus på kartan!
 	var poi_defs := [
 		["landmark", String(city_data.get("landmark", {}).get("name", "Sevärdhet")), Color(0.98, 0.80, 0.28)],
-		["hub", String(city_data.get("hub", {}).get("name", "Centralstationen")), Color(0.26, 0.64, 0.94)],
-		["hotel", "🏨 Grand Hotel", Color(0.86, 0.36, 0.52)],
-		["market", "🛍️ Basar / Marknad", Color(0.26, 0.72, 0.46)],
-		["library", "📚 Bibliotek", Color(0.56, 0.42, 0.82)]
+		["hub", String(city_data.get("hub", {}).get("name", "Centralstationen")), Color(0.35, 0.72, 0.98)],
+		["hotel", "🏨 Grand Hotel", Color(0.92, 0.42, 0.54)],
+		["market", "🛍️ Basar / Marknad", Color(0.32, 0.78, 0.50)],
+		["library", "📚 Bibliotek", Color(0.66, 0.52, 0.92)]
 	]
+	var used_bldg_indices: Dictionary = {}
 	for pd in poi_defs:
 		var pkey: String = String(pd[0])
 		var ptitle: String = String(pd[1])
 		var pcol: Color = pd[2]
 		var pt_arr: Array = osm_pois.get(pkey, [0.0, 0.0])
-		var ppos := Vector3(float(pt_arr[0]), 0.0, float(pt_arr[1]))
-		_add_osm_poi_marker(pkey, ptitle, ppos, pcol, city_id)
+		var target_pos := Vector3(float(pt_arr[0]), 0.0, float(pt_arr[1]))
+		if pkey == "landmark":
+			_add_osm_poi_marker(pkey, ptitle, target_pos, pcol, city_id, {})
+		else:
+			var picked: Dictionary = _pick_nearest_real_building(target_pos, buildings_arr, used_bldg_indices)
+			if not picked.is_empty():
+				var bc: Vector2 = picked["center"]
+				_add_osm_poi_marker(pkey, ptitle, Vector3(bc.x, 0.0, bc.y), pcol, city_id, picked)
+			else:
+				_add_osm_poi_marker(pkey, ptitle, target_pos, pcol, city_id, {})
 
 	# 7. Osynliga stadsmurar vid kartgränsen
 	var margin: float = 12.0
@@ -654,8 +668,82 @@ func _update_building_chunks(center_pos: Vector3, max_build_per_frame: int = 2) 
 				if built_now >= max_build_per_frame:
 					return
 
-func _add_osm_poi_marker(pkey: String, title: String, center: Vector3, _col: Color, city_id: String) -> void:
-	# Diskret glittrande gyllene markring runt själva 3D-byggnaden (så man ser att man kan trycka [E]!)
+func _pick_nearest_real_building(target: Vector3, buildings: Array, used: Dictionary) -> Dictionary:
+	var t2 := Vector2(target.x, target.z)
+	var best_idx: int = -1
+	var best_d: float = 1e12
+	var best_center := Vector2.ZERO
+	var best_h: float = 18.0
+	var best_pts: Array = []
+
+	for i in range(buildings.size()):
+		if used.has(i):
+			continue
+		var b: Dictionary = buildings[i]
+		var pts: Array = b.get("pts", [])
+		if pts.size() < 3:
+			continue
+		var sx: float = 0.0
+		var sz: float = 0.0
+		for p in pts:
+			sx += float(p[0])
+			sz += float(p[1])
+		var c2 := Vector2(sx / float(pts.size()), sz / float(pts.size()))
+		var d: float = t2.distance_squared_to(c2)
+		if d < best_d:
+			best_d = d
+			best_idx = i
+			best_center = c2
+			best_h = float(b.get("h", 0.0))
+			if best_h <= 0.5:
+				best_h = 18.0
+			best_pts = pts
+
+	if best_idx >= 0 and best_d < 220.0 * 220.0:
+		used[best_idx] = true
+		return { "idx": best_idx, "center": best_center, "h": best_h, "pts": best_pts }
+	return {}
+
+func _highlight_real_poi_building(pts: Array, h: float, col: Color) -> void:
+	# Lägg en snygg gyllene/färgad skymnings-glödram runt det verkliga 3D-husets takkant så det tydligt syns som Hotell/Bibliotek/Marknad/Station!
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var n: int = pts.size()
+	var y_bot: float = maxf(0.4, h - 1.4)
+	var y_top: float = h + 0.55
+	for i in range(n):
+		var a := Vector2(float(pts[i][0]), float(pts[i][1]))
+		var c := Vector2(float(pts[(i + 1) % n][0]), float(pts[(i + 1) % n][1]))
+		var edge: Vector2 = c - a
+		if edge.length_squared() < 0.04:
+			continue
+		var norm := Vector3(edge.y, 0.0, -edge.x).normalized()
+		var off: Vector3 = norm * 0.25
+		var v0 := Vector3(a.x, y_bot, a.y) + off
+		var v1 := Vector3(c.x, y_bot, c.y) + off
+		var v2 := Vector3(c.x, y_top, c.y) + off
+		var v3 := Vector3(a.x, y_top, a.y) + off
+		st.set_normal(norm); st.add_vertex(v0)
+		st.set_normal(norm); st.add_vertex(v1)
+		st.set_normal(norm); st.add_vertex(v2)
+		st.set_normal(norm); st.add_vertex(v0)
+		st.set_normal(norm); st.add_vertex(v2)
+		st.set_normal(norm); st.add_vertex(v3)
+	var m: ArrayMesh = st.commit()
+	if m.get_surface_count() > 0:
+		var mi := MeshInstance3D.new()
+		mi.mesh = m
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = col
+		mat.emission_enabled = true
+		mat.emission = col
+		mat.emission_energy_multiplier = 1.4
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mi.material_override = mat
+		city_root.add_child(mi)
+
+func _add_osm_poi_marker(pkey: String, title: String, center: Vector3, col: Color, city_id: String, real_bldg: Dictionary = {}) -> void:
+	# Diskret glittrande gyllene markring runt själva byggnaden
 	var ring := MeshInstance3D.new()
 	var torus := TorusMesh.new()
 	torus.inner_radius = 13.0
@@ -663,33 +751,37 @@ func _add_osm_poi_marker(pkey: String, title: String, center: Vector3, _col: Col
 	ring.mesh = torus
 	ring.position = Vector3(center.x, 0.55, center.z)
 	var rmat := StandardMaterial3D.new()
-	rmat.albedo_color = Color(1.0, 0.86, 0.34, 0.82)
+	rmat.albedo_color = Color(col.r, col.g, col.b, 0.78)
 	rmat.emission_enabled = true
-	rmat.emission = Color(1.0, 0.78, 0.22)
-	rmat.emission_energy_multiplier = 1.6
+	rmat.emission = col
+	rmat.emission_energy_multiplier = 1.3
 	rmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	ring.material_override = rmat
 	city_root.add_child(ring)
 
-	# Specifik, detaljerad 3D-byggnad för varje POI-typ och stadens landmärke!
 	var top_y: float = 22.0
 	if pkey == "landmark":
 		top_y = _build_landmark_visual(city_id, center)
-	elif pkey == "hub":
-		top_y = _build_station_building(center)
-	elif pkey == "hotel":
-		top_y = _build_hotel_building(center)
-	elif pkey == "market":
-		top_y = _build_market_building(center)
-	elif pkey == "library":
-		top_y = _build_library_building(center)
+	elif not real_bldg.is_empty():
+		# Använd det VERKLIGA 3D-huset på kartan — ingen påhittad byggnad mitt i gatan!
+		top_y = float(real_bldg["h"]) + 2.0
+		_highlight_real_poi_building(real_bldg["pts"], float(real_bldg["h"]), col)
+	else:
+		if pkey == "hub":
+			top_y = _build_station_building(center)
+		elif pkey == "hotel":
+			top_y = _build_hotel_building(center)
+		elif pkey == "market":
+			top_y = _build_market_building(center)
+		elif pkey == "library":
+			top_y = _build_library_building(center)
 
 	# Varmt kvällsljus som lyser upp landmärket/byggnaden i Noir-skymningen
 	var poi_light := OmniLight3D.new()
-	poi_light.position = Vector3(center.x, top_y * 0.55, center.z)
-	poi_light.light_color = Color(1.0, 0.84, 0.52)
+	poi_light.position = Vector3(center.x, top_y + 4.0, center.z)
+	poi_light.light_color = Color(1.0, 0.86, 0.55)
 	poi_light.light_energy = 1.4
-	poi_light.omni_range = 42.0
+	poi_light.omni_range = 44.0
 	city_root.add_child(poi_light)
 
 	var lbl := Label3D.new()
@@ -697,13 +789,13 @@ func _add_osm_poi_marker(pkey: String, title: String, center: Vector3, _col: Col
 	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	lbl.font_size = 44
 	lbl.pixel_size = 0.055
-	lbl.position = Vector3(center.x, top_y + 7.0, center.z)
+	lbl.position = Vector3(center.x, top_y + 8.0, center.z)
 	lbl.modulate = Color(1.0, 0.94, 0.62)
 	lbl.outline_size = 10
 	city_root.add_child(lbl)
 
 	pois[pkey] = {
-		"pos": Vector3(center.x, 0.1, center.z + 15.0),
+		"pos": Vector3(center.x, 0.1, center.z),
 		"center": center,
 		"name": title,
 		"ring": ring,
@@ -939,8 +1031,12 @@ func _build_fallback_city(city_id: String, city_data: Dictionary) -> void:
 	_add_osm_poi_marker("library", "📚 Bibliotek", Vector3(110.0, 0.0, 110.0), Color(0.56, 0.42, 0.82), city_id)
 
 func _is_point_blocked_by_building(pt: Vector2) -> bool:
-	# Kolla både exakt punkt och 4 punkter i 3.5m radie (spelarens kapselradie + marginal!)
-	var offsets := [Vector2.ZERO, Vector2(3.5, 0.0), Vector2(-3.5, 0.0), Vector2(0.0, 3.5), Vector2(0.0, -3.5)]
+	# Kolla både exakt punkt och 8 punkter i 4.5m radie så man aldrig hamnar i hus eller trång gränd!
+	var offsets := [
+		Vector2.ZERO,
+		Vector2(4.5, 0.0), Vector2(-4.5, 0.0), Vector2(0.0, 4.5), Vector2(0.0, -4.5),
+		Vector2(3.2, 3.2), Vector2(-3.2, 3.2), Vector2(3.2, -3.2), Vector2(-3.2, -3.2)
+	]
 	for poly in building_polys_2d:
 		for off in offsets:
 			if Geometry2D.is_point_in_polygon(pt + off, poly):
@@ -952,21 +1048,32 @@ func _find_nearest_free_street(target: Vector3) -> Vector3:
 	var best_d: float = 1e12
 	var t2 := Vector2(target.x, target.z)
 
-	# 1. Prova riktiga gatupunkter närmast målet som garanterat inte ligger i något hus!
-	for rp in road_points:
+	# 1. Föredra BREDA huvudgator (w >= 7m) närmast målet som garanterat har gott om utrymme!
+	for rp in wide_road_points:
 		var rp2 := Vector2(rp.x, rp.z)
 		var d: float = t2.distance_squared_to(rp2)
-		if d < best_d and d > 16.0: # Minst 4m från själva POI-mitten
+		if d < best_d and d > 25.0:
 			if not _is_point_blocked_by_building(rp2):
 				best_d = d
 				best_pt = Vector3(rp.x, 0.1, rp.z)
 	if best_d < 1e11:
 		return best_pt
 
-	# 2. Fallback: spiral utåt tills fri gata hittas
-	for r in [12.0, 20.0, 30.0, 42.0]:
-		for ang_i in range(12):
-			var a: float = float(ang_i) * (TAU / 12.0)
+	# 2. Annars valfri gata med fri 4.5m-radie
+	for rp in road_points:
+		var rp2 := Vector2(rp.x, rp.z)
+		var d: float = t2.distance_squared_to(rp2)
+		if d < best_d and d > 25.0:
+			if not _is_point_blocked_by_building(rp2):
+				best_d = d
+				best_pt = Vector3(rp.x, 0.1, rp.z)
+	if best_d < 1e11:
+		return best_pt
+
+	# 3. Fallback: spiral utåt tills fri gata hittas
+	for r in [16.0, 26.0, 38.0, 52.0]:
+		for ang_i in range(16):
+			var a: float = float(ang_i) * (TAU / 16.0)
 			var cand := Vector2(target.x + cos(a) * float(r), target.z + sin(a) * float(r))
 			if not _is_point_blocked_by_building(cand):
 				return Vector3(cand.x, 0.1, cand.y)
