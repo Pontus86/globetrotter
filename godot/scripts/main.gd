@@ -29,32 +29,32 @@ func _ready() -> void:
 	var e_res := Environment.new()
 	var sky := Sky.new()
 	var psky := ProceduralSkyMaterial.new()
-	# Realistisk Film Noir skymningshimmel (mjuk kvällsblå, aldrig kolsvart)
-	psky.sky_top_color = Color(0.06, 0.10, 0.18)
-	psky.sky_horizon_color = Color(0.20, 0.26, 0.36)
-	psky.ground_horizon_color = Color(0.16, 0.18, 0.22)
+	# Glad, ljus europeisk sommarhimmel (dagtid!)
+	psky.sky_top_color = Color(0.24, 0.56, 0.90)
+	psky.sky_horizon_color = Color(0.76, 0.88, 0.98)
+	psky.ground_horizon_color = Color(0.74, 0.82, 0.88)
 	sky.sky_material = psky
 	e_res.background_mode = Environment.BG_SKY
 	e_res.sky = sky
 	e_res.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e_res.ambient_light_color = Color(0.46, 0.50, 0.58)
-	e_res.ambient_light_energy = 0.54
+	e_res.ambient_light_color = Color(0.82, 0.88, 0.96)
+	e_res.ambient_light_energy = 0.62
 	e_res.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	e_res.tonemap_exposure = 0.94
+	e_res.tonemap_exposure = 0.96
 	e_res.glow_enabled = true
-	e_res.glow_intensity = 0.25
-	e_res.glow_bloom = 0.08
-	e_res.glow_hdr_threshold = 1.05
+	e_res.glow_intensity = 0.16
+	e_res.glow_bloom = 0.05
+	e_res.glow_hdr_threshold = 1.15
 	e_res.fog_enabled = true
-	e_res.fog_light_color = Color(0.18, 0.22, 0.30)
-	e_res.fog_density = 0.00042
+	e_res.fog_light_color = Color(0.78, 0.87, 0.96)
+	e_res.fog_density = 0.00020
 	env.environment = e_res
 	add_child(env)
 
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-42.0, 32.0, 0.0)
-	sun.light_color = Color(0.86, 0.88, 0.94) # Mjukt europeiskt skymningsljus
-	sun.light_energy = 0.68
+	sun.rotation_degrees = Vector3(-44.0, 34.0, 0.0)
+	sun.light_color = Color(1.0, 0.96, 0.86) # Varm, glad europeisk eftermiddagssol!
+	sun.light_energy = 1.02
 	sun.shadow_enabled = true
 	add_child(sun)
 

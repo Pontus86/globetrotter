@@ -32,64 +32,50 @@ var roof_tex: Texture2D
 var fog_cloud_plane: MeshInstance3D
 
 func _ready() -> void:
-	_generate_noir_textures()
-	for key in ["facade_brick", "facade_stone"]:
-		var path: String = "res://assets/noir/" + key + ".png"
-		if ResourceLoader.exists(path):
-			noir_facades.append(load(path))
-	if ResourceLoader.exists("res://assets/noir/roof_slate.png"):
-		roof_tex = load("res://assets/noir/roof_slate.png")
+	_generate_daytime_textures()
 
-func _generate_noir_textures() -> void:
-	# 1. Realistisk europeisk sten-/tegelfasad (128x128px = ~16x16m): mörka glasfönster + få diskreta tända fönster!
+func _generate_daytime_textures() -> void:
+	# 1. Glad, ljus DAGTID-fasadtextur (solbelyst europeisk puts/tegel + himmelsblå fönster!)
 	var img_a := Image.create(128, 128, false, Image.FORMAT_RGBA8)
-	var img_e := Image.create(128, 128, false, Image.FORMAT_RGBA8)
 	var trng := RandomNumberGenerator.new()
 	trng.seed = 424242
 
-	# Bas: realistisk sten-/putsstruktur med diskreta våningsskiften
 	for y in range(128):
 		var floor_band: bool = (y % 32) < 3
 		var brick_line: bool = (y % 8) == 0
 		for x in range(128):
-			var n: float = trng.randf_range(-0.035, 0.035)
-			var v: float = (0.80 if floor_band else (0.88 if brick_line else 0.94)) + n
-			img_a.set_pixel(x, y, Color(v, v * 0.98, v * 0.96, 1.0))
-			img_e.set_pixel(x, y, Color(0.0, 0.0, 0.0, 1.0))
+			var n: float = trng.randf_range(-0.025, 0.025)
+			var v: float = (0.90 if floor_band else (0.95 if brick_line else 1.0)) + n
+			img_a.set_pixel(x, y, Color(clampf(v, 0.8, 1.0), clampf(v * 0.98, 0.78, 1.0), clampf(v * 0.95, 0.75, 1.0), 1.0))
 
-	# 4 våningar x 4 realistiska fönster (mestadels mörkt glas, ~18% diskret varm belysning!)
+	# 4 våningar x 4 ljusa fönster som reflekterar sommarhimlen + vita fönsterkarmar!
 	for row in range(4):
 		for col in range(4):
-			var lit: bool = trng.randf() < 0.18
-			var warm: Color = Color(0.95, 0.84, 0.64) if trng.randf() < 0.8 else Color(0.80, 0.88, 0.96)
 			var wx0: int = col * 32 + 10
 			var wy0: int = row * 32 + 8
 			for wy in range(wy0, wy0 + 15):
 				for wx in range(wx0, wx0 + 12):
 					if wy == wy0 or wy == wy0 + 14 or wx == wx0 or wx == wx0 + 11:
-						img_a.set_pixel(wx, wy, Color(0.62, 0.60, 0.58, 1.0)) # Ljus stenkarm
+						img_a.set_pixel(wx, wy, Color(0.96, 0.94, 0.90, 1.0)) # Vit solbelyst karm
 					elif wy == wy0 + 7 or wx == wx0 + 6:
-						img_a.set_pixel(wx, wy, Color(0.45, 0.44, 0.43, 1.0)) # Fönsterspröjs
-					elif lit:
-						img_a.set_pixel(wx, wy, Color(0.86, 0.78, 0.64, 1.0))
-						img_e.set_pixel(wx, wy, warm * 0.45)
+						img_a.set_pixel(wx, wy, Color(0.88, 0.86, 0.82, 1.0)) # Fönsterspröjs
 					else:
-						img_a.set_pixel(wx, wy, Color(0.24, 0.28, 0.34, 1.0)) # Mörkt speglande glas
+						var sky_t: float = float(wy - wy0) / 14.0
+						img_a.set_pixel(wx, wy, Color(0.58, 0.76, 0.92, 1.0).lerp(Color(0.38, 0.56, 0.76, 1.0), sky_t))
 
 	img_a.generate_mipmaps()
-	img_e.generate_mipmaps()
 	facade_albedo_tex = ImageTexture.create_from_image(img_a)
-	facade_emit_tex = ImageTexture.create_from_image(img_e)
+	facade_emit_tex = null
 
-	# 2. Realistisk europeisk taktegel-/zinkplåt-textur (ljus & tydlig, aldrig svart!)
+	# 2. Ljus, glad europeisk tegeltak-textur
 	var img_r := Image.create(64, 64, false, Image.FORMAT_RGBA8)
 	for y in range(64):
-		var row_shade: float = 0.90 if (y % 8 < 2) else 1.0
+		var row_shade: float = 0.92 if (y % 8 < 2) else 1.0
 		for x in range(64):
-			var seam: float = 0.92 if (x % 12 == 0) else 1.0
-			var rn: float = trng.randf_range(-0.03, 0.03)
-			var rv: float = clampf(row_shade * seam + rn, 0.78, 1.0)
-			img_r.set_pixel(x, y, Color(rv, rv * 0.96, rv * 0.94, 1.0))
+			var seam: float = 0.94 if (x % 12 == 0) else 1.0
+			var rn: float = trng.randf_range(-0.025, 0.025)
+			var rv: float = clampf(row_shade * seam + rn, 0.82, 1.0)
+			img_r.set_pixel(x, y, Color(rv, rv * 0.97, rv * 0.94, 1.0))
 	img_r.generate_mipmaps()
 	roof_tex = ImageTexture.create_from_image(img_r)
 
@@ -168,11 +154,10 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 		plane_mi.mesh = pm
 		plane_mi.position = Vector3(tb_cx, 0.02, tb_cz)
 		var pmat := StandardMaterial3D.new()
-		pmat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+		pmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		pmat.albedo_texture = map_tex
-		# Film Noir skymningston på stadskartan (behaglig regntung kvällsblå)
-		pmat.albedo_color = Color(0.32, 0.36, 0.38)
-		pmat.roughness = 0.72
+		# Ljus, krispig dagtidskarta (aldrig mörk eller utbränd!)
+		pmat.albedo_color = Color(0.92, 0.90, 0.86)
 		pmat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 		plane_mi.material_override = pmat
 		city_root.add_child(plane_mi)
@@ -216,21 +201,63 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 	var buildings_arr: Array = osm.get("buildings", [])
 	_build_osm_buildings(buildings_arr, rng, poi_clear_pts)
 
-	# 6. Alla 5 POI-platser kopplas till VERKLIGA 3D-byggnader / riktiga OSM-monument på kartan!
+	# 6. 4 sevärdheter + 1 station + 3 utspridda hotell + 3 marknader + 3 bibliotek på VERKLIGA 3D-hus!
+	var extra_lms: Dictionary = {
+		"stockholm": ["Kungliga slottet", "Storkyrkan", "Kungliga Operan"],
+		"oslo": ["Akershus fästning", "Operahuset", "Stortinget"],
+		"copenhagen": ["Nyhavn", "Amalienborg", "Rundetårn"],
+		"london": ["Westminster Abbey", "Trafalgar Square", "London Eye"],
+		"amsterdam": ["Kungliga palatset", "Anne Franks hus", "Rijksmuseum"],
+		"brussels": ["Manneken Pis", "Kungliga slottet", "Galeries Royales"],
+		"paris": ["Hôtel des Invalides", "Pont Alexandre III", "Trocadéro"],
+		"berlin": ["Riksdagshuset", "Berliner Dom", "Gendarmenmarkt"],
+		"prague": ["Karlsbron", "Gamla stans torg", "Pragborgen"],
+		"vienna": ["Stefansdomen", "Hofburg", "Statsoperan"],
+		"zurich": ["Grossmünster", "Fraumünster", "Bahnhofstrasse"],
+		"milan": ["Galleria Vittorio Emanuele", "La Scala", "Castello Sforzesco"],
+		"rome": ["Forum Romanum", "Pantheon", "Fontana di Trevi"],
+		"barcelona": ["Casa Batlló", "Casa Milà", "Plaça de Catalunya"],
+		"madrid": ["Plaza Mayor", "Pradomuseet", "Retiroparken"],
+		"lisbon": ["Praça do Comércio", "Castelo de São Jorge", "Elevador de Santa Justa"],
+		"athens": ["Agora", "Zeustemplet", "Syntagmatorget"],
+		"istanbul": ["Blå moskén", "Topkapipalatset", "Stora basaren"]
+	}
+	var ex_names: Array = extra_lms.get(city_id, ["Gamla torget", "Katedralen", "Stadsmuseet"])
+	var main_lm_name: String = String(city_data.get("landmark", {}).get("name", "Sevärdhet"))
+	var hub_name: String = String(city_data.get("hub", {}).get("name", "Centralstationen"))
+
+	var sx_span: float = (max_x - min_x) * 0.34
+	var sz_span: float = (max_z - min_z) * 0.34
+	var lm_pt: Array = osm_pois.get("landmark", [0.0, 0.0])
+	var hub_pt: Array = osm_pois.get("hub", [-140.0, 120.0])
+
 	var poi_defs := [
-		["landmark", String(city_data.get("landmark", {}).get("name", "Sevärdhet")), Color(0.98, 0.80, 0.28)],
-		["hub", String(city_data.get("hub", {}).get("name", "Centralstationen")), Color(0.35, 0.72, 0.98)],
-		["hotel", "🏨 Grand Hotel", Color(0.92, 0.42, 0.54)],
-		["market", "🛍️ Basar / Marknad", Color(0.32, 0.78, 0.50)],
-		["library", "📚 Bibliotek", Color(0.66, 0.52, 0.92)]
+		# 4 Sevärdheter (huvudsevärdhet + 3 utspridda!)
+		["landmark", main_lm_name, Color(1.0, 0.78, 0.22), Vector3(float(lm_pt[0]), 0.0, float(lm_pt[1]))],
+		["landmark_1", String(ex_names[0]), Color(1.0, 0.72, 0.28), Vector3(cx + sx_span, 0.0, cz - sz_span * 0.8)],
+		["landmark_2", String(ex_names[1]), Color(1.0, 0.72, 0.28), Vector3(cx - sx_span, 0.0, cz - sz_span * 0.7)],
+		["landmark_3", String(ex_names[2]), Color(1.0, 0.72, 0.28), Vector3(cx + sx_span * 0.85, 0.0, cz + sz_span * 0.85)],
+		# Centralstation / Flygplats
+		["hub", hub_name, Color(0.24, 0.68, 0.98), Vector3(float(hub_pt[0]), 0.0, float(hub_pt[1]))],
+		# 3 utspridda Hotell
+		["hotel_0", "🏨 Grand Hotel", Color(0.94, 0.38, 0.52), Vector3(cx + sx_span * 0.5, 0.0, cz - sz_span * 0.2)],
+		["hotel_1", "🏨 Hotel Royal", Color(0.94, 0.38, 0.52), Vector3(cx - sx_span * 0.7, 0.0, cz + sz_span * 0.6)],
+		["hotel_2", "🏨 Boutique Hotel", Color(0.94, 0.38, 0.52), Vector3(cx - sx_span * 0.2, 0.0, cz - sz_span * 0.9)],
+		# 3 utspridda Marknader
+		["market_0", "🛍️ Saluhallen", Color(0.24, 0.76, 0.46), Vector3(cx - sx_span * 0.55, 0.0, cz - sz_span * 0.35)],
+		["market_1", "🛍️ Basaren", Color(0.24, 0.76, 0.46), Vector3(cx + sx_span * 0.9, 0.0, cz + sz_span * 0.2)],
+		["market_2", "🛍️ Gatumarknad", Color(0.24, 0.76, 0.46), Vector3(cx - sx_span * 0.15, 0.0, cz + sz_span * 0.9)],
+		# 3 utspridda Bibliotek
+		["library_0", "📚 Stadsbiblioteket", Color(0.62, 0.48, 0.94), Vector3(cx + sx_span * 0.3, 0.0, cz + sz_span * 0.55)],
+		["library_1", "📚 Kungliga Biblioteket", Color(0.62, 0.48, 0.94), Vector3(cx - sx_span * 0.9, 0.0, cz + sz_span * 0.1)],
+		["library_2", "📚 Arkivbiblioteket", Color(0.62, 0.48, 0.94), Vector3(cx + sx_span * 0.4, 0.0, cz - sz_span * 0.95)]
 	]
 	var used_bldg_indices: Dictionary = {}
 	for pd in poi_defs:
 		var pkey: String = String(pd[0])
 		var ptitle: String = String(pd[1])
 		var pcol: Color = pd[2]
-		var pt_arr: Array = osm_pois.get(pkey, [0.0, 0.0])
-		var target_pos := Vector3(float(pt_arr[0]), 0.0, float(pt_arr[1]))
+		var target_pos: Vector3 = pd[3]
 		var picked: Dictionary = _pick_nearest_real_building(target_pos, buildings_arr, used_bldg_indices)
 		if not picked.is_empty():
 			var bc: Vector2 = picked["center"]
@@ -238,20 +265,64 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 		else:
 			_add_osm_poi_marker(pkey, ptitle, target_pos, pcol, city_id, {})
 
-	# 7. Osynliga stadsmurar vid kartgränsen
+	# 7. Tydlig visuell stadsgräns + kollisionsmurar så man aldrig springer in i osynliga väggar!
 	var margin: float = 12.0
+	_add_visible_city_boundary(min_x - margin, max_x + margin, min_z - margin, max_z + margin)
 	_add_invisible_wall(Vector3(cx, 15.0, min_z - margin), Vector3(width, 30.0, 4.0))
 	_add_invisible_wall(Vector3(cx, 15.0, max_z + margin), Vector3(width, 30.0, 4.0))
 	_add_invisible_wall(Vector3(min_x - margin, 15.0, cz), Vector3(4.0, 30.0, depth))
 	_add_invisible_wall(Vector3(max_x + margin, 15.0, cz), Vector3(4.0, 30.0, depth))
 
-	# 8. Drivande Noir Fog-of-War-moln utanför de inladdade hus-chunksen!
+	# 8. Ljusa drivande dagmoln utanför de inladdade hus-chunksen!
 	_build_fog_of_war_clouds()
 
-	# 9. Levande stad: bilar med strålkastare, gående fotgängare och varma europeiska gatlyktor!
+	# 9. Levande stad: bilar, gående fotgängare och gatlyktor!
 	var life: Node3D = CityLifeScript.new()
 	city_root.add_child(life)
 	life.populate_from_roads(osm.get("roads", []), city_id)
+
+func _add_visible_city_boundary(x0: float, x1: float, z0: float, z1: float) -> void:
+	# Tydlig varmguld / vit stadsgräns-ram längs alla 4 sidor av spelområdet!
+	var line_mat := StandardMaterial3D.new()
+	line_mat.albedo_color = Color(1.0, 0.72, 0.22, 0.88)
+	line_mat.emission_enabled = true
+	line_mat.emission = Color(1.0, 0.68, 0.18)
+	line_mat.emission_energy_multiplier = 0.9
+	line_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	line_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+
+	var wall_mat := StandardMaterial3D.new()
+	wall_mat.albedo_color = Color(1.0, 0.76, 0.30, 0.16)
+	wall_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	wall_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	wall_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	var bw: float = x1 - x0
+	var bd: float = z1 - z0
+	var bcx: float = (x0 + x1) * 0.5
+	var bcz: float = (z0 + z1) * 0.5
+	var sides := [
+		[Vector3(bcx, 0.35, z0), Vector3(bw, 0.4, 3.2), Vector3(bcx, 3.0, z0), Vector3(bw, 5.5, 0.6)],
+		[Vector3(bcx, 0.35, z1), Vector3(bw, 0.4, 3.2), Vector3(bcx, 3.0, z1), Vector3(bw, 5.5, 0.6)],
+		[Vector3(x0, 0.35, bcz), Vector3(3.2, 0.4, bd), Vector3(x0, 3.0, bcz), Vector3(0.6, 5.5, bd)],
+		[Vector3(x1, 0.35, bcz), Vector3(3.2, 0.4, bd), Vector3(x1, 3.0, bcz), Vector3(0.6, 5.5, bd)]
+	]
+	for s in sides:
+		var lm := MeshInstance3D.new()
+		var lb := BoxMesh.new()
+		lb.size = s[1]
+		lm.mesh = lb
+		lm.position = s[0]
+		lm.material_override = line_mat
+		city_root.add_child(lm)
+
+		var wm := MeshInstance3D.new()
+		var wb := BoxMesh.new()
+		wb.size = s[3]
+		wm.mesh = wb
+		wm.position = s[2]
+		wm.material_override = wall_mat
+		city_root.add_child(wm)
 
 func _build_fog_of_war_clouds() -> void:
 	fog_cloud_plane = MeshInstance3D.new()
@@ -265,8 +336,8 @@ func _build_fog_of_war_clouds() -> void:
 shader_type spatial;
 render_mode unshaded, blend_mix, depth_draw_never, cull_disabled;
 
-uniform vec3 fog_color : source_color = vec3(0.10, 0.13, 0.20);
-uniform float inner_radius = 290.0;
+uniform vec3 fog_color : source_color = vec3(0.86, 0.91, 0.97);
+uniform float inner_radius = 300.0;
 uniform float outer_radius = 520.0;
 
 float cloud_noise(vec2 p, float t) {
@@ -475,12 +546,12 @@ func _commit_surface(st: SurfaceTool, color: Color, rough: float, use_vertex_col
 		city_root.add_child(mi)
 
 func _height_to_color(h: float) -> Color:
-	# Realistisk europeisk sten- & tegelpalett i skymnings-noir (högre hus = mörkare sten/tegel!)
-	var c0 := Color.html("#9c9082")  # 0m: varm kalksten
-	var c10 := Color.html("#8c7968") # 10m: europeisk sandsten
-	var c22 := Color.html("#7b6052") # 22m: klassiskt tegelrödbrunt
-	var c40 := Color.html("#644e46") # 40m: mörkt rödbrunt tegel
-	var c75 := Color.html("#4d5664") # 75m+: skiffergrå sten
+	# Solig, glad europeisk ORANGE / terrakotta-palett i dagtid (högre hus = djupare orange-tegel!)
+	var c0 := Color.html("#f5cfa0")  # 0m: solig varm aprikos-sandsten
+	var c10 := Color.html("#eeaa6b") # 10m: glad varm orange-ockra
+	var c22 := Color.html("#df8348") # 22m: rik terrakotta-orange
+	var c40 := Color.html("#c86335") # 40m: djup bränd orange-tegel
+	var c75 := Color.html("#a85232") # 75m+: varm koppar-terrakotta
 	if h <= 10.0:
 		return c0.lerp(c10, clampf(h / 10.0, 0.0, 1.0))
 	elif h <= 22.0:
@@ -574,13 +645,11 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 		var building_seed: float = fposmod(center2.x * 0.1031 + center2.y * 0.11369, 1.0)
 		ws.set_uv2(Vector2(building_seed, 0.0))
 		var base_col: Color = _height_to_color(h)
-		if not noir_facades.is_empty():
-			base_col = Color.WHITE.darkened(rng.randf_range(0.0, 0.12))
-		var col_bot: Color = base_col.darkened(0.24)
-		var col_top: Color = base_col
-		# Realistiska europeiska tak: varmt tegelrött eller patinerad zink/skiffer (aldrig kolsvart!)
-		var roof_tint: Color = Color(0.56, 0.34, 0.27) if rng.randf() < 0.65 else Color(0.42, 0.45, 0.49)
-		var col_roof: Color = base_col.lerp(roof_tint, 0.55)
+		var col_bot: Color = base_col.darkened(0.16)
+		var col_top: Color = base_col.lightened(0.06)
+		# Soliga, glada europeiska terrakotta-/tegeltak!
+		var roof_tint: Color = Color(0.84, 0.42, 0.24) if rng.randf() < 0.75 else Color(0.76, 0.48, 0.30)
+		var col_roof: Color = base_col.lerp(roof_tint, 0.58)
 
 		var n: int = pts2.size()
 		for i in range(n):
@@ -723,8 +792,8 @@ func _build_noir_roof(surface: SurfaceTool, footprint: PackedVector2Array, heigh
 		half_width = minf(half_width, center.distance_to(Geometry2D.get_closest_point_to_segment(center,a,b)))
 		half_length = maxf(half_length, absf((a-center).dot(longest)))
 	if convex and footprint.size() <= 16 and height < 48.0 and half_width > 2.5 and seed < 0.84:
-		var rise := clampf(half_width * 0.65, 1.8, 7.0)
-		var ridge_half := maxf(0.0, half_length - half_width * 1.3) * 0.5
+		var rise: float = clampf(half_width * 1.0, 2.8, 12.0) # ~45 graders brantare, klassiskt europeiskt sadel-/valmtak!
+		var ridge_half: float = maxf(0.0, half_length - half_width * 1.15) * 0.5
 		# Two clipped ridge endpoints stay inside the footprint.
 		var end_a := center - longest * ridge_half
 		var end_b := center + longest * ridge_half
@@ -741,12 +810,14 @@ func _build_noir_roof(surface: SurfaceTool, footprint: PackedVector2Array, heigh
 				_roof_triangle(surface, Vector3(a.x,height,a.y), Vector3(rb.x,height+rise,rb.y), Vector3(ra.x,height+rise,ra.y), tint)
 		return { "y": height + rise, "pitched": true, "pos": (end_a + end_b) * 0.5 }
 	else:
+		# Platta tak: ljusgrå/beige betong- & grusyta (ALDRIG tegelfärg på platta tak!)
+		var flat_col := Color(0.68, 0.67, 0.64)
 		var triangles := Geometry2D.triangulate_polygon(footprint)
 		for i in range(0,triangles.size(),3):
 			var a := footprint[triangles[i]]
 			var b := footprint[triangles[i+1]]
 			var c := footprint[triangles[i+2]]
-			_roof_triangle(surface,Vector3(a.x,height,a.y),Vector3(b.x,height,b.y),Vector3(c.x,height,c.y),tint)
+			_roof_triangle(surface,Vector3(a.x,height,a.y),Vector3(b.x,height,b.y),Vector3(c.x,height,c.y),flat_col)
 		return { "y": height, "pitched": false, "pos": center }
 
 func _outline_area(points: PackedVector2Array) -> float:
@@ -1247,6 +1318,29 @@ func _find_nearest_free_street(target: Vector3) -> Vector3:
 				return Vector3(cand.x, 0.1, cand.y)
 	return Vector3(target.x, 0.1, target.z)
 
+	# Hjälpfunktion för smarta bottar: returnerar nästa fria gatupunkt som tar botten närmare målet utan att fastna!
+func get_next_street_waypoint(from_pos: Vector3, goal_pos: Vector3) -> Vector3:
+	var pts_src: Array[Vector3] = wide_road_points if wide_road_points.size() > 15 else road_points
+	if pts_src.is_empty():
+		return goal_pos
+	var f2 := Vector2(from_pos.x, from_pos.z)
+	var g2 := Vector2(goal_pos.x, goal_pos.z)
+	var best_pt := goal_pos
+	var best_score: float = 1e12
+	var step_count: int = mini(pts_src.size(), 90)
+	var stride: int = maxi(1, int(pts_src.size() / step_count))
+	for i in range(0, pts_src.size(), stride):
+		var rp: Vector3 = pts_src[i]
+		var rp2 := Vector2(rp.x, rp.z)
+		var d_from: float = f2.distance_to(rp2)
+		if d_from < 22.0 or d_from > 190.0:
+			continue
+		var score: float = rp2.distance_to(g2) + d_from * 0.28
+		if score < best_score and not _is_point_blocked_by_building(rp2):
+			best_score = score
+			best_pt = Vector3(rp.x, 0.1, rp.z)
+	return best_pt
+
 func get_spawn_pos(pkey: String) -> Vector3:
 	if pois.has(pkey):
 		var c: Vector3 = pois[pkey]["center"]
@@ -1254,6 +1348,8 @@ func get_spawn_pos(pkey: String) -> Vector3:
 	return _find_nearest_free_street(Vector3.ZERO)
 
 func get_police_spawn_pos() -> Vector3:
+	if pois.has("hotel_0"):
+		return _find_nearest_free_street(pois["hotel_0"]["center"])
 	if pois.has("hotel"):
 		return _find_nearest_free_street(pois["hotel"]["center"])
 	if road_points.size() > 0:

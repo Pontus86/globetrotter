@@ -41,8 +41,8 @@ func _ready() -> void:
 	var lamp := OmniLight3D.new()
 	lamp.position = Vector3(0.0, 14.0, 0.0)
 	lamp.light_color = Color(1.0, 0.82, 0.52)
-	lamp.light_energy = 1.6
-	lamp.omni_range = 48.0
+	lamp.light_energy = 0.65
+	lamp.omni_range = 20.0
 	add_child(lamp)
 
 	var col := CollisionShape3D.new()
@@ -57,7 +57,7 @@ func _ready() -> void:
 	name_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	name_label.font_size = 44
 	name_label.pixel_size = 0.085
-	name_label.position = Vector3(0.0, 11.5, 0.0)
+	name_label.position = Vector3(0.0, 7.0, 0.0)
 	name_label.outline_size = 10
 	add_child(name_label)
 
@@ -250,10 +250,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		cam_yaw -= mm.relative.x * 0.006
 		_update_camera_transform()
 	elif event.is_action_pressed("interact") and nearby_poi_key != "":
-		match nearby_poi_key:
-			"landmark": GameState.challenge_requested.emit(GameState.current_city_id)
-			"hub": GameState.departures_requested.emit(GameState.current_city_id)
-			"hotel", "market", "library": GameState.extra_place_requested.emit(nearby_poi_key, GameState.current_city_id)
+		if nearby_poi_key.begins_with("landmark"):
+			GameState.challenge_requested.emit(GameState.current_city_id)
+		elif nearby_poi_key == "hub":
+			GameState.departures_requested.emit(GameState.current_city_id)
+		elif nearby_poi_key.begins_with("hotel"):
+			GameState.extra_place_requested.emit("hotel", GameState.current_city_id)
+		elif nearby_poi_key.begins_with("market"):
+			GameState.extra_place_requested.emit("market", GameState.current_city_id)
+		elif nearby_poi_key.begins_with("library"):
+			GameState.extra_place_requested.emit("library", GameState.current_city_id)
 	elif event.is_action_pressed("sprint_boost"):
 		GameState.activate_sprint_boost()
 

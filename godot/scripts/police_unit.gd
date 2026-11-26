@@ -19,7 +19,10 @@ var spotted_pos: Vector3 = Vector3.ZERO
 var has_spotted_pos: bool = false
 var last_heard_time: float = -999.0
 var stuck_timer: float = 0.0
+var progress_timer: float = 0.0
+var last_progress_pos: Vector3 = Vector3.ZERO
 var detour_sign: float = 1.0
+var search_retarget_timer: float = 0.0
 
 func _ready() -> void:
 	# Animerad springande 3D-polisfigur (blå uniform + poliskeps!)
@@ -40,7 +43,7 @@ func _ready() -> void:
 	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	lbl.font_size = 44
 	lbl.pixel_size = 0.085
-	lbl.position = Vector3(0.0, 11.5, 0.0)
+	lbl.position = Vector3(0.0, 7.0, 0.0)
 	lbl.modulate = Color(0.65, 0.90, 1.0)
 	lbl.outline_size = 10
 	add_child(lbl)
@@ -140,11 +143,17 @@ func _physics_process(delta: float) -> void:
 				alert_state = "searching"
 
 	var goal: Vector3 = spotted_pos
-	if not has_spotted_pos or Vector2(global_position.x, global_position.z).distance_to(Vector2(goal.x, goal.z)) < 8.0:
+	search_retarget_timer -= delta
+	if not has_spotted_pos or Vector2(global_position.x, global_position.z).distance_to(Vector2(goal.x, goal.z)) < 12.0 or (alert_state != "chasing" and search_retarget_timer <= 0.0):
 		alert_state = "searching"
+		search_retarget_timer = 7.5
 		if city_builder != null:
-			var rkeys := ["hub", "landmark", "hotel", "market", "library"]
-			goal = city_builder.get_spawn_pos(rkeys[randi() % rkeys.size()])
+			# Aktivt sökande: rör sig alltid i riktning mot spelarens ungefärliga stadsdel (+/- 95m) så polisen aldrig ger upp!
+			var approx_goal: Vector3 = target_player.global_position + Vector3(randf_range(-95.0, 95.0), 0.0, randf_range(-95.0, 95.0))
+			if randf() < 0.35 and city_builder.pois.size() > 0:
+				var pkeys: Array = city_builder.pois.keys()
+				approx_goal = city_builder.get_spawn_pos(String(pkeys[randi() % pkeys.size()]))
+			goal = city_builder.get_next_street_waypoint(global_position, approx_goal)
 			spotted_pos = goal
 			has_spotted_pos = true
 
@@ -161,14 +170,20 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector3.ZERO
 
 	velocity.y = 0.0
-	var prev_pos := global_position
 	move_and_slide()
 	global_position.y = 0.1
 	if runner_fig != null:
 		runner_fig.update_run(velocity, delta)
 
-	# Om polisen skrapar mot ett verkligt OSM-hus, styr smidigt runt hörnet!
-	if get_slide_collision_count() > 0 and prev_pos.distance_to(global_position) < 0.15:
-		if stuck_timer <= 0.0:
+	# Robust anti-fastna: om polisen inte kommit minst 3.5m på 1.1s, välj ny fri gatupunkt runt kvarteret!
+	progress_timer += delta
+	if progress_timer >= 1.1:
+		var moved: float = Vector2(global_position.x, global_position.z).distance_to(Vector2(last_progress_pos.x, last_progress_pos.z))
+		last_progress_pos = global_position
+		progress_timer = 0.0
+		if moved < 3.5:
 			detour_sign = -detour_sign
-			stuck_timer = 0.65
+			stuck_timer = 1.6
+			if city_builder != null:
+				spotted_pos = city_builder.get_next_street_waypoint(global_position, target_player.global_position)
+				has_spotted_pos = true

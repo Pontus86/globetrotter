@@ -490,10 +490,16 @@ func _build_hud() -> void:
 	mscroll.add_child(modal_vbox)
 
 func _trigger_poi(pkey: String) -> void:
-	match pkey:
-		"landmark": GameState.challenge_requested.emit(GameState.current_city_id)
-		"hub": GameState.departures_requested.emit(GameState.current_city_id)
-		"hotel", "market", "library": GameState.extra_place_requested.emit(pkey, GameState.current_city_id)
+	if pkey.begins_with("landmark"):
+		GameState.challenge_requested.emit(GameState.current_city_id)
+	elif pkey == "hub":
+		GameState.departures_requested.emit(GameState.current_city_id)
+	elif pkey.begins_with("hotel"):
+		GameState.extra_place_requested.emit("hotel", GameState.current_city_id)
+	elif pkey.begins_with("market"):
+		GameState.extra_place_requested.emit("market", GameState.current_city_id)
+	elif pkey.begins_with("library"):
+		GameState.extra_place_requested.emit("library", GameState.current_city_id)
 
 func _rebuild_police_tabs() -> void:
 	for ch in police_tab_box.get_children():
@@ -657,28 +663,6 @@ func _open_pause_or_start_modal() -> void:
 	b_new.pressed.connect(_open_start_modal)
 	modal_vbox.add_child(b_new)
 
-func _add_item_row(control: Control, item_id: String) -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
-	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var picture := TextureRect.new()
-	picture.custom_minimum_size = Vector2(80, 80)
-	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var path := "res://assets/noir/items/" + item_id + ".png"
-	if ResourceLoader.exists(path):
-		picture.texture = load(path)
-	row.add_child(picture)
-	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	control.set_meta("noir_item", item_id)
-	if control is Label:
-		control.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	if control is Label or control is Button:
-		control.text = control.text.replace(" — ", "\n").replace(" (", "\n(")
-	row.add_child(control)
-	modal_vbox.add_child(row)
-
 func _open_bag_modal() -> void:
 	if not GameState.active:
 		return
@@ -702,7 +686,7 @@ func _open_bag_modal() -> void:
 			any_item = true
 			var l1 := Label.new()
 			l1.text = "🔧 Dyrkset (%d st) — Dubbel grön zon i nästa Kassaskåp" % int(GameState.gear["lockpick"])
-			_add_item_row(l1, "lockpick")
+			modal_vbox.add_child(l1)
 		if int(GameState.gear["smoke"]) > 0:
 			any_item = true
 			var b_sm := Button.new()
@@ -714,23 +698,23 @@ func _open_bag_modal() -> void:
 				GameState.add_radio("💨 RÖKBOMB! Poliser i staden frusna i 6s!", "good")
 				_close_modal()
 			)
-			_add_item_row(b_sm, "smoke")
+			modal_vbox.add_child(b_sm)
 		if int(GameState.gear["fake_pass"]) > 0:
 			any_item = true
 			var l3 := Label.new()
 			l3.text = "🛂 Förfalskat pass (%d st) — Nästa direktflyg pingar inte avgångsstaden" % int(GameState.gear["fake_pass"])
-			_add_item_row(l3, "fake_pass")
+			modal_vbox.add_child(l3)
 		if GameState.skip_next_reveal:
 			any_item = true
 			var l4 := Label.new()
 			l4.text = "🎭 Hotellförklädnad (AKTIV) — Blockerar nästa radarping"
-			_add_item_row(l4, "disguise")
+			modal_vbox.add_child(l4)
 	else:
 		if int(GameState.gear["fast_flight"]) > 0:
 			any_item = true
 			var l5 := Label.new()
 			l5.text = "⚡ Snabbrekvisition (%d st) — Halverar nästa restid" % int(GameState.gear["fast_flight"])
-			_add_item_row(l5, "fast_flight")
+			modal_vbox.add_child(l5)
 		if int(GameState.gear["hound"]) > 0:
 			any_item = true
 			var b_hd := Button.new()
@@ -742,18 +726,18 @@ func _open_bag_modal() -> void:
 				GameState.add_radio("🐕 SPÅRHUND! Dubbel gripanderadie i 30s!", "police")
 				_close_modal()
 			)
-			_add_item_row(b_hd, "hound")
+			modal_vbox.add_child(b_hd)
 		if GameState.train_tap_active:
 			any_item = true
 			var l6 := Label.new()
 			l6.text = "📡 Tågspaning (AKTIV) — Avslöjar tjuvens nästa tåg/båt"
-			_add_item_row(l6, "train_tap")
+			modal_vbox.add_child(l6)
 
 	if GameState.guide_hint_ready:
 		any_item = true
 		var lg := Label.new()
 		lg.text = "📖 Bibliotekets Guidebok (AKTIV) — Stryker 2 fel på nästa Frågekort"
-		_add_item_row(lg, "guide")
+		modal_vbox.add_child(lg)
 
 	if not any_item:
 		var emp := Label.new()
@@ -791,7 +775,7 @@ func _open_passport_modal() -> void:
 			var l := Label.new()
 			l.text = "%s %s %s — %s (%s)" % ["✅ STULEN:" if done else "🎯 MÅL:", icon, String(c["landmark"]["artifact"]), String(c["name"]), String(c["landmark"]["name"])]
 			l.add_theme_color_override("font_color", Color(0.45, 0.92, 0.60) if done else Color(1.0, 0.92, 0.65))
-			_add_item_row(l, "artifact_" + String(tid))
+			modal_vbox.add_child(l)
 	else:
 		for sid in GameState.suspect_pool:
 			var c: Dictionary = GameState.cities[sid]
@@ -800,7 +784,7 @@ func _open_passport_modal() -> void:
 			var l := Label.new()
 			l.text = "%s %s (%s)" % ["🚨 STULEN:" if stolen else ("✓ AVSKRIVEN:" if cleared else "❓ MISSTÄNKT:"), String(c["name"]), String(c["landmark"]["name"])]
 			l.add_theme_color_override("font_color", Color(1.0, 0.45, 0.45) if stolen else (Color(0.55, 0.65, 0.72) if cleared else Color(1.0, 0.90, 0.55)))
-			_add_item_row(l, "artifact_" + String(sid))
+			modal_vbox.add_child(l)
 
 	var cb := Button.new()
 	cb.text = "Stäng passet [Esc]"
@@ -1200,7 +1184,7 @@ func _open_extra_place_modal(place_key: String, city_id: String) -> void:
 				GameState.add_radio("🏨 Förklädnad bytt (-500 kr)!", "good")
 				_close_modal()
 			)
-			_add_item_row(b1, "disguise")
+			modal_vbox.add_child(b1)
 
 			var nb: Array = c["trains"] + c["flights"]
 			if nb.size() > 0:
@@ -1246,7 +1230,7 @@ func _open_extra_place_modal(place_key: String, city_id: String) -> void:
 				GameState.add_radio("🛍️ Skaffade %s!" % String(it[1]), "good")
 				_close_modal()
 			)
-			_add_item_row(b, gid)
+			modal_vbox.add_child(b)
 	else:
 		h.text = "📚 %s Bibliotek (Gratis)" % c["name"]
 		var fl := Label.new()
@@ -1263,7 +1247,7 @@ func _open_extra_place_modal(place_key: String, city_id: String) -> void:
 			GameState.add_radio("📚 Guidebok redo för nästa Frågekort!", "good")
 			_close_modal()
 		)
-		_add_item_row(b1, "guide")
+		modal_vbox.add_child(b1)
 
 		if is_police:
 			var b2 := Button.new()

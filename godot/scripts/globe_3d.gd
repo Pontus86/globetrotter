@@ -47,9 +47,9 @@ func _ready() -> void:
 	var tex_spec: Texture2D = load("res://assets/globe/earth_spec.jpg") as Texture2D
 	if tex_day != null:
 		mat.albedo_texture = tex_day
-		mat.albedo_color = Color(0.54, 0.60, 0.72) # Film Noir skymningston på världskartan!
+		mat.albedo_color = Color(1.0, 1.0, 1.0) # Ljus, vacker dagtid-jordglob!
 	else:
-		mat.albedo_color = Color(0.10, 0.22, 0.36)
+		mat.albedo_color = Color(0.18, 0.46, 0.72)
 	if tex_norm != null:
 		mat.normal_enabled = true
 		mat.normal_texture = tex_norm

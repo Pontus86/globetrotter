@@ -31,10 +31,30 @@ func _draw() -> void:
 	var pad_bot: float = 96.0
 
 
-	for pkey in ["landmark", "hub", "hotel", "market", "library"]:
-		if not cb.pois.has(pkey):
-			continue
-		var pinfo: Dictionary = cb.pois[pkey]
+	# Visa huvudsevärdhet, station + NÄRMASTE extra sevärdhet, hotell, marknad och bibliotek så kompassen alltid är ren och tydlig!
+	var display_list: Array[Dictionary] = []
+	if cb.pois.has("landmark"):
+		display_list.append({ "key": "landmark", "cat": "landmark", "info": cb.pois["landmark"] })
+	if cb.pois.has("hub"):
+		display_list.append({ "key": "hub", "cat": "hub", "info": cb.pois["hub"] })
+	for cat in ["landmark_", "hotel", "market", "library"]:
+		var best_k: String = ""
+		var best_d2: float = 1e12
+		for pk in cb.pois.keys():
+			var ks: String = String(pk)
+			if ks.begins_with(cat) and ks != "landmark":
+				var pc: Vector3 = cb.pois[pk]["center"]
+				var d2: float = Vector2(player_ref.global_position.x, player_ref.global_position.z).distance_squared_to(Vector2(pc.x, pc.z))
+				if d2 < best_d2:
+					best_d2 = d2
+					best_k = ks
+		if best_k != "":
+			var norm_cat: String = "landmark" if cat == "landmark_" else cat
+			display_list.append({ "key": best_k, "cat": norm_cat, "info": cb.pois[best_k] })
+
+	for item in display_list:
+		var pkey: String = String(item["cat"])
+		var pinfo: Dictionary = item["info"]
 		var world_pos: Vector3 = pinfo["center"]
 		var dist_m: int = int(Vector2(player_ref.global_position.x, player_ref.global_position.z).distance_to(Vector2(world_pos.x, world_pos.z)))
 		var short_nm: String = String(pinfo["name"])
