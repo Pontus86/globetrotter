@@ -24,7 +24,7 @@ var city_builder: Node3D
 var ui_blocking_input: bool = false
 
 var cam_yaw: float = -0.22
-var cam_dist: float = 185.0
+var cam_dist: float = 340.0
 var rotating_cam: bool = false
 var has_click_target: bool = false
 var click_target: Vector3 = Vector3.ZERO
@@ -204,10 +204,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
-			cam_dist = clampf(cam_dist - 18.0, 75.0, 360.0)
+			cam_dist = clampf(cam_dist - 22.0, 90.0, 380.0)
 			_update_camera_transform()
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
-			cam_dist = clampf(cam_dist + 18.0, 75.0, 360.0)
+			cam_dist = clampf(cam_dist + 22.0, 90.0, 380.0)
 			_update_camera_transform()
 		elif mb.button_index == MOUSE_BUTTON_RIGHT:
 			rotating_cam = mb.pressed

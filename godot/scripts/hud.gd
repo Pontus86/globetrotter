@@ -11,6 +11,7 @@ extends CanvasLayer
 const RadarScript = preload("res://scripts/radar_minimap.gd")
 const MinigameScript = preload("res://scripts/minigame_panel.gd")
 const PoiCompassScript = preload("res://scripts/poi_compass.gd")
+const DockBadgeScript = preload("res://scripts/dock_badge.gd")
 
 var player_ref: CharacterBody3D
 
@@ -19,9 +20,9 @@ var lbl_region: Label
 var lbl_day: Label
 var lbl_clock: Label
 var lbl_cash: Label
-var btn_passport: Button
-var btn_bag: Button
-var btn_toggle_view: Button
+var dock_globe: Control
+var dock_bag: Control
+var dock_passport: Control
 var btn_sound: Button
 var danger_vignette: Panel
 var chase_banner: PanelContainer
@@ -314,46 +315,42 @@ func _build_hud() -> void:
 	)
 	bot_h.add_child(btn_hound)
 
-	# 5A. Resedocka nere till höger: Jordglob [G], Ryggsäck [B] och Pass [P] (precis som .travel-dock i webben!)
-	var dock_panel := PanelContainer.new()
-	dock_panel.anchor_left = 1.0
-	dock_panel.anchor_right = 1.0
-	dock_panel.anchor_top = 1.0
-	dock_panel.anchor_bottom = 1.0
-	dock_panel.offset_left = -340
-	dock_panel.offset_right = -16
-	dock_panel.offset_top = -76
-	dock_panel.offset_bottom = -14
-	dock_panel.add_theme_stylebox_override("panel", _make_style(Color(0.12, 0.08, 0.05, 0.94), Color(0.82, 0.64, 0.28), 14))
-	add_child(dock_panel)
-
+	# 5A. Resedocka nere till höger: Snurrande 3D-Jordglob, Läderryggsäck och Svenskt EU-Pass (exakt som .travel-dock i webben!)
 	var dock_h := HBoxContainer.new()
-	dock_h.alignment = BoxContainer.ALIGNMENT_CENTER
-	dock_h.add_theme_constant_override("separation", 8)
-	dock_panel.add_child(dock_h)
+	dock_h.anchor_left = 1.0
+	dock_h.anchor_right = 1.0
+	dock_h.anchor_top = 1.0
+	dock_h.anchor_bottom = 1.0
+	dock_h.offset_left = -258
+	dock_h.offset_right = -16
+	dock_h.offset_top = -90
+	dock_h.offset_bottom = -16
+	dock_h.alignment = BoxContainer.ALIGNMENT_END
+	dock_h.add_theme_constant_override("separation", 10)
+	add_child(dock_h)
 
-	btn_toggle_view = Button.new()
-	btn_toggle_view.text = "🌍 Glob [G]"
-	btn_toggle_view.custom_minimum_size = Vector2(96, 44)
-	btn_toggle_view.pressed.connect(func():
+	dock_globe = DockBadgeScript.new()
+	dock_globe.kind = "globe"
+	dock_globe.set_sub_text("GLOB [G]")
+	dock_globe.clicked.connect(func():
 		if not GameState.active or GameState.finished:
 			return
 		var nxt: String = "globe" if GameState.view_mode == "city" else "city"
 		GameState.set_view_mode(nxt, GameState.current_city_id)
 	)
-	dock_h.add_child(btn_toggle_view)
+	dock_h.add_child(dock_globe)
 
-	btn_bag = Button.new()
-	btn_bag.text = "🎒 Väska [B]"
-	btn_bag.custom_minimum_size = Vector2(96, 44)
-	btn_bag.pressed.connect(_open_bag_modal)
-	dock_h.add_child(btn_bag)
+	dock_bag = DockBadgeScript.new()
+	dock_bag.kind = "backpack"
+	dock_bag.set_sub_text("0 st [B]")
+	dock_bag.clicked.connect(_open_bag_modal)
+	dock_h.add_child(dock_bag)
 
-	btn_passport = Button.new()
-	btn_passport.text = "🛂 Pass 0/3"
-	btn_passport.custom_minimum_size = Vector2(102, 44)
-	btn_passport.pressed.connect(_open_passport_modal)
-	dock_h.add_child(btn_passport)
+	dock_passport = DockBadgeScript.new()
+	dock_passport.kind = "passport"
+	dock_passport.set_sub_text("0/3 [P]")
+	dock_passport.clicked.connect(_open_passport_modal)
+	dock_h.add_child(dock_passport)
 
 	# 5B. Hopfällbar 1-rads Polisradio precis ovanför dockan nere till höger
 	radio_ticker_btn = Button.new()
@@ -361,10 +358,10 @@ func _build_hud() -> void:
 	radio_ticker_btn.anchor_right = 1.0
 	radio_ticker_btn.anchor_top = 1.0
 	radio_ticker_btn.anchor_bottom = 1.0
-	radio_ticker_btn.offset_left = -340
+	radio_ticker_btn.offset_left = -310
 	radio_ticker_btn.offset_right = -16
-	radio_ticker_btn.offset_top = -114
-	radio_ticker_btn.offset_bottom = -82
+	radio_ticker_btn.offset_top = -128
+	radio_ticker_btn.offset_bottom = -96
 	radio_ticker_btn.text = "📻 Polisradio [R]"
 	radio_ticker_btn.clip_text = true
 	radio_ticker_btn.pressed.connect(func(): radio_panel.visible = not radio_panel.visible)
@@ -378,8 +375,8 @@ func _build_hud() -> void:
 	radio_panel.anchor_bottom = 1.0
 	radio_panel.offset_left = -350
 	radio_panel.offset_right = -16
-	radio_panel.offset_top = -410
-	radio_panel.offset_bottom = -120
+	radio_panel.offset_top = -424
+	radio_panel.offset_bottom = -134
 	radio_panel.add_theme_stylebox_override("panel", _make_style(Color(0.09, 0.08, 0.06, 0.96), Color(0.77, 0.61, 0.28), 10))
 	add_child(radio_panel)
 
@@ -1291,8 +1288,10 @@ func _process(delta: float) -> void:
 	lbl_day.text = "DAG %d/10" % int(clk["day"])
 	lbl_clock.text = "%s:%s" % [clk["hh"], clk["mm"]]
 	lbl_cash.text = "💰 %s" % GameState.format_kr(GameState.cash) if GameState.player_role == "thief" else "🚓 POLISCHEF"
-	btn_passport.text = "🛂 Pass %d/3" % GameState.collected_targets.size()
-	btn_toggle_view.text = "🌍 Glob [G]" if GameState.view_mode == "city" else "🏙️ Stad [G]"
+	dock_passport.set_sub_text("%d/3 [P]" % GameState.collected_targets.size())
+	dock_globe.set_sub_text("GLOB [G]" if GameState.view_mode == "city" else "STAD [G]")
+	var item_cnt: int = int(GameState.gear["lockpick"]) + int(GameState.gear["smoke"]) + int(GameState.gear["fake_pass"]) + int(GameState.gear["fast_flight"]) + int(GameState.gear["hound"]) + (1 if GameState.guide_hint_ready else 0) + (1 if GameState.skip_next_reveal else 0) + (1 if GameState.train_tap_active else 0)
+	dock_bag.set_sub_text("%d st [B]" % item_cnt)
 
 	# Siren-banner + pulserande röd/blå skärmkant under pågående jakt
 	var in_same: bool = false

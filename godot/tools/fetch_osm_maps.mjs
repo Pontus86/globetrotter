@@ -216,14 +216,23 @@ out skel qt;`;
     }
   }
 
-  // Cap buildings to max 3000 so whole city (including hub & landmarks) is densely filled!
-  if (buildings.length > 3000) {
+  // Preserve existing tile_bounds so re-fetching buildings keeps exact map alignment!
+  let existingTileBounds = null;
+  if (fs.existsSync(outFile)) {
+    try {
+      const prev = JSON.parse(fs.readFileSync(outFile, 'utf8'));
+      if (prev.tile_bounds) existingTileBounds = prev.tile_bounds;
+    } catch {}
+  }
+
+  // Cap buildings to max 8000 (chunk streaming handles thousands of buildings at 144 FPS!)
+  if (buildings.length > 8000) {
     buildings.sort((a, b) => {
       const da = a.pts[0][0] * a.pts[0][0] + a.pts[0][1] * a.pts[0][1];
       const db = b.pts[0][0] * b.pts[0][0] + b.pts[0][1] * b.pts[0][1];
       return da - db;
     });
-    buildings.length = 3000;
+    buildings.length = 8000;
   }
 
   // Compute real POI locations snapped to actual roads so player/police never spawn inside a building!
@@ -241,6 +250,7 @@ out skel qt;`;
   const out = {
     id: cid,
     bounds: [Math.round(minX), Math.round(maxX), Math.round(minZ), Math.round(maxZ)],
+    ...(existingTileBounds ? { tile_bounds: existingTileBounds } : {}),
     pois: {
       landmark: lmPt,
       hub: hubPt,

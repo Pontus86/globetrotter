@@ -6,11 +6,20 @@ extends Node3D
 ## - Riktiga gator (boulevarder, lokalgator, broar), gatunamn, parker & floder (Seine, Themsen, Mälaren, Tibern m.fl.)
 ## - 5 glittrande POI-platser på sina riktiga geografiska platser i staden
 
+const CHUNK_SIZE: float = 180.0
+const CHUNK_LOAD_RADIUS: int = 2   # 5x5 chunks = 900x900m synfält runt spelaren!
+const CHUNK_UNLOAD_RADIUS: int = 3 # Avlasta chunks >540m bort för 144 FPS
+
 var pois: Dictionary = {}
 var city_root: Node3D
 var current_city_id: String = ""
 var city_bounds: Array[float] = [-400.0, 400.0, -400.0, 400.0]
 var road_points: Array[Vector3] = []
+var focus_target: Node3D
+var chunk_data: Dictionary = {}      # Vector2i -> Array[Dictionary] (råa hus i chunken)
+var loaded_chunks: Dictionary = {}   # Vector2i -> Node3D (byggd mesh + hitbox)
+var chunk_clear_pts: Array[Vector2] = []
+var chunk_seed: int = 0
 
 const PALETTE := [
 	Color(0.76, 0.44, 0.31), # Varmt tegelrödbrunt (webbens huvudfärg!)
@@ -24,6 +33,10 @@ func build_city(city_id: String) -> void:
 	current_city_id = city_id
 	pois.clear()
 	road_points.clear()
+	chunk_data.clear()
+	loaded_chunks.clear()
+	chunk_clear_pts.clear()
+	chunk_seed = hash(city_id)
 	if city_root != null:
 		city_root.queue_free()
 	city_root = Node3D.new()
@@ -348,21 +361,48 @@ func _height_to_color(h: float) -> Color:
 	else:
 		return c40.lerp(c75, clampf((h - 40.0) / 35.0, 0.0, 1.0))
 
-func _build_osm_buildings(buildings: Array, rng: RandomNumberGenerator, clear_pts: Array[Vector2]) -> void:
-	var ws := SurfaceTool.new()
-	ws.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rs := SurfaceTool.new()
-	rs.begin(Mesh.PRIMITIVE_TRIANGLES)
-
-	var col_faces := PackedVector3Array()
+func _build_osm_buildings(buildings: Array, _rng: RandomNumberGenerator, clear_pts: Array[Vector2]) -> void:
+	# Sortera in ALLA hus i 180x180m chunks så bara husen som syns runt spelaren byggs & renderas!
+	chunk_data.clear()
+	loaded_chunks.clear()
+	chunk_clear_pts = clear_pts.duplicate()
 
 	for b_raw in buildings:
 		var b: Dictionary = b_raw
 		var pts: Array = b.get("pts", [])
 		if pts.size() < 3:
 			continue
+		var fx: float = float(pts[0][0])
+		var fz: float = float(pts[0][1])
+		var ck := Vector2i(int(floorf(fx / CHUNK_SIZE)), int(floorf(fz / CHUNK_SIZE)))
+		if not chunk_data.has(ck):
+			chunk_data[ck] = []
+		(chunk_data[ck] as Array).append(b)
 
-		# Beräkna centrum och hoppa över byggnad om den ligger rakt på en POI-spawn
+	# Ladda direkt in de närmaste chunks runt startpunkten (0,0) så staden aldrig startar tom
+	_update_building_chunks(Vector3.ZERO, 99)
+
+func _build_single_chunk(ck: Vector2i) -> Node3D:
+	var chunk_node := Node3D.new()
+	var b_list: Array = chunk_data.get(ck, [])
+	if b_list.is_empty():
+		return chunk_node
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = chunk_seed ^ (ck.x * 73856093) ^ (ck.y * 19349663)
+
+	var ws := SurfaceTool.new()
+	ws.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rs := SurfaceTool.new()
+	rs.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var col_faces := PackedVector3Array()
+
+	for b_raw in b_list:
+		var b: Dictionary = b_raw
+		var pts: Array = b.get("pts", [])
+		if pts.size() < 3:
+			continue
+
 		var sx: float = 0.0
 		var sz: float = 0.0
 		var pts2 := PackedVector2Array()
@@ -375,7 +415,7 @@ func _build_osm_buildings(buildings: Array, rng: RandomNumberGenerator, clear_pt
 		var center2 := Vector2(sx / float(pts.size()), sz / float(pts.size()))
 
 		var too_close: bool = false
-		for cp in clear_pts:
+		for cp in chunk_clear_pts:
 			if center2.distance_to(cp) < 13.0:
 				too_close = true
 				break
@@ -386,11 +426,10 @@ func _build_osm_buildings(buildings: Array, rng: RandomNumberGenerator, clear_pt
 		if h <= 0.5:
 			h = rng.randf_range(10.0, 26.0)
 		var base_col: Color = _height_to_color(h)
-		var col_bot: Color = base_col.darkened(0.32) # MapLibre-lik vertikal skugggradient vid gatan!
+		var col_bot: Color = base_col.darkened(0.32)
 		var col_top: Color = base_col
 		var col_roof: Color = base_col.darkened(0.12)
 
-		# Extrudera väggar med vertikal skugggradient + samla osynliga kollisionstrianglar!
 		var n: int = pts2.size()
 		for i in range(n):
 			var a: Vector2 = pts2[i]
@@ -404,56 +443,50 @@ func _build_osm_buildings(buildings: Array, rng: RandomNumberGenerator, clear_pt
 			var v2 := Vector3(c.x, h, c.y)
 			var v3 := Vector3(a.x, h, a.y)
 
-			ws.set_normal(norm)
-			ws.set_color(col_bot)
-			ws.add_vertex(v0)
-			ws.set_normal(norm)
-			ws.set_color(col_bot)
-			ws.add_vertex(v1)
-			ws.set_normal(norm)
-			ws.set_color(col_top)
-			ws.add_vertex(v2)
+			ws.set_normal(norm); ws.set_color(col_bot); ws.add_vertex(v0)
+			ws.set_normal(norm); ws.set_color(col_bot); ws.add_vertex(v1)
+			ws.set_normal(norm); ws.set_color(col_top); ws.add_vertex(v2)
 
-			ws.set_normal(norm)
-			ws.set_color(col_bot)
-			ws.add_vertex(v0)
-			ws.set_normal(norm)
-			ws.set_color(col_top)
-			ws.add_vertex(v2)
-			ws.set_normal(norm)
-			ws.set_color(col_top)
-			ws.add_vertex(v3)
+			ws.set_normal(norm); ws.set_color(col_bot); ws.add_vertex(v0)
+			ws.set_normal(norm); ws.set_color(col_top); ws.add_vertex(v2)
+			ws.set_normal(norm); ws.set_color(col_top); ws.add_vertex(v3)
 
-			# Kollisionsvägg (höjd 8m räcker för CharacterBody3D!)
 			var cv2 := Vector3(c.x, 8.0, c.y)
 			var cv3 := Vector3(a.x, 8.0, a.y)
-			col_faces.append(v0)
-			col_faces.append(v1)
-			col_faces.append(cv2)
-			col_faces.append(v0)
-			col_faces.append(cv2)
-			col_faces.append(cv3)
+			col_faces.append(v0); col_faces.append(v1); col_faces.append(cv2)
+			col_faces.append(v0); col_faces.append(cv2); col_faces.append(cv3)
 
-		# Takpolygon (med husets höjdfärg!)
 		var tris: PackedInt32Array = Geometry2D.triangulate_polygon(pts2)
 		for i in range(0, tris.size(), 3):
 			var ta: Vector2 = pts2[tris[i]]
 			var tb: Vector2 = pts2[tris[i + 1]]
 			var tc: Vector2 = pts2[tris[i + 2]]
-			rs.set_normal(Vector3.UP)
-			rs.set_color(col_roof)
-			rs.add_vertex(Vector3(ta.x, h, ta.y))
-			rs.set_normal(Vector3.UP)
-			rs.set_color(col_roof)
-			rs.add_vertex(Vector3(tb.x, h, tb.y))
-			rs.set_normal(Vector3.UP)
-			rs.set_color(col_roof)
-			rs.add_vertex(Vector3(tc.x, h, tc.y))
+			rs.set_normal(Vector3.UP); rs.set_color(col_roof); rs.add_vertex(Vector3(ta.x, h, ta.y))
+			rs.set_normal(Vector3.UP); rs.set_color(col_roof); rs.add_vertex(Vector3(tb.x, h, tb.y))
+			rs.set_normal(Vector3.UP); rs.set_color(col_roof); rs.add_vertex(Vector3(tc.x, h, tc.y))
 
-	_commit_surface(ws, Color.WHITE, 0.82, true)
-	_commit_surface(rs, Color.WHITE, 0.88, true)
+	var wmesh: ArrayMesh = ws.commit()
+	if wmesh.get_surface_count() > 0:
+		var wmi := MeshInstance3D.new()
+		wmi.mesh = wmesh
+		var wmat := StandardMaterial3D.new()
+		wmat.vertex_color_use_as_albedo = true
+		wmat.roughness = 0.82
+		wmat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		wmi.material_override = wmat
+		chunk_node.add_child(wmi)
 
-	# 1 gemensam StaticBody3D med ConcavePolygonShape3D för ALLA hus i staden!
+	var rmesh: ArrayMesh = rs.commit()
+	if rmesh.get_surface_count() > 0:
+		var rmi := MeshInstance3D.new()
+		rmi.mesh = rmesh
+		var rmat := StandardMaterial3D.new()
+		rmat.vertex_color_use_as_albedo = true
+		rmat.roughness = 0.88
+		rmat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		rmi.material_override = rmat
+		chunk_node.add_child(rmi)
+
 	if col_faces.size() >= 3:
 		var sb := StaticBody3D.new()
 		var cs := CollisionShape3D.new()
@@ -462,7 +495,39 @@ func _build_osm_buildings(buildings: Array, rng: RandomNumberGenerator, clear_pt
 		shape.set_faces(col_faces)
 		cs.shape = shape
 		sb.add_child(cs)
-		city_root.add_child(sb)
+		chunk_node.add_child(sb)
+
+	return chunk_node
+
+func _update_building_chunks(center_pos: Vector3, max_build_per_frame: int = 2) -> void:
+	if chunk_data.is_empty() or city_root == null:
+		return
+	var pc := Vector2i(int(floorf(center_pos.x / CHUNK_SIZE)), int(floorf(center_pos.z / CHUNK_SIZE)))
+
+	# Avlasta chunks som hamnat långt utanför synfältet
+	var to_unload: Array[Vector2i] = []
+	for ck_raw in loaded_chunks.keys():
+		var ck: Vector2i = ck_raw
+		if absi(ck.x - pc.x) > CHUNK_UNLOAD_RADIUS or absi(ck.y - pc.y) > CHUNK_UNLOAD_RADIUS:
+			to_unload.append(ck)
+	for ck in to_unload:
+		var nd: Node3D = loaded_chunks[ck]
+		if is_instance_valid(nd):
+			nd.queue_free()
+		loaded_chunks.erase(ck)
+
+	# Ladda in synliga chunks runt spelaren (max 2/frame för 0 lagg!)
+	var built_now: int = 0
+	for dx in range(-CHUNK_LOAD_RADIUS, CHUNK_LOAD_RADIUS + 1):
+		for dz in range(-CHUNK_LOAD_RADIUS, CHUNK_LOAD_RADIUS + 1):
+			var ck := Vector2i(pc.x + dx, pc.y + dz)
+			if chunk_data.has(ck) and not loaded_chunks.has(ck):
+				var nd: Node3D = _build_single_chunk(ck)
+				city_root.add_child(nd)
+				loaded_chunks[ck] = nd
+				built_now += 1
+				if built_now >= max_build_per_frame:
+					return
 
 func _add_osm_poi_marker(pkey: String, title: String, center: Vector3, col: Color, city_id: String) -> void:
 	# Glittrande gyllene aura-ring direkt på gatan/torget!
@@ -614,6 +679,8 @@ func get_police_spawn_pos() -> Vector3:
 	return Vector3(120.0, 0.1, -120.0)
 
 func _process(delta: float) -> void:
+	if is_visible_in_tree() and focus_target != null and not chunk_data.is_empty():
+		_update_building_chunks(focus_target.global_position, 2)
 	var t: float = float(Time.get_ticks_msec()) * 0.004
 	for pkey in pois.keys():
 		var r: MeshInstance3D = pois[pkey]["ring"]

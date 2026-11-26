@@ -56,6 +56,7 @@ func _ready() -> void:
 	player = PlayerScript.new()
 	player.city_builder = city_builder
 	city_container.add_child(player)
+	city_builder.focus_target = player
 
 	globe = GlobeScript.new()
 	globe.visible = false

@@ -372,7 +372,8 @@ func _process(delta: float) -> void:
 	if auto_center_active and not dragging:
 		rot_y = lerp_angle(rot_y, target_rot_y, clampf(delta * 4.5, 0.0, 1.0))
 		rot_x = lerpf(rot_x, target_rot_x, clampf(delta * 4.5, 0.0, 1.0))
-	globe_pivot.rotation = Vector3(rot_x, rot_y, 0.0)
+	# Applicera alltid Y-rotation (longitud) FÖRST, sedan X-rotation (latitud) så Europa & spelaren alltid hamnar mitt framför kameran!
+	globe_pivot.transform.basis = Basis(Vector3.RIGHT, rot_x) * Basis(Vector3.UP, rot_y)
 	camera.position.z = lerpf(camera.position.z, zoom_dist, 0.15)
 	if clouds_mesh != null:
 		clouds_mesh.rotate_y(delta * 0.012)
