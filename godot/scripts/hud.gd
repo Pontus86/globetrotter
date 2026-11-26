@@ -10,10 +10,13 @@ extends CanvasLayer
 
 const RadarScript = preload("res://scripts/radar_minimap.gd")
 const MinigameScript = preload("res://scripts/minigame_panel.gd")
+const PoiCompassScript = preload("res://scripts/poi_compass.gd")
 
 var player_ref: CharacterBody3D
 
 var lbl_city: Label
+var lbl_region: Label
+var lbl_day: Label
 var lbl_clock: Label
 var lbl_cash: Label
 var btn_passport: Button
@@ -24,6 +27,7 @@ var danger_vignette: Panel
 var chase_banner: PanelContainer
 var lbl_chase: Label
 
+var poi_compass: Control
 var radar_minimap: Control
 
 var lbl_status: Label
@@ -119,55 +123,68 @@ func _build_hud() -> void:
 	danger_vignette.add_theme_stylebox_override("panel", dv_sb)
 	add_child(danger_vignette)
 
-	# 1. Topp-list
-	var top_panel := PanelContainer.new()
-	top_panel.anchor_left = 0.01
-	top_panel.anchor_right = 0.99
-	top_panel.anchor_top = 0.014
-	top_panel.offset_bottom = 52
-	top_panel.add_theme_stylebox_override("panel", _make_style(Color(0.11, 0.08, 0.05, 0.92), Color(0.77, 0.61, 0.28), 10))
-	add_child(top_panel)
+	# 0.5 Skärmkant-kompass & avstånd i meter för stadens 5 POI-platser!
+	poi_compass = PoiCompassScript.new()
+	poi_compass.player_ref = player_ref
+	add_child(poi_compass)
 
-	var top_h := HBoxContainer.new()
-	top_h.add_theme_constant_override("separation", 14)
-	top_panel.add_child(top_h)
+	# 1A. Uppe till vänster: Klassisk mässings-stadsskylt (precis som .city-plate i webben!)
+	var city_plate := PanelContainer.new()
+	city_plate.anchor_left = 0.0
+	city_plate.anchor_top = 0.0
+	city_plate.offset_left = 16
+	city_plate.offset_top = 14
+	city_plate.offset_right = 276
+	city_plate.offset_bottom = 78
+	city_plate.add_theme_stylebox_override("panel", _make_style(Color(0.13, 0.09, 0.05, 0.94), Color(0.82, 0.64, 0.28), 10))
+	add_child(city_plate)
+
+	var plate_v := VBoxContainer.new()
+	plate_v.add_theme_constant_override("separation", 2)
+	city_plate.add_child(plate_v)
 
 	lbl_city = Label.new()
-	lbl_city.text = "PARIS"
-	lbl_city.add_theme_font_size_override("font_size", 18)
-	lbl_city.add_theme_color_override("font_color", Color(1.0, 0.86, 0.45))
-	top_h.add_child(lbl_city)
+	lbl_city.text = "STOCKHOLM"
+	lbl_city.add_theme_font_size_override("font_size", 21)
+	lbl_city.add_theme_color_override("font_color", Color(1.0, 0.88, 0.48))
+	plate_v.add_child(lbl_city)
+
+	lbl_region = Label.new()
+	lbl_region.text = "Sverige · 3D-STAD"
+	lbl_region.add_theme_font_size_override("font_size", 12)
+	lbl_region.add_theme_color_override("font_color", Color(0.86, 0.80, 0.66))
+	plate_v.add_child(lbl_region)
+
+	# 1B. Uppe till höger: Kompakta 90-tals reseinstrument (Kalender, Klocka, Resekassa, Ljud, Meny)
+	var hud_tr := PanelContainer.new()
+	hud_tr.anchor_left = 1.0
+	hud_tr.anchor_right = 1.0
+	hud_tr.anchor_top = 0.0
+	hud_tr.offset_left = -450
+	hud_tr.offset_right = -16
+	hud_tr.offset_top = 14
+	hud_tr.offset_bottom = 66
+	hud_tr.add_theme_stylebox_override("panel", _make_style(Color(0.12, 0.08, 0.05, 0.93), Color(0.77, 0.61, 0.28), 10))
+	add_child(hud_tr)
+
+	var top_h := HBoxContainer.new()
+	top_h.alignment = BoxContainer.ALIGNMENT_END
+	top_h.add_theme_constant_override("separation", 12)
+	hud_tr.add_child(top_h)
+
+	lbl_day = Label.new()
+	lbl_day.text = "DAG 1/10"
+	lbl_day.add_theme_color_override("font_color", Color(1.0, 0.86, 0.45))
+	top_h.add_child(lbl_day)
 
 	lbl_clock = Label.new()
-	lbl_clock.text = "DAG 1/10 · 00:00"
-	lbl_clock.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	lbl_clock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_clock.text = "00:00"
 	top_h.add_child(lbl_clock)
 
 	lbl_cash = Label.new()
 	lbl_cash.text = "💰 2200 kr"
 	lbl_cash.add_theme_color_override("font_color", Color(0.65, 0.96, 0.72))
 	top_h.add_child(lbl_cash)
-
-	btn_passport = Button.new()
-	btn_passport.text = "🛂 Pass (0/3) [P]"
-	btn_passport.pressed.connect(_open_passport_modal)
-	top_h.add_child(btn_passport)
-
-	btn_bag = Button.new()
-	btn_bag.text = "🎒 Väska [B]"
-	btn_bag.pressed.connect(_open_bag_modal)
-	top_h.add_child(btn_bag)
-
-	btn_toggle_view = Button.new()
-	btn_toggle_view.text = "🌍 3D-Glob [G]"
-	btn_toggle_view.pressed.connect(func():
-		if not GameState.active or GameState.finished:
-			return
-		var nxt: String = "globe" if GameState.view_mode == "city" else "city"
-		GameState.set_view_mode(nxt, GameState.current_city_id)
-	)
-	top_h.add_child(btn_toggle_view)
 
 	btn_sound = Button.new()
 	btn_sound.text = "🔊"
@@ -178,7 +195,7 @@ func _build_hud() -> void:
 	top_h.add_child(btn_sound)
 
 	var btn_menu := Button.new()
-	btn_menu.text = "☰"
+	btn_menu.text = "☰ MENY"
 	btn_menu.pressed.connect(_open_pause_or_start_modal)
 	top_h.add_child(btn_menu)
 
@@ -211,10 +228,10 @@ func _build_hud() -> void:
 	radar_minimap.offset_bottom = -16
 	add_child(radar_minimap)
 
-	# 4. Slimmad botten-list
+	# 4. Slimmad botten-list i mitten (precis som .sy-compass-panel!)
 	var bot_panel := PanelContainer.new()
-	bot_panel.anchor_left = 0.22
-	bot_panel.anchor_right = 0.78
+	bot_panel.anchor_left = 0.20
+	bot_panel.anchor_right = 0.70
 	bot_panel.anchor_top = 1.0
 	bot_panel.anchor_bottom = 1.0
 	bot_panel.offset_top = -60
@@ -297,16 +314,57 @@ func _build_hud() -> void:
 	)
 	bot_h.add_child(btn_hound)
 
-	# 5. Hopfällbar 1-rads Polisradio nere till höger
+	# 5A. Resedocka nere till höger: Jordglob [G], Ryggsäck [B] och Pass [P] (precis som .travel-dock i webben!)
+	var dock_panel := PanelContainer.new()
+	dock_panel.anchor_left = 1.0
+	dock_panel.anchor_right = 1.0
+	dock_panel.anchor_top = 1.0
+	dock_panel.anchor_bottom = 1.0
+	dock_panel.offset_left = -340
+	dock_panel.offset_right = -16
+	dock_panel.offset_top = -76
+	dock_panel.offset_bottom = -14
+	dock_panel.add_theme_stylebox_override("panel", _make_style(Color(0.12, 0.08, 0.05, 0.94), Color(0.82, 0.64, 0.28), 14))
+	add_child(dock_panel)
+
+	var dock_h := HBoxContainer.new()
+	dock_h.alignment = BoxContainer.ALIGNMENT_CENTER
+	dock_h.add_theme_constant_override("separation", 8)
+	dock_panel.add_child(dock_h)
+
+	btn_toggle_view = Button.new()
+	btn_toggle_view.text = "🌍 Glob [G]"
+	btn_toggle_view.custom_minimum_size = Vector2(96, 44)
+	btn_toggle_view.pressed.connect(func():
+		if not GameState.active or GameState.finished:
+			return
+		var nxt: String = "globe" if GameState.view_mode == "city" else "city"
+		GameState.set_view_mode(nxt, GameState.current_city_id)
+	)
+	dock_h.add_child(btn_toggle_view)
+
+	btn_bag = Button.new()
+	btn_bag.text = "🎒 Väska [B]"
+	btn_bag.custom_minimum_size = Vector2(96, 44)
+	btn_bag.pressed.connect(_open_bag_modal)
+	dock_h.add_child(btn_bag)
+
+	btn_passport = Button.new()
+	btn_passport.text = "🛂 Pass 0/3"
+	btn_passport.custom_minimum_size = Vector2(102, 44)
+	btn_passport.pressed.connect(_open_passport_modal)
+	dock_h.add_child(btn_passport)
+
+	# 5B. Hopfällbar 1-rads Polisradio precis ovanför dockan nere till höger
 	radio_ticker_btn = Button.new()
 	radio_ticker_btn.anchor_left = 1.0
 	radio_ticker_btn.anchor_right = 1.0
 	radio_ticker_btn.anchor_top = 1.0
 	radio_ticker_btn.anchor_bottom = 1.0
-	radio_ticker_btn.offset_left = -320
+	radio_ticker_btn.offset_left = -340
 	radio_ticker_btn.offset_right = -16
-	radio_ticker_btn.offset_top = -54
-	radio_ticker_btn.offset_bottom = -18
+	radio_ticker_btn.offset_top = -114
+	radio_ticker_btn.offset_bottom = -82
 	radio_ticker_btn.text = "📻 Polisradio [R]"
 	radio_ticker_btn.clip_text = true
 	radio_ticker_btn.pressed.connect(func(): radio_panel.visible = not radio_panel.visible)
@@ -318,10 +376,10 @@ func _build_hud() -> void:
 	radio_panel.anchor_right = 1.0
 	radio_panel.anchor_top = 1.0
 	radio_panel.anchor_bottom = 1.0
-	radio_panel.offset_left = -336
+	radio_panel.offset_left = -350
 	radio_panel.offset_right = -16
-	radio_panel.offset_top = -350
-	radio_panel.offset_bottom = -62
+	radio_panel.offset_top = -410
+	radio_panel.offset_bottom = -120
 	radio_panel.add_theme_stylebox_override("panel", _make_style(Color(0.09, 0.08, 0.06, 0.96), Color(0.77, 0.61, 0.28), 10))
 	add_child(radio_panel)
 
@@ -1223,11 +1281,18 @@ func _process(delta: float) -> void:
 		return
 	var clk: Dictionary = GameState.get_clock()
 	var actor: Dictionary = GameState.get_controlled_actor()
-	lbl_city.text = "%s (%s)" % [String(GameState.cities[GameState.current_city_id]["name"]).to_upper(), "3D-STAD" if GameState.view_mode == "city" else "3D-GLOB"]
-	lbl_clock.text = "DAG %d / 10  ·  %s:%s" % [int(clk["day"]), clk["hh"], clk["mm"]]
+	var cur_c: Dictionary = GameState.cities[GameState.current_city_id]
+	lbl_city.text = String(cur_c["name"]).to_upper()
+	if actor.get("travel") != null:
+		var tr: Dictionary = actor["travel"]
+		lbl_region.text = "%s → %s" % [String(GameState.cities[tr["from"]]["name"]), String(GameState.cities[tr["to"]]["name"])]
+	else:
+		lbl_region.text = "%s · %s" % [String(cur_c.get("country", "EUROPA")), "3D-STAD" if GameState.view_mode == "city" else "3D-GLOB"]
+	lbl_day.text = "DAG %d/10" % int(clk["day"])
+	lbl_clock.text = "%s:%s" % [clk["hh"], clk["mm"]]
 	lbl_cash.text = "💰 %s" % GameState.format_kr(GameState.cash) if GameState.player_role == "thief" else "🚓 POLISCHEF"
-	btn_passport.text = "🛂 Pass (%d/3) [P]" % GameState.collected_targets.size()
-	btn_toggle_view.text = "🌍 3D-Glob [G]" if GameState.view_mode == "city" else "🏙️ 3D-Stad [G]"
+	btn_passport.text = "🛂 Pass %d/3" % GameState.collected_targets.size()
+	btn_toggle_view.text = "🌍 Glob [G]" if GameState.view_mode == "city" else "🏙️ Stad [G]"
 
 	# Siren-banner + pulserande röd/blå skärmkant under pågående jakt
 	var in_same: bool = false

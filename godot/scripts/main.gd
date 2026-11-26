@@ -8,6 +8,7 @@ const PlayerScript = preload("res://scripts/player_controller.gd")
 const PoliceScript = preload("res://scripts/police_unit.gd")
 const GlobeScript = preload("res://scripts/globe_3d.gd")
 const HudScript = preload("res://scripts/hud.gd")
+const RunnerFigureScript = preload("res://scripts/runner_figure.gd")
 
 var city_container: Node3D
 var city_builder: Node3D
@@ -126,7 +127,7 @@ func _process(_delta: float) -> void:
 			ai_thief_node.queue_free()
 			ai_thief_node = null
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if not GameState.active or GameState.finished or GameState.view_mode != "city":
 		GameState.nearest_police_dist_in_city = 999.0
 		GameState.nearest_police_chasing = false
@@ -153,6 +154,11 @@ func _physics_process(_delta: float) -> void:
 			ai_thief_node.velocity = Vector3(dir.x * 36.5, 0.0, dir.z * 36.5)
 			ai_thief_node.move_and_slide()
 			ai_thief_node.global_position.y = 0.1
+		else:
+			ai_thief_node.velocity = Vector3.ZERO
+		var rf: Node = ai_thief_node.get_node_or_null("RunnerFig")
+		if rf != null:
+			rf.update_run(ai_thief_node.velocity, delta)
 		var cap_r: float = GameState.CAPTURE_DIST_M * (2.0 if GameState.elapsed_sec < GameState.hound_until else 1.0)
 		var dist: float = Vector2(player.global_position.x, player.global_position.z).distance_to(Vector2(ai_thief_node.global_position.x, ai_thief_node.global_position.z))
 		if dist <= cap_r:
@@ -160,35 +166,27 @@ func _physics_process(_delta: float) -> void:
 
 func _spawn_ai_thief() -> CharacterBody3D:
 	var th := CharacterBody3D.new()
-	var m := MeshInstance3D.new()
-	var cap := CapsuleMesh.new()
-	cap.radius = 1.6
-	cap.height = 5.0
-	m.mesh = cap
-	m.position = Vector3(0.0, 2.5, 0.0)
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.95, 0.18, 0.18)
-	mat.emission_enabled = true
-	mat.emission = Color(0.6, 0.1, 0.1)
-	m.material_override = mat
-	th.add_child(m)
+	var rf: Node3D = RunnerFigureScript.new()
+	rf.name = "RunnerFig"
+	rf.setup(false)
+	th.add_child(rf)
 
 	var col := CollisionShape3D.new()
 	var sh := CapsuleShape3D.new()
-	sh.radius = 1.6
-	sh.height = 5.0
+	sh.radius = 2.0
+	sh.height = 6.0
 	col.shape = sh
-	col.position = Vector3(0.0, 2.5, 0.0)
+	col.position = Vector3(0.0, 3.0, 0.0)
 	th.add_child(col)
 
 	var lbl := Label3D.new()
 	lbl.text = "🕵️ TJUVEN!"
 	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	lbl.font_size = 42
-	lbl.pixel_size = 0.06
-	lbl.position = Vector3(0.0, 7.6, 0.0)
+	lbl.font_size = 44
+	lbl.pixel_size = 0.085
+	lbl.position = Vector3(0.0, 11.5, 0.0)
 	lbl.modulate = Color(1.0, 0.4, 0.4)
-	lbl.outline_size = 8
+	lbl.outline_size = 10
 	th.add_child(lbl)
 
 	city_container.add_child(th)

@@ -21,7 +21,10 @@ var city_hitboxes: Dictionary = {} # StaticBody3D -> city_id
 
 var rot_y: float = PI + 0.18
 var rot_x: float = 0.82
-var zoom_dist: float = 17.5
+var target_rot_y: float = PI + 0.18
+var target_rot_x: float = 0.82
+var auto_center_active: bool = true
+var zoom_dist: float = 16.0
 var dragging: bool = false
 var drag_moved: float = 0.0
 
@@ -103,11 +106,48 @@ func _ready() -> void:
 	camera.position = Vector3(0.0, 0.0, zoom_dist)
 	add_child(camera)
 
-	GameState.match_started.connect(_rebuild_all)
+	GameState.match_started.connect(func():
+		_rebuild_all()
+		_focus_on_actor(true)
+	)
 	GameState.target_updated.connect(_rebuild_all)
-	GameState.city_arrived.connect(func(_cid): _rebuild_markers())
-	GameState.view_changed.connect(func(_m, _c): _rebuild_markers())
+	GameState.city_arrived.connect(func(_cid):
+		_rebuild_markers()
+		_focus_on_actor(false)
+	)
+	GameState.view_changed.connect(func(mode, _c):
+		_rebuild_markers()
+		if mode == "globe":
+			_focus_on_actor(false)
+	)
 	_rebuild_all()
+
+func _focus_on_lon_lat(lon_deg: float, lat_deg: float, snap: bool = false) -> void:
+	target_rot_y = PI - deg_to_rad(lon_deg)
+	target_rot_x = clampf(deg_to_rad(lat_deg), -1.15, 1.25)
+	auto_center_active = true
+	if snap:
+		rot_y = target_rot_y
+		rot_x = target_rot_x
+
+func _focus_on_actor(snap: bool = false) -> void:
+	var actor: Dictionary = GameState.get_controlled_actor()
+	if actor.is_empty():
+		_focus_on_lon_lat(10.0, 48.0, snap)
+		return
+	if actor.get("travel") != null:
+		var t: Dictionary = actor["travel"]
+		var frac: float = clampf((GameState.elapsed_sec - float(t["start_sec"])) / float(t["duration_sec"]), 0.0, 1.0)
+		var a: Array = GameState.cities[t["from"]]["center"]
+		var b: Array = GameState.cities[t["to"]]["center"]
+		_focus_on_lon_lat(lerpf(float(a[0]), float(b[0]), frac), lerpf(float(a[1]), float(b[1]), frac), snap)
+	else:
+		var cid: String = String(actor.get("city", ""))
+		if GameState.cities.has(cid):
+			var c: Array = GameState.cities[cid]["center"]
+			_focus_on_lon_lat(float(c[0]), float(c[1]), snap)
+		else:
+			_focus_on_lon_lat(10.0, 48.0, snap)
 
 func _lat_lon_to_vec3(lon_deg: float, lat_deg: float, radius: float = GLOBE_RADIUS + 0.14) -> Vector3:
 	var lat: float = deg_to_rad(lat_deg)
@@ -302,6 +342,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion and dragging:
 		var mm: InputEventMouseMotion = event
 		drag_moved += mm.relative.length()
+		auto_center_active = false
 		rot_y += mm.relative.x * 0.007
 		rot_x = clampf(rot_x + mm.relative.y * 0.007, -1.2, 1.35)
 
@@ -325,6 +366,12 @@ func _try_click_city(screen_pos: Vector2) -> void:
 func _process(delta: float) -> void:
 	if not visible or not GameState.active:
 		return
+	var ctrl_actor: Dictionary = GameState.get_controlled_actor()
+	if not dragging and ctrl_actor.get("travel") != null:
+		_focus_on_actor(false)
+	if auto_center_active and not dragging:
+		rot_y = lerp_angle(rot_y, target_rot_y, clampf(delta * 4.5, 0.0, 1.0))
+		rot_x = lerpf(rot_x, target_rot_x, clampf(delta * 4.5, 0.0, 1.0))
 	globe_pivot.rotation = Vector3(rot_x, rot_y, 0.0)
 	camera.position.z = lerpf(camera.position.z, zoom_dist, 0.15)
 	if clouds_mesh != null:

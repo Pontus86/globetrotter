@@ -7,10 +7,12 @@ extends CharacterBody3D
 
 const CHASE_SPEED: float = 35.5
 const SEARCH_SPEED: float = 28.0
+const RunnerFigureScript = preload("res://scripts/runner_figure.gd")
 
 var police_data: Dictionary = {}
 var target_player: CharacterBody3D
 var city_builder: Node3D
+var runner_fig: Node3D
 var alert_state: String = "patrol" # "chasing" | "searching" | "patrol"
 var spotted_pos: Vector3 = Vector3.ZERO
 var has_spotted_pos: bool = false
@@ -18,36 +20,27 @@ var stuck_timer: float = 0.0
 var detour_sign: float = 1.0
 
 func _ready() -> void:
-	# Polisens 3D-figur (blå uniform)
-	var mesh := MeshInstance3D.new()
-	var cap := CapsuleMesh.new()
-	cap.radius = 1.7
-	cap.height = 5.2
-	mesh.mesh = cap
-	mesh.position = Vector3(0.0, 2.6, 0.0)
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.10, 0.56, 0.92)
-	mat.emission_enabled = true
-	mat.emission = Color(0.06, 0.25, 0.55)
-	mesh.material_override = mat
-	add_child(mesh)
+	# Animerad springande 3D-polisfigur (blå uniform + poliskeps!)
+	runner_fig = RunnerFigureScript.new()
+	runner_fig.setup(true)
+	add_child(runner_fig)
 
 	var col := CollisionShape3D.new()
 	var shape := CapsuleShape3D.new()
-	shape.radius = 1.7
-	shape.height = 5.2
+	shape.radius = 2.0
+	shape.height = 6.0
 	col.shape = shape
-	col.position = Vector3(0.0, 2.6, 0.0)
+	col.position = Vector3(0.0, 3.0, 0.0)
 	add_child(col)
 
 	var lbl := Label3D.new()
 	lbl.text = "🚓 " + String(police_data.get("short", "Polis"))
 	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	lbl.font_size = 38
-	lbl.pixel_size = 0.055
-	lbl.position = Vector3(0.0, 7.6, 0.0)
+	lbl.font_size = 44
+	lbl.pixel_size = 0.085
+	lbl.position = Vector3(0.0, 11.5, 0.0)
 	lbl.modulate = Color(0.65, 0.90, 1.0)
-	lbl.outline_size = 8
+	lbl.outline_size = 10
 	add_child(lbl)
 
 	# Synlig RÖD gripanderadie-cirkel direkt på gatan!
@@ -139,6 +132,8 @@ func _physics_process(delta: float) -> void:
 	var prev_pos := global_position
 	move_and_slide()
 	global_position.y = 0.1
+	if runner_fig != null:
+		runner_fig.update_run(velocity, delta)
 
 	# Om polisen skrapar mot ett verkligt OSM-hus, styr smidigt runt hörnet!
 	if get_slide_collision_count() > 0 and prev_pos.distance_to(global_position) < 0.15:

@@ -13,11 +13,11 @@ var city_bounds: Array[float] = [-400.0, 400.0, -400.0, 400.0]
 var road_points: Array[Vector3] = []
 
 const PALETTE := [
-	Color(0.92, 0.86, 0.76), # Varm sandsten
-	Color(0.88, 0.80, 0.68), # Kalksten
-	Color(0.84, 0.69, 0.56), # Terrakotta
-	Color(0.80, 0.63, 0.50), # Varmt tegel
-	Color(0.94, 0.90, 0.83)  # Gräddvit puts
+	Color(0.76, 0.44, 0.31), # Varmt tegelrödbrunt (webbens huvudfärg!)
+	Color(0.69, 0.37, 0.26), # Klassiskt europeiskt tegel
+	Color(0.81, 0.51, 0.36), # Ljus terrakotta
+	Color(0.62, 0.32, 0.23), # Mörkt bränt tegel
+	Color(0.73, 0.47, 0.34)  # Varm ockra-terrakotta
 ]
 
 func build_city(city_id: String) -> void:
@@ -66,8 +66,8 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 	g_mesh.mesh = g_box
 	g_mesh.position = Vector3(cx, -1.0, cz)
 	var g_mat := StandardMaterial3D.new()
-	g_mat.albedo_color = Color(0.86, 0.84, 0.79)
-	g_mat.roughness = 0.95
+	g_mat.albedo_color = Color(0.82, 0.78, 0.71)
+	g_mat.roughness = 0.96
 	g_mesh.material_override = g_mat
 	ground.add_child(g_mesh)
 
@@ -79,15 +79,16 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 	ground.add_child(g_col)
 	city_root.add_child(ground)
 
-	# 2. Riktiga Parker (gröna polygoner)
+	# 2. Riktiga Parker (gröna polygoner + 3D-träd!)
 	var parks_arr: Array = osm.get("parks", [])
 	if parks_arr.size() > 0:
-		_build_flat_polygons(parks_arr, 0.06, Color(0.67, 0.83, 0.61), 0.92)
+		_build_flat_polygons(parks_arr, 0.08, Color(0.46, 0.68, 0.42), 0.92)
+		_build_park_trees(parks_arr, rng)
 
-	# 3. Riktigt Vatten & Floder
+	# 3. Riktigt Vatten & Floder (klarblått med havsglans!)
 	var waters_arr: Array = osm.get("waters", [])
 	if waters_arr.size() > 0:
-		_build_flat_polygons(waters_arr, 0.10, Color(0.42, 0.70, 0.88), 0.25)
+		_build_flat_polygons(waters_arr, 0.14, Color(0.20, 0.52, 0.78), 0.18)
 
 	# 4. Riktiga Gator, Boulevarder, Broar & Flodband
 	var roads_arr: Array = osm.get("roads", [])
@@ -242,10 +243,46 @@ func _build_roads(roads: Array) -> void:
 			slbl.outline_modulate = Color(1.0, 0.98, 0.94, 0.9)
 			city_root.add_child(slbl)
 
-	_commit_surface(st_river, Color(0.42, 0.70, 0.88), 0.25)
-	_commit_surface(st_minor, Color(0.96, 0.95, 0.92), 0.92)
-	_commit_surface(st_major, Color(0.99, 0.91, 0.68), 0.90)
-	_commit_surface(st_bridge, Color(0.80, 0.78, 0.74), 0.88)
+	_commit_surface(st_river, Color(0.20, 0.52, 0.78), 0.18)
+	_commit_surface(st_minor, Color(0.36, 0.38, 0.42), 0.90)
+	_commit_surface(st_major, Color(0.28, 0.30, 0.34), 0.88)
+	_commit_surface(st_bridge, Color(0.68, 0.64, 0.58), 0.86)
+
+func _build_park_trees(parks: Array, rng: RandomNumberGenerator) -> void:
+	var tree_count: int = 0
+	var trunk_mat := StandardMaterial3D.new()
+	trunk_mat.albedo_color = Color(0.36, 0.25, 0.16)
+	var leaf_mat := StandardMaterial3D.new()
+	leaf_mat.albedo_color = Color(0.24, 0.52, 0.25)
+	leaf_mat.roughness = 0.85
+
+	for poly_raw in parks:
+		if tree_count >= 55:
+			break
+		var poly: Array = poly_raw
+		if poly.size() < 3:
+			continue
+		var sx: float = 0.0
+		var sz: float = 0.0
+		for p in poly:
+			sx += float(p[0])
+			sz += float(p[1])
+		var cx: float = sx / float(poly.size())
+		var cz: float = sz / float(poly.size())
+		for _k in range(2):
+			if tree_count >= 55:
+				break
+			var ox: float = rng.randf_range(-10.0, 10.0)
+			var oz: float = rng.randf_range(-10.0, 10.0)
+			var crown := MeshInstance3D.new()
+			var sm := SphereMesh.new()
+			sm.radius = rng.randf_range(3.2, 5.2)
+			sm.height = sm.radius * 2.0
+			crown.mesh = sm
+			crown.position = Vector3(cx + ox, 5.5, cz + oz)
+			crown.material_override = leaf_mat
+			city_root.add_child(crown)
+			tree_count += 1
 
 func _commit_surface(st: SurfaceTool, color: Color, rough: float) -> void:
 	var mesh: ArrayMesh = st.commit()
@@ -358,8 +395,8 @@ func _build_osm_buildings(buildings: Array, rng: RandomNumberGenerator, clear_pt
 
 	for idx in range(PALETTE.size()):
 		var base_col: Color = PALETTE[idx]
-		_commit_surface(wall_sts[idx], base_col, 0.82)
-		_commit_surface(roof_sts[idx], base_col.darkened(0.16), 0.88)
+		_commit_surface(wall_sts[idx], base_col, 0.80)
+		_commit_surface(roof_sts[idx], base_col.darkened(0.28), 0.88)
 
 	# 1 gemensam StaticBody3D med ConcavePolygonShape3D för ALLA hus i staden!
 	if col_faces.size() >= 3:

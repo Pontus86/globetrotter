@@ -8,10 +8,11 @@ extends CharacterBody3D
 
 const BASE_SPEED: float = 48.0
 const INTERACT_RANGE: float = 28.0
+const RunnerFigureScript = preload("res://scripts/runner_figure.gd")
 
 var cam_pivot: Node3D
 var camera: Camera3D
-var body_mesh: MeshInstance3D
+var runner_fig: Node3D
 var name_label: Label3D
 var police_cap_ring: MeshInstance3D
 var police_vis_ring: MeshInstance3D
@@ -23,34 +24,29 @@ var city_builder: Node3D
 var ui_blocking_input: bool = false
 
 var cam_yaw: float = -0.22
-var cam_dist: float = 92.0
+var cam_dist: float = 205.0
 var rotating_cam: bool = false
 var has_click_target: bool = false
 var click_target: Vector3 = Vector3.ZERO
 
 func _ready() -> void:
-	body_mesh = MeshInstance3D.new()
-	var cap := CapsuleMesh.new()
-	cap.radius = 1.6
-	cap.height = 5.0
-	body_mesh.mesh = cap
-	body_mesh.position = Vector3(0.0, 2.5, 0.0)
-	add_child(body_mesh)
+	runner_fig = RunnerFigureScript.new()
+	add_child(runner_fig)
 
 	var col := CollisionShape3D.new()
 	var shape := CapsuleShape3D.new()
-	shape.radius = 1.6
-	shape.height = 5.0
+	shape.radius = 2.0
+	shape.height = 6.0
 	col.shape = shape
-	col.position = Vector3(0.0, 2.5, 0.0)
+	col.position = Vector3(0.0, 3.0, 0.0)
 	add_child(col)
 
 	name_label = Label3D.new()
 	name_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	name_label.font_size = 38
-	name_label.pixel_size = 0.055
-	name_label.position = Vector3(0.0, 7.5, 0.0)
-	name_label.outline_size = 8
+	name_label.font_size = 44
+	name_label.pixel_size = 0.085
+	name_label.position = Vector3(0.0, 11.5, 0.0)
+	name_label.outline_size = 10
 	add_child(name_label)
 
 	# Gripande- och siktring för Polischef-läget
@@ -86,11 +82,11 @@ func _ready() -> void:
 	walk_line_mesh.top_level = true
 	add_child(walk_line_mesh)
 
-	# Roterbar fågelperspektiv-kamera (MapLibre-känsla!)
+	# Roterbar fågelperspektiv-kamera (MapLibre-känsla, utzoomad som webbversionen!)
 	cam_pivot = Node3D.new()
 	add_child(cam_pivot)
 	camera = Camera3D.new()
-	camera.far = 1800.0
+	camera.far = 3200.0
 	cam_pivot.add_child(camera)
 	_update_camera_transform()
 
@@ -101,30 +97,24 @@ func _update_camera_transform() -> void:
 	if cam_pivot == null or camera == null:
 		return
 	cam_pivot.rotation.y = cam_yaw
-	camera.position = Vector3(0.0, cam_dist * 0.88, cam_dist * 0.68)
-	camera.rotation_degrees = Vector3(-54.0, 0.0, 0.0)
+	camera.position = Vector3(0.0, cam_dist * 0.90, cam_dist * 0.65)
+	camera.rotation_degrees = Vector3(-56.0, 0.0, 0.0)
 
 func _apply_role_color() -> void:
-	if body_mesh == null:
+	if runner_fig == null:
 		return
-	var mat := StandardMaterial3D.new()
-	if GameState.player_role == "police":
-		mat.albedo_color = Color(0.10, 0.56, 0.92)
-		mat.emission_enabled = true
-		mat.emission = Color(0.06, 0.28, 0.55)
+	var is_pol: bool = GameState.player_role == "police"
+	runner_fig.setup(is_pol)
+	if is_pol:
 		name_label.text = "🚓 DU"
 		name_label.modulate = Color(0.65, 0.90, 1.0)
 		police_cap_ring.visible = true
 		police_vis_ring.visible = true
 	else:
-		mat.albedo_color = Color(0.88, 0.18, 0.18)
-		mat.emission_enabled = true
-		mat.emission = Color(0.45, 0.08, 0.08)
 		name_label.text = "🕵️ DU"
 		name_label.modulate = Color(1.0, 0.82, 0.72)
 		police_cap_ring.visible = false
 		police_vis_ring.visible = false
-	body_mesh.material_override = mat
 
 func teleport_to(pos: Vector3) -> void:
 	global_position = Vector3(pos.x, 0.1, pos.z)
@@ -190,6 +180,8 @@ func _physics_process(delta: float) -> void:
 	velocity.y = 0.0
 	move_and_slide()
 	global_position.y = 0.1
+	if runner_fig != null:
+		runner_fig.update_run(velocity, delta)
 	_update_nearby_poi()
 
 func _draw_walk_line() -> void:
@@ -211,10 +203,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
-			cam_dist = clampf(cam_dist - 10.0, 42.0, 170.0)
+			cam_dist = clampf(cam_dist - 18.0, 75.0, 360.0)
 			_update_camera_transform()
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
-			cam_dist = clampf(cam_dist + 10.0, 42.0, 170.0)
+			cam_dist = clampf(cam_dist + 18.0, 75.0, 360.0)
 			_update_camera_transform()
 		elif mb.button_index == MOUSE_BUTTON_RIGHT:
 			rotating_cam = mb.pressed
