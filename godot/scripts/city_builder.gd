@@ -22,6 +22,7 @@ var focus_target: Node3D
 var chunk_data: Dictionary = {}      # Vector2i -> Array[Dictionary] (råa hus i chunken)
 var loaded_chunks: Dictionary = {}   # Vector2i -> Node3D (byggd mesh + hitbox)
 var chunk_clear_pts: Array[Vector2] = []
+var special_poi_zones: Array[Dictionary] = [] # { "pos": Vector2, "r": float, "col": Color }
 var building_polys_2d: Array[PackedVector2Array] = []
 var chunk_seed: int = 0
 var light_budget_elapsed: float = 0.0
@@ -95,6 +96,7 @@ func build_city(city_id: String) -> void:
 	chunk_data.clear()
 	loaded_chunks.clear()
 	chunk_clear_pts.clear()
+	special_poi_zones.clear()
 	building_polys_2d.clear()
 	chunk_seed = hash(city_id)
 	if city_root != null:
@@ -193,15 +195,12 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 			_build_flat_polygons(waters_arr, 0.14, Color(0.20, 0.52, 0.78), 0.18)
 		_build_roads(osm.get("roads", []))
 
-	# Behåll ALLA riktiga OSM 3D-monument & building:part orörda (ingen rensning under landmark!)
+	# 5 & 6. Förbered alla 14 specialbyggnader (4 sevärdheter + station + 3 hotell + 3 marknader + 3 bibliotek)
+	# så de byggs HELT UTAN fönstertexturer och tydligt sticker ut från vanliga bostadshus!
 	var osm_pois: Dictionary = osm.get("pois", {})
 	var poi_clear_pts: Array[Vector2] = []
-
-	# 5. Riktiga 3D-byggnader + building:part + relation-multipolygoner (Chunk-streamade 180x180m)
 	var buildings_arr: Array = osm.get("buildings", [])
-	_build_osm_buildings(buildings_arr, rng, poi_clear_pts)
 
-	# 6. 4 sevärdheter + 1 station + 3 utspridda hotell + 3 marknader + 3 bibliotek på VERKLIGA 3D-hus!
 	var extra_lms: Dictionary = {
 		"stockholm": ["Kungliga slottet", "Storkyrkan", "Kungliga Operan"],
 		"oslo": ["Akershus fästning", "Operahuset", "Stortinget"],
@@ -232,38 +231,42 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 	var hub_pt: Array = osm_pois.get("hub", [-140.0, 120.0])
 
 	var poi_defs := [
-		# 4 Sevärdheter (huvudsevärdhet + 3 utspridda!)
-		["landmark", main_lm_name, Color(1.0, 0.78, 0.22), Vector3(float(lm_pt[0]), 0.0, float(lm_pt[1]))],
-		["landmark_1", String(ex_names[0]), Color(1.0, 0.72, 0.28), Vector3(cx + sx_span, 0.0, cz - sz_span * 0.8)],
-		["landmark_2", String(ex_names[1]), Color(1.0, 0.72, 0.28), Vector3(cx - sx_span, 0.0, cz - sz_span * 0.7)],
-		["landmark_3", String(ex_names[2]), Color(1.0, 0.72, 0.28), Vector3(cx + sx_span * 0.85, 0.0, cz + sz_span * 0.85)],
-		# Centralstation / Flygplats
-		["hub", hub_name, Color(0.24, 0.68, 0.98), Vector3(float(hub_pt[0]), 0.0, float(hub_pt[1]))],
-		# 3 utspridda Hotell
-		["hotel_0", "🏨 Grand Hotel", Color(0.94, 0.38, 0.52), Vector3(cx + sx_span * 0.5, 0.0, cz - sz_span * 0.2)],
-		["hotel_1", "🏨 Hotel Royal", Color(0.94, 0.38, 0.52), Vector3(cx - sx_span * 0.7, 0.0, cz + sz_span * 0.6)],
-		["hotel_2", "🏨 Boutique Hotel", Color(0.94, 0.38, 0.52), Vector3(cx - sx_span * 0.2, 0.0, cz - sz_span * 0.9)],
-		# 3 utspridda Marknader
-		["market_0", "🛍️ Saluhallen", Color(0.24, 0.76, 0.46), Vector3(cx - sx_span * 0.55, 0.0, cz - sz_span * 0.35)],
-		["market_1", "🛍️ Basaren", Color(0.24, 0.76, 0.46), Vector3(cx + sx_span * 0.9, 0.0, cz + sz_span * 0.2)],
-		["market_2", "🛍️ Gatumarknad", Color(0.24, 0.76, 0.46), Vector3(cx - sx_span * 0.15, 0.0, cz + sz_span * 0.9)],
-		# 3 utspridda Bibliotek
-		["library_0", "📚 Stadsbiblioteket", Color(0.62, 0.48, 0.94), Vector3(cx + sx_span * 0.3, 0.0, cz + sz_span * 0.55)],
-		["library_1", "📚 Kungliga Biblioteket", Color(0.62, 0.48, 0.94), Vector3(cx - sx_span * 0.9, 0.0, cz + sz_span * 0.1)],
-		["library_2", "📚 Arkivbiblioteket", Color(0.62, 0.48, 0.94), Vector3(cx + sx_span * 0.4, 0.0, cz - sz_span * 0.95)]
+		["landmark", main_lm_name, Color(0.96, 0.86, 0.62), Vector3(float(lm_pt[0]), 0.0, float(lm_pt[1])), 72.0],
+		["landmark_1", String(ex_names[0]), Color(0.94, 0.84, 0.64), Vector3(cx + sx_span, 0.0, cz - sz_span * 0.8), 28.0],
+		["landmark_2", String(ex_names[1]), Color(0.94, 0.84, 0.64), Vector3(cx - sx_span, 0.0, cz - sz_span * 0.7), 28.0],
+		["landmark_3", String(ex_names[2]), Color(0.94, 0.84, 0.64), Vector3(cx + sx_span * 0.85, 0.0, cz + sz_span * 0.85), 28.0],
+		["hub", hub_name, Color(0.42, 0.68, 0.88), Vector3(float(hub_pt[0]), 0.0, float(hub_pt[1])), 34.0],
+		["hotel_0", "🏨 Grand Hotel", Color(0.90, 0.54, 0.60), Vector3(cx + sx_span * 0.5, 0.0, cz - sz_span * 0.2), 24.0],
+		["hotel_1", "🏨 Hotel Royal", Color(0.90, 0.54, 0.60), Vector3(cx - sx_span * 0.7, 0.0, cz + sz_span * 0.6), 24.0],
+		["hotel_2", "🏨 Boutique Hotel", Color(0.90, 0.54, 0.60), Vector3(cx - sx_span * 0.2, 0.0, cz - sz_span * 0.9), 24.0],
+		["market_0", "🛍️ Saluhallen", Color(0.46, 0.80, 0.58), Vector3(cx - sx_span * 0.55, 0.0, cz - sz_span * 0.35), 24.0],
+		["market_1", "🛍️ Basaren", Color(0.46, 0.80, 0.58), Vector3(cx + sx_span * 0.9, 0.0, cz + sz_span * 0.2), 24.0],
+		["market_2", "🛍️ Gatumarknad", Color(0.46, 0.80, 0.58), Vector3(cx - sx_span * 0.15, 0.0, cz + sz_span * 0.9), 24.0],
+		["library_0", "📚 Stadsbiblioteket", Color(0.72, 0.62, 0.90), Vector3(cx + sx_span * 0.3, 0.0, cz + sz_span * 0.55), 24.0],
+		["library_1", "📚 Kungliga Biblioteket", Color(0.72, 0.62, 0.90), Vector3(cx - sx_span * 0.9, 0.0, cz + sz_span * 0.1), 24.0],
+		["library_2", "📚 Arkivbiblioteket", Color(0.72, 0.62, 0.90), Vector3(cx + sx_span * 0.4, 0.0, cz - sz_span * 0.95), 24.0]
 	]
 	var used_bldg_indices: Dictionary = {}
+	var resolved_pois: Array[Dictionary] = []
 	for pd in poi_defs:
 		var pkey: String = String(pd[0])
 		var ptitle: String = String(pd[1])
 		var pcol: Color = pd[2]
 		var target_pos: Vector3 = pd[3]
+		var zrad: float = float(pd[4])
 		var picked: Dictionary = _pick_nearest_real_building(target_pos, buildings_arr, used_bldg_indices)
+		var final_pos: Vector3 = target_pos
 		if not picked.is_empty():
 			var bc: Vector2 = picked["center"]
-			_add_osm_poi_marker(pkey, ptitle, Vector3(bc.x, 0.0, bc.y), pcol, city_id, picked)
-		else:
-			_add_osm_poi_marker(pkey, ptitle, target_pos, pcol, city_id, {})
+			final_pos = Vector3(bc.x, 0.0, bc.y)
+		special_poi_zones.append({ "pos": Vector2(final_pos.x, final_pos.z), "r": zrad, "col": pcol })
+		resolved_pois.append({ "key": pkey, "title": ptitle, "pos": final_pos, "col": pcol, "picked": picked })
+
+	# Bygg nu 3D-husen (nu vet chunks direkt vilka som är specialbyggnader utan textur!)
+	_build_osm_buildings(buildings_arr, rng, poi_clear_pts)
+
+	for rp in resolved_pois:
+		_add_osm_poi_marker(String(rp["key"]), String(rp["title"]), rp["pos"], rp["col"], city_id, rp["picked"])
 
 	# 7. Tydlig visuell stadsgräns + kollisionsmurar så man aldrig springer in i osynliga väggar!
 	var margin: float = 12.0
@@ -605,6 +608,11 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 		wall_counts.append(0)
 	var rs := SurfaceTool.new()
 	rs.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var special_ws := SurfaceTool.new()
+	special_ws.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var special_rs := SurfaceTool.new()
+	special_rs.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var special_count: int = 0
 	var col_faces := PackedVector3Array()
 	var entrance_count: int = 0
 	var roof_props: Node3D = RooftopPropsScript.new()
@@ -640,16 +648,26 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 		var h: float = float(b.get("h", 0.0))
 		if h <= min_h + 0.5:
 			h = min_h + rng.randf_range(10.0, 24.0)
+		var is_special: bool = false
+		var special_col: Color = Color.WHITE
+		for sz_info in special_poi_zones:
+			var zpos: Vector2 = sz_info["pos"]
+			var zr: float = float(sz_info["r"])
+			if center2.distance_to(zpos) <= zr:
+				is_special = true
+				special_col = sz_info["col"]
+				break
+
 		var wall_variant: int = rng.randi_range(0, wall_surfaces.size() - 1)
-		var ws: SurfaceTool = wall_surfaces[wall_variant]
+		var ws: SurfaceTool = special_ws if is_special else wall_surfaces[wall_variant]
 		var building_seed: float = fposmod(center2.x * 0.1031 + center2.y * 0.11369, 1.0)
 		ws.set_uv2(Vector2(building_seed, 0.0))
-		var base_col: Color = _height_to_color(h)
+		var base_col: Color = special_col if is_special else _height_to_color(h)
 		var col_bot: Color = base_col.darkened(0.16)
 		var col_top: Color = base_col.lightened(0.06)
 		# Intensiva, varma europeiska tegeltak på de 45-gradiga spetsiga taken!
-		var roof_tint: Color = Color(0.92, 0.32, 0.14) if rng.randf() < 0.75 else Color(0.96, 0.46, 0.18)
-		var col_roof: Color = base_col.lerp(roof_tint, 0.65)
+		var roof_tint: Color = special_col.darkened(0.14) if is_special else (Color(0.92, 0.32, 0.14) if rng.randf() < 0.75 else Color(0.96, 0.46, 0.18))
+		var col_roof: Color = special_col.darkened(0.14) if is_special else base_col.lerp(roof_tint, 0.65)
 
 		var n: int = pts2.size()
 		for i in range(n):
@@ -674,12 +692,14 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 				_add_noir_entrance(chunk_node, Vector3(midpoint.x, 3.2, midpoint.y) + outside * 0.8)
 				entrance_count += 1
 
-			wall_counts[wall_variant] += 3
+			if is_special:
+				special_count += 6
+			else:
+				wall_counts[wall_variant] += 6
 			ws.set_normal(norm); ws.set_color(col_bot); ws.set_uv(Vector2(0.0, v_rep)); ws.add_vertex(v0)
 			ws.set_normal(norm); ws.set_color(col_bot); ws.set_uv(Vector2(u_rep, v_rep)); ws.add_vertex(v1)
 			ws.set_normal(norm); ws.set_color(col_top); ws.set_uv(Vector2(u_rep, 0.0)); ws.add_vertex(v2)
 
-			wall_counts[wall_variant] += 3
 			ws.set_normal(norm); ws.set_color(col_bot); ws.set_uv(Vector2(0.0, v_rep)); ws.add_vertex(v0)
 			ws.set_normal(norm); ws.set_color(col_top); ws.set_uv(Vector2(u_rep, 0.0)); ws.add_vertex(v2)
 			ws.set_normal(norm); ws.set_color(col_top); ws.set_uv(Vector2(0.0, 0.0)); ws.add_vertex(v3)
@@ -693,8 +713,9 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 				col_faces.append(cv0); col_faces.append(cv1); col_faces.append(cv2)
 				col_faces.append(cv0); col_faces.append(cv2); col_faces.append(cv3)
 
-		var roof_info: Dictionary = _build_noir_roof(rs, pts2, h, col_roof, building_seed)
-		if min_h < 0.5 and props_in_chunk < 24 and rng.randf() < 0.36:
+		var target_rs: SurfaceTool = special_rs if is_special else rs
+		var roof_info: Dictionary = _build_noir_roof(target_rs, pts2, h, col_roof, building_seed)
+		if (not is_special) and min_h < 0.5 and props_in_chunk < 24 and rng.randf() < 0.36:
 			var rp2: Vector2 = roof_info["pos"]
 			if Geometry2D.is_point_in_polygon(rp2, pts2):
 				roof_props.add_random_prop(Vector3(rp2.x, float(roof_info["y"]), rp2.y), h, rng, bool(roof_info["pitched"]))
@@ -729,6 +750,29 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 			else:
 				wmi.material_override = wmat
 			chunk_node.add_child(wmi)
+
+	# Specialbyggnader (monument, station, hotell, marknader, bibliotek): HELT UTAN fasadtexturer så de sticker ut!
+	if special_count > 0:
+		var swm: ArrayMesh = special_ws.commit()
+		if swm.get_surface_count() > 0:
+			var swmi := MeshInstance3D.new()
+			swmi.mesh = swm
+			var swmat := StandardMaterial3D.new()
+			swmat.vertex_color_use_as_albedo = true
+			swmat.roughness = 0.65
+			swmat.cull_mode = BaseMaterial3D.CULL_DISABLED
+			swmi.material_override = swmat
+			chunk_node.add_child(swmi)
+		var srm: ArrayMesh = special_rs.commit()
+		if srm.get_surface_count() > 0:
+			var srmi := MeshInstance3D.new()
+			srmi.mesh = srm
+			var srmat := StandardMaterial3D.new()
+			srmat.vertex_color_use_as_albedo = true
+			srmat.roughness = 0.72
+			srmat.cull_mode = BaseMaterial3D.CULL_DISABLED
+			srmi.material_override = srmat
+			chunk_node.add_child(srmi)
 
 	var rmesh: ArrayMesh = rs.commit()
 	if rmesh.get_surface_count() > 0:

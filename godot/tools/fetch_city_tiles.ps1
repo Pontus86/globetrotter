@@ -15,7 +15,7 @@ $client = New-Object System.Net.Http.HttpClient($handler)
 $client.DefaultRequestHeaders.Add("User-Agent", "Globetrotter3DMapBaker/1.0")
 $client.Timeout = [TimeSpan]::FromSeconds(20)
 
-$Z = 16
+$Z = 17
 $N = [Math]::Pow(2, $Z)
 
 function LonToTileX([double]$lon) {
