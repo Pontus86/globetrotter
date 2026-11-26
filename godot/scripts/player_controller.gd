@@ -33,6 +33,14 @@ func _ready() -> void:
 	runner_fig = RunnerFigureScript.new()
 	add_child(runner_fig)
 
+	# Varmt litet Noir-gatulyktesken runt spelaren så figuren alltid poppar i skymningen!
+	var lamp := OmniLight3D.new()
+	lamp.position = Vector3(0.0, 14.0, 0.0)
+	lamp.light_color = Color(1.0, 0.82, 0.52)
+	lamp.light_energy = 1.6
+	lamp.omni_range = 48.0
+	add_child(lamp)
+
 	var col := CollisionShape3D.new()
 	var shape := CapsuleShape3D.new()
 	shape.radius = 2.0

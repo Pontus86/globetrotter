@@ -20,6 +20,66 @@ var chunk_data: Dictionary = {}      # Vector2i -> Array[Dictionary] (råa hus i
 var loaded_chunks: Dictionary = {}   # Vector2i -> Node3D (byggd mesh + hitbox)
 var chunk_clear_pts: Array[Vector2] = []
 var chunk_seed: int = 0
+var facade_albedo_tex: Texture2D
+var facade_emit_tex: Texture2D
+var roof_tex: Texture2D
+var fog_cloud_plane: MeshInstance3D
+
+func _ready() -> void:
+	_generate_noir_textures()
+
+func _generate_noir_textures() -> void:
+	# 1. Realistisk europeisk sten-/tegelfasad (128x128px = ~16x16m): mörka glasfönster + få diskreta tända fönster!
+	var img_a := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+	var img_e := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+	var trng := RandomNumberGenerator.new()
+	trng.seed = 424242
+
+	# Bas: realistisk sten-/putsstruktur med diskreta våningsskiften
+	for y in range(128):
+		var floor_band: bool = (y % 32) < 3
+		var brick_line: bool = (y % 8) == 0
+		for x in range(128):
+			var n: float = trng.randf_range(-0.035, 0.035)
+			var v: float = (0.80 if floor_band else (0.88 if brick_line else 0.94)) + n
+			img_a.set_pixel(x, y, Color(v, v * 0.98, v * 0.96, 1.0))
+			img_e.set_pixel(x, y, Color(0.0, 0.0, 0.0, 1.0))
+
+	# 4 våningar x 4 realistiska fönster (mestadels mörkt glas, ~18% diskret varm belysning!)
+	for row in range(4):
+		for col in range(4):
+			var lit: bool = trng.randf() < 0.18
+			var warm: Color = Color(0.95, 0.84, 0.64) if trng.randf() < 0.8 else Color(0.80, 0.88, 0.96)
+			var wx0: int = col * 32 + 10
+			var wy0: int = row * 32 + 8
+			for wy in range(wy0, wy0 + 15):
+				for wx in range(wx0, wx0 + 12):
+					if wy == wy0 or wy == wy0 + 14 or wx == wx0 or wx == wx0 + 11:
+						img_a.set_pixel(wx, wy, Color(0.62, 0.60, 0.58, 1.0)) # Ljus stenkarm
+					elif wy == wy0 + 7 or wx == wx0 + 6:
+						img_a.set_pixel(wx, wy, Color(0.45, 0.44, 0.43, 1.0)) # Fönsterspröjs
+					elif lit:
+						img_a.set_pixel(wx, wy, Color(0.86, 0.78, 0.64, 1.0))
+						img_e.set_pixel(wx, wy, warm * 0.45)
+					else:
+						img_a.set_pixel(wx, wy, Color(0.24, 0.28, 0.34, 1.0)) # Mörkt speglande glas
+
+	img_a.generate_mipmaps()
+	img_e.generate_mipmaps()
+	facade_albedo_tex = ImageTexture.create_from_image(img_a)
+	facade_emit_tex = ImageTexture.create_from_image(img_e)
+
+	# 2. Realistisk europeisk taktegel-/zinkplåt-textur (ljus & tydlig, aldrig svart!)
+	var img_r := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	for y in range(64):
+		var row_shade: float = 0.90 if (y % 8 < 2) else 1.0
+		for x in range(64):
+			var seam: float = 0.92 if (x % 12 == 0) else 1.0
+			var rn: float = trng.randf_range(-0.03, 0.03)
+			var rv: float = clampf(row_shade * seam + rn, 0.78, 1.0)
+			img_r.set_pixel(x, y, Color(rv, rv * 0.96, rv * 0.94, 1.0))
+	img_r.generate_mipmaps()
+	roof_tex = ImageTexture.create_from_image(img_r)
 
 const PALETTE := [
 	Color(0.76, 0.44, 0.31), # Varmt tegelrödbrunt (webbens huvudfärg!)
@@ -96,7 +156,8 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 		var pmat := StandardMaterial3D.new()
 		pmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		pmat.albedo_texture = map_tex
-		pmat.albedo_color = Color(0.86, 0.84, 0.80) # Hindrar överexponering så gator & namn syns knivskarpt!
+		# Film Noir skymningston på stadskartan (behaglig regntung kvällsblå)
+		pmat.albedo_color = Color(0.62, 0.64, 0.70)
 		pmat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 		plane_mi.material_override = pmat
 		city_root.add_child(plane_mi)
@@ -161,6 +222,47 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 	_add_invisible_wall(Vector3(cx, 15.0, max_z + margin), Vector3(width, 30.0, 4.0))
 	_add_invisible_wall(Vector3(min_x - margin, 15.0, cz), Vector3(4.0, 30.0, depth))
 	_add_invisible_wall(Vector3(max_x + margin, 15.0, cz), Vector3(4.0, 30.0, depth))
+
+	# 8. Drivande Noir Fog-of-War-moln utanför de inladdade hus-chunksen!
+	_build_fog_of_war_clouds()
+
+func _build_fog_of_war_clouds() -> void:
+	fog_cloud_plane = MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(2400.0, 2400.0)
+	fog_cloud_plane.mesh = pm
+	fog_cloud_plane.position = Vector3(0.0, 28.0, 0.0)
+
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode unshaded, blend_mix, depth_draw_never, cull_disabled;
+
+uniform vec3 fog_color : source_color = vec3(0.10, 0.13, 0.20);
+uniform float inner_radius = 290.0;
+uniform float outer_radius = 520.0;
+
+float cloud_noise(vec2 p, float t) {
+	float n = sin(p.x * 0.012 + t * 0.18) * cos(p.y * 0.014 - t * 0.14);
+	n += 0.5 * sin(p.x * 0.029 - t * 0.22 + p.y * 0.021);
+	n += 0.25 * cos(p.x * 0.055 + p.y * 0.048 + t * 0.30);
+	return n * 0.5 + 0.5;
+}
+
+void fragment() {
+	vec2 local_xz = (UV - vec2(0.5)) * 2400.0;
+	float dist = length(local_xz);
+	float c = cloud_noise(local_xz, TIME);
+	float noisy_dist = dist + (c - 0.5) * 95.0;
+	float alpha = smoothstep(inner_radius, outer_radius, noisy_dist);
+	ALBEDO = mix(fog_color * 0.85, fog_color * 1.25, c);
+	ALPHA = clamp(alpha * 0.94, 0.0, 0.94);
+}
+"""
+	var smat := ShaderMaterial.new()
+	smat.shader = sh
+	fog_cloud_plane.material_override = smat
+	city_root.add_child(fog_cloud_plane)
 
 func _build_flat_polygons(polys: Array, y_height: float, color: Color, rough: float) -> void:
 	var st := SurfaceTool.new()
@@ -346,12 +448,12 @@ func _commit_surface(st: SurfaceTool, color: Color, rough: float, use_vertex_col
 		city_root.add_child(mi)
 
 func _height_to_color(h: float) -> Color:
-	# Exakt samma höjd-interpolerade europeiska husfärger som webbversionen (högre hus = mörkare!)
-	var c0 := Color.html("#ead8bc") # 0m: ljus sandsten
-	var c10 := Color.html("#dfbe99") # 10m: varm ockra
-	var c22 := Color.html("#cfa078") # 22m: varm terrakotta
-	var c40 := Color.html("#b9835e") # 40m: mörkt tegelrödbrunt
-	var c75 := Color.html("#8e9bab") # 75m+: skiffergråblå
+	# Realistisk europeisk sten- & tegelpalett i skymnings-noir (högre hus = mörkare sten/tegel!)
+	var c0 := Color.html("#9c9082")  # 0m: varm kalksten
+	var c10 := Color.html("#8c7968") # 10m: europeisk sandsten
+	var c22 := Color.html("#7b6052") # 22m: klassiskt tegelrödbrunt
+	var c40 := Color.html("#644e46") # 40m: mörkt rödbrunt tegel
+	var c75 := Color.html("#4d5664") # 75m+: skiffergrå sten
 	if h <= 10.0:
 		return c0.lerp(c10, clampf(h / 10.0, 0.0, 1.0))
 	elif h <= 22.0:
@@ -426,9 +528,11 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 		if h <= 0.5:
 			h = rng.randf_range(10.0, 26.0)
 		var base_col: Color = _height_to_color(h)
-		var col_bot: Color = base_col.darkened(0.32)
+		var col_bot: Color = base_col.darkened(0.24)
 		var col_top: Color = base_col
-		var col_roof: Color = base_col.darkened(0.12)
+		# Realistiska europeiska tak: varmt tegelrött eller patinerad zink/skiffer (aldrig kolsvart!)
+		var roof_tint: Color = Color(0.56, 0.34, 0.27) if rng.randf() < 0.65 else Color(0.42, 0.45, 0.49)
+		var col_roof: Color = base_col.lerp(roof_tint, 0.55)
 
 		var n: int = pts2.size()
 		for i in range(n):
@@ -437,19 +541,22 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 			var edge: Vector2 = c - a
 			if edge.length_squared() < 0.04:
 				continue
+			var edge_len: float = edge.length()
+			var u_rep: float = edge_len / 16.0
+			var v_rep: float = h / 16.0
 			var norm := Vector3(edge.y, 0.0, -edge.x).normalized()
 			var v0 := Vector3(a.x, 0.0, a.y)
 			var v1 := Vector3(c.x, 0.0, c.y)
 			var v2 := Vector3(c.x, h, c.y)
 			var v3 := Vector3(a.x, h, a.y)
 
-			ws.set_normal(norm); ws.set_color(col_bot); ws.add_vertex(v0)
-			ws.set_normal(norm); ws.set_color(col_bot); ws.add_vertex(v1)
-			ws.set_normal(norm); ws.set_color(col_top); ws.add_vertex(v2)
+			ws.set_normal(norm); ws.set_color(col_bot); ws.set_uv(Vector2(0.0, v_rep)); ws.add_vertex(v0)
+			ws.set_normal(norm); ws.set_color(col_bot); ws.set_uv(Vector2(u_rep, v_rep)); ws.add_vertex(v1)
+			ws.set_normal(norm); ws.set_color(col_top); ws.set_uv(Vector2(u_rep, 0.0)); ws.add_vertex(v2)
 
-			ws.set_normal(norm); ws.set_color(col_bot); ws.add_vertex(v0)
-			ws.set_normal(norm); ws.set_color(col_top); ws.add_vertex(v2)
-			ws.set_normal(norm); ws.set_color(col_top); ws.add_vertex(v3)
+			ws.set_normal(norm); ws.set_color(col_bot); ws.set_uv(Vector2(0.0, v_rep)); ws.add_vertex(v0)
+			ws.set_normal(norm); ws.set_color(col_top); ws.set_uv(Vector2(u_rep, 0.0)); ws.add_vertex(v2)
+			ws.set_normal(norm); ws.set_color(col_top); ws.set_uv(Vector2(0.0, 0.0)); ws.add_vertex(v3)
 
 			var cv2 := Vector3(c.x, 8.0, c.y)
 			var cv3 := Vector3(a.x, 8.0, a.y)
@@ -461,9 +568,9 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 			var ta: Vector2 = pts2[tris[i]]
 			var tb: Vector2 = pts2[tris[i + 1]]
 			var tc: Vector2 = pts2[tris[i + 2]]
-			rs.set_normal(Vector3.UP); rs.set_color(col_roof); rs.add_vertex(Vector3(ta.x, h, ta.y))
-			rs.set_normal(Vector3.UP); rs.set_color(col_roof); rs.add_vertex(Vector3(tb.x, h, tb.y))
-			rs.set_normal(Vector3.UP); rs.set_color(col_roof); rs.add_vertex(Vector3(tc.x, h, tc.y))
+			rs.set_normal(Vector3.UP); rs.set_color(col_roof); rs.set_uv(ta / 18.0); rs.add_vertex(Vector3(ta.x, h, ta.y))
+			rs.set_normal(Vector3.UP); rs.set_color(col_roof); rs.set_uv(tb / 18.0); rs.add_vertex(Vector3(tb.x, h, tb.y))
+			rs.set_normal(Vector3.UP); rs.set_color(col_roof); rs.set_uv(tc / 18.0); rs.add_vertex(Vector3(tc.x, h, tc.y))
 
 	var wmesh: ArrayMesh = ws.commit()
 	if wmesh.get_surface_count() > 0:
@@ -471,7 +578,15 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 		wmi.mesh = wmesh
 		var wmat := StandardMaterial3D.new()
 		wmat.vertex_color_use_as_albedo = true
-		wmat.roughness = 0.82
+		if facade_albedo_tex != null:
+			wmat.albedo_texture = facade_albedo_tex
+		if facade_emit_tex != null:
+			wmat.emission_enabled = true
+			wmat.emission_texture = facade_emit_tex
+			wmat.emission = Color(0.96, 0.84, 0.62)
+			wmat.emission_energy_multiplier = 0.48
+		wmat.roughness = 0.84
+		wmat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 		wmat.cull_mode = BaseMaterial3D.CULL_DISABLED
 		wmi.material_override = wmat
 		chunk_node.add_child(wmi)
@@ -482,6 +597,8 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 		rmi.mesh = rmesh
 		var rmat := StandardMaterial3D.new()
 		rmat.vertex_color_use_as_albedo = true
+		if roof_tex != null:
+			rmat.albedo_texture = roof_tex
 		rmat.roughness = 0.88
 		rmat.cull_mode = BaseMaterial3D.CULL_DISABLED
 		rmi.material_override = rmat
@@ -529,107 +646,254 @@ func _update_building_chunks(center_pos: Vector3, max_build_per_frame: int = 2) 
 				if built_now >= max_build_per_frame:
 					return
 
-func _add_osm_poi_marker(pkey: String, title: String, center: Vector3, col: Color, city_id: String) -> void:
-	# Glittrande gyllene aura-ring direkt på gatan/torget!
+func _add_osm_poi_marker(pkey: String, title: String, center: Vector3, _col: Color, city_id: String) -> void:
+	# Diskret glittrande gyllene markring runt själva 3D-byggnaden (så man ser att man kan trycka [E]!)
 	var ring := MeshInstance3D.new()
 	var torus := TorusMesh.new()
-	torus.inner_radius = 10.5
-	torus.outer_radius = 12.2
+	torus.inner_radius = 13.0
+	torus.outer_radius = 14.5
 	ring.mesh = torus
 	ring.position = Vector3(center.x, 0.55, center.z)
 	var rmat := StandardMaterial3D.new()
-	rmat.albedo_color = Color(1.0, 0.88, 0.35, 0.90)
+	rmat.albedo_color = Color(1.0, 0.86, 0.34, 0.82)
 	rmat.emission_enabled = true
-	rmat.emission = Color(1.0, 0.80, 0.20)
-	rmat.emission_energy_multiplier = 1.8
+	rmat.emission = Color(1.0, 0.78, 0.22)
+	rmat.emission_energy_multiplier = 1.6
 	rmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	ring.material_override = rmat
 	city_root.add_child(ring)
 
-	# Lysande pelare / ikoniskt 3D-monument (utan kollision så spelaren inte fastnar!)
-	var top_y: float = 20.0
+	# Specifik, detaljerad 3D-byggnad för varje POI-typ och stadens landmärke!
+	var top_y: float = 22.0
 	if pkey == "landmark":
 		top_y = _build_landmark_visual(city_id, center)
-	else:
-		var beacon := MeshInstance3D.new()
-		var cyl := CylinderMesh.new()
-		cyl.top_radius = 1.6
-		cyl.bottom_radius = 2.8
-		cyl.height = 14.0
-		beacon.mesh = cyl
-		beacon.position = Vector3(center.x, 7.0, center.z)
-		var bmat := StandardMaterial3D.new()
-		bmat.albedo_color = col
-		bmat.emission_enabled = true
-		bmat.emission = col * 0.55
-		bmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		bmat.albedo_color.a = 0.82
-		beacon.material_override = bmat
-		city_root.add_child(beacon)
-		top_y = 16.0
+	elif pkey == "hub":
+		top_y = _build_station_building(center)
+	elif pkey == "hotel":
+		top_y = _build_hotel_building(center)
+	elif pkey == "market":
+		top_y = _build_market_building(center)
+	elif pkey == "library":
+		top_y = _build_library_building(center)
+
+	# Varmt kvällsljus som lyser upp landmärket/byggnaden i Noir-skymningen
+	var poi_light := OmniLight3D.new()
+	poi_light.position = Vector3(center.x, top_y * 0.55, center.z)
+	poi_light.light_color = Color(1.0, 0.84, 0.52)
+	poi_light.light_energy = 1.4
+	poi_light.omni_range = 42.0
+	city_root.add_child(poi_light)
 
 	var lbl := Label3D.new()
 	lbl.text = title
 	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	lbl.font_size = 44
 	lbl.pixel_size = 0.055
-	lbl.position = Vector3(center.x, top_y + 6.0, center.z)
+	lbl.position = Vector3(center.x, top_y + 7.0, center.z)
 	lbl.modulate = Color(1.0, 0.94, 0.62)
 	lbl.outline_size = 10
 	city_root.add_child(lbl)
 
 	pois[pkey] = {
-		"pos": Vector3(center.x, 0.1, center.z),
+		"pos": Vector3(center.x, 0.1, center.z + 15.0),
 		"center": center,
 		"name": title,
 		"ring": ring,
 		"label": lbl
 	}
 
-func _build_landmark_visual(city_id: String, center: Vector3) -> float:
-	var gold_mat := StandardMaterial3D.new()
-	gold_mat.albedo_color = Color(0.98, 0.82, 0.30)
-	gold_mat.emission_enabled = true
-	gold_mat.emission = Color(0.55, 0.42, 0.10)
-	gold_mat.metallic = 0.45
-	gold_mat.roughness = 0.35
+func _poi_mat(col: Color, emit: Color = Color.BLACK, rough: float = 0.7) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = col
+	m.roughness = rough
+	if emit != Color.BLACK:
+		m.emission_enabled = true
+		m.emission = emit
+		m.emission_energy_multiplier = 1.3
+	return m
 
-	if city_id == "paris":
-		var iron := StandardMaterial3D.new()
-		iron.albedo_color = Color(0.50, 0.42, 0.35)
-		iron.metallic = 0.5
-		var tiers := [[14.0, 10.0, 5.0], [9.5, 13.0, 16.5], [5.5, 14.0, 30.0], [2.0, 11.0, 42.5]]
-		for t in tiers:
-			var mi := MeshInstance3D.new()
-			var bm := BoxMesh.new()
-			bm.size = Vector3(float(t[0]), float(t[1]), float(t[0]))
-			mi.mesh = bm
-			mi.position = Vector3(center.x, float(t[2]), center.z)
-			mi.material_override = iron
-			city_root.add_child(mi)
-		return 49.0
+func _add_box(pos: Vector3, sz: Vector3, mat: StandardMaterial3D) -> void:
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = sz
+	mi.mesh = bm
+	mi.position = pos
+	mi.material_override = mat
+	city_root.add_child(mi)
+
+func _add_cyl(pos: Vector3, r_top: float, r_bot: float, h: float, mat: StandardMaterial3D) -> void:
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = r_top
+	cm.bottom_radius = r_bot
+	cm.height = h
+	mi.mesh = cm
+	mi.position = pos
+	mi.material_override = mat
+	city_root.add_child(mi)
+
+func _build_station_building(c: Vector3) -> float:
+	# Europeisk Centralstation med välvd hall, klocktorn & lysande fönster
+	var stone := _poi_mat(Color(0.45, 0.42, 0.40))
+	var glass := _poi_mat(Color(0.32, 0.56, 0.72), Color(0.45, 0.72, 0.95) * 0.45, 0.25)
+	var gold := _poi_mat(Color(0.95, 0.80, 0.35), Color(0.85, 0.68, 0.25) * 0.5, 0.4)
+	_add_box(c + Vector3(0.0, 5.5, 0.0), Vector3(18.0, 11.0, 12.0), stone)
+	_add_cyl(c + Vector3(0.0, 11.2, 0.0), 5.6, 5.6, 17.0, glass) # Välvt glastak (stående som takkupol)
+	_add_box(c + Vector3(-6.5, 11.0, 4.5), Vector3(4.5, 22.0, 4.5), stone) # Klocktorn
+	_add_box(c + Vector3(-6.5, 18.0, 6.85), Vector3(2.4, 2.4, 0.3), gold) # Lysande stationsklocka
+	return 23.0
+
+func _build_hotel_building(c: Vector3) -> float:
+	# Ståtligt Grand Hotel med mörkröd baldakin, lysande fönster & takkupol
+	var wall := _poi_mat(Color(0.62, 0.48, 0.42))
+	var win := _poi_mat(Color(1.0, 0.86, 0.50), Color(1.0, 0.78, 0.35) * 0.75)
+	var roof := _poi_mat(Color(0.18, 0.28, 0.30))
+	var canopy := _poi_mat(Color(0.68, 0.14, 0.20), Color(0.45, 0.08, 0.12))
+	_add_box(c + Vector3(0.0, 9.0, 0.0), Vector3(15.0, 18.0, 13.0), wall)
+	_add_box(c + Vector3(0.0, 19.2, 0.0), Vector3(15.8, 2.6, 13.8), roof)
+	_add_cyl(c + Vector3(0.0, 22.0, 0.0), 1.5, 4.2, 4.0, roof)
+	_add_box(c + Vector3(0.0, 3.0, 7.6), Vector3(6.0, 1.2, 3.0), canopy) # Entrébaldakin
+	for fy in [6.0, 10.5, 15.0]:
+		for fx in [-4.5, 0.0, 4.5]:
+			_add_box(c + Vector3(float(fx), float(fy), 6.65), Vector3(2.0, 2.2, 0.2), win)
+	return 25.0
+
+func _build_market_building(c: Vector3) -> float:
+	# Basar / Marknadstorg med flera färgglada stånd & varma lyktor
+	var base := _poi_mat(Color(0.35, 0.32, 0.28))
+	var tent1 := _poi_mat(Color(0.76, 0.24, 0.20))
+	var tent2 := _poi_mat(Color(0.18, 0.55, 0.38))
+	var tent3 := _poi_mat(Color(0.84, 0.62, 0.22))
+	var lamp := _poi_mat(Color(1.0, 0.88, 0.48), Color(1.0, 0.80, 0.32))
+	_add_box(c + Vector3(0.0, 0.5, 0.0), Vector3(18.0, 1.0, 16.0), base)
+	var stalls := [[-5.0, -4.0, tent1], [5.0, -4.0, tent2], [-5.0, 4.0, tent3], [5.0, 4.0, tent1]]
+	for st in stalls:
+		var sx: float = float(st[0])
+		var sz: float = float(st[1])
+		_add_box(c + Vector3(sx, 2.5, sz), Vector3(6.5, 3.5, 5.2), base)
+		_add_cyl(c + Vector3(sx, 6.0, sz), 0.6, 4.8, 3.5, st[2])
+		_add_box(c + Vector3(sx, 4.3, sz + 2.7), Vector3(1.2, 0.8, 0.4), lamp)
+	return 11.0
+
+func _build_library_building(c: Vector3) -> float:
+	# Neoklassiskt Bibliotek med kolonner, tempelgavel & varmt läsljus
+	var marble := _poi_mat(Color(0.72, 0.68, 0.62))
+	var glow := _poi_mat(Color(1.0, 0.86, 0.54), Color(0.95, 0.76, 0.38) * 0.65)
+	_add_box(c + Vector3(0.0, 1.0, 0.0), Vector3(18.0, 2.0, 14.0), marble) # Trappa
+	_add_box(c + Vector3(0.0, 7.5, -1.0), Vector3(15.5, 11.0, 10.0), marble)
+	_add_box(c + Vector3(0.0, 7.0, 4.1), Vector3(9.0, 7.0, 0.3), glow) # Varmt ljus inifrån
+	for cx in [-6.5, -3.2, 0.0, 3.2, 6.5]:
+		_add_cyl(c + Vector3(float(cx), 7.5, 5.6), 0.75, 0.85, 11.0, marble) # Kolonner
+	_add_box(c + Vector3(0.0, 14.0, 1.0), Vector3(17.5, 2.2, 13.0), marble)
+	_add_cyl(c + Vector3(0.0, 17.5, -0.5), 1.0, 5.2, 5.0, _poi_mat(Color(0.28, 0.44, 0.42))) # Kuppeltak
+	return 21.0
+
+func _build_landmark_visual(city_id: String, center: Vector3) -> float:
+	var gold := _poi_mat(Color(0.96, 0.80, 0.32), Color(0.70, 0.52, 0.14), 0.35)
+	var stone := _poi_mat(Color(0.74, 0.66, 0.56))
+	var dark_stone := _poi_mat(Color(0.46, 0.40, 0.36))
+	var warm_glow := _poi_mat(Color(1.0, 0.86, 0.48), Color(1.0, 0.78, 0.32) * 0.85)
+
+	if city_id == "barcelona":
+		# SAGRADA FAMÍLIA: katedralbas + 4 höga ikoniska tornspiror + högsta centraltornet med gyllene topp!
+		var sand := _poi_mat(Color(0.76, 0.62, 0.46))
+		_add_box(center + Vector3(0.0, 8.0, 0.0), Vector3(20.0, 16.0, 16.0), sand)
+		_add_box(center + Vector3(0.0, 6.5, 8.1), Vector3(6.0, 9.0, 0.4), warm_glow) # Upplyst portal
+		# 4 ikoniska fasadtorn + 4 bakre torn
+		for ox in [-7.2, -2.8, 2.8, 7.2]:
+			_add_cyl(center + Vector3(float(ox), 24.0, 5.2), 0.55, 2.1, 32.0, sand)
+			_add_cyl(center + Vector3(float(ox), 41.2, 5.2), 0.2, 0.9, 2.8, gold)
+		for ox2 in [-5.8, 5.8]:
+			_add_cyl(center + Vector3(float(ox2), 21.0, -5.2), 0.55, 2.0, 26.0, sand)
+		# Högsta centrala Jesus-tornet med lysande kors
+		_add_cyl(center + Vector3(0.0, 28.0, 0.0), 1.0, 4.2, 42.0, sand)
+		_add_box(center + Vector3(0.0, 51.0, 0.0), Vector3(1.2, 5.0, 1.2), gold)
+		_add_box(center + Vector3(0.0, 52.0, 0.0), Vector3(3.8, 1.1, 1.1), gold)
+		return 55.0
+	elif city_id == "paris":
+		# EIFFELTORNET: 4 ben, 3 plattformar & hög spira
+		var iron := _poi_mat(Color(0.42, 0.36, 0.31), Color(0.28, 0.20, 0.08), 0.45)
+		for lx in [-6.0, 6.0]:
+			for lz in [-6.0, 6.0]:
+				_add_box(center + Vector3(float(lx), 6.0, float(lz)), Vector3(3.4, 12.0, 3.4), iron)
+		_add_box(center + Vector3(0.0, 13.0, 0.0), Vector3(15.5, 2.5, 15.5), iron)
+		_add_cyl(center + Vector3(0.0, 22.0, 0.0), 4.2, 7.2, 16.0, iron)
+		_add_box(center + Vector3(0.0, 30.5, 0.0), Vector3(9.5, 2.0, 9.5), iron)
+		_add_cyl(center + Vector3(0.0, 44.0, 0.0), 1.1, 4.0, 26.0, iron)
+		_add_cyl(center + Vector3(0.0, 60.0, 0.0), 0.2, 0.6, 8.0, gold)
+		return 65.0
 	elif city_id == "rome":
-		var mi := MeshInstance3D.new()
-		var cm := CylinderMesh.new()
-		cm.top_radius = 10.0
-		cm.bottom_radius = 10.8
-		cm.height = 16.0
-		mi.mesh = cm
-		mi.position = Vector3(center.x, 8.0, center.z)
-		mi.material_override = gold_mat
-		city_root.add_child(mi)
-		return 18.0
+		# COLOSSEUM: stor rund flervånings-stenarena med varmt ljus inifrån
+		_add_cyl(center + Vector3(0.0, 8.0, 0.0), 13.5, 14.2, 16.0, stone)
+		_add_cyl(center + Vector3(0.0, 16.5, 0.0), 13.2, 13.5, 2.0, dark_stone)
+		_add_cyl(center + Vector3(0.0, 8.5, 0.0), 9.5, 9.5, 16.6, warm_glow)
+		return 20.0
+	elif city_id == "london":
+		# BIG BEN (Elizabeth Tower): gotiskt klocktorn + 4 lysande urtavlor + spira
+		_add_box(center + Vector3(0.0, 18.0, 0.0), Vector3(9.0, 36.0, 9.0), stone)
+		_add_box(center + Vector3(0.0, 31.0, 4.65), Vector3(4.8, 4.8, 0.3), warm_glow)
+		_add_box(center + Vector3(0.0, 31.0, -4.65), Vector3(4.8, 4.8, 0.3), warm_glow)
+		_add_box(center + Vector3(4.65, 31.0, 0.0), Vector3(0.3, 4.8, 4.8), warm_glow)
+		_add_box(center + Vector3(-4.65, 31.0, 0.0), Vector3(0.3, 4.8, 4.8), warm_glow)
+		_add_cyl(center + Vector3(0.0, 43.0, 0.0), 0.3, 5.8, 14.0, dark_stone)
+		_add_cyl(center + Vector3(0.0, 51.5, 0.0), 0.15, 0.5, 4.0, gold)
+		return 54.0
+	elif city_id == "stockholm":
+		# STOCKHOLMS STADSHUS: rött tegelpalats + högt torn med gyllene Tre Kronor!
+		var brick := _poi_mat(Color(0.58, 0.24, 0.19))
+		_add_box(center + Vector3(0.0, 7.0, 0.0), Vector3(20.0, 14.0, 14.0), brick)
+		_add_box(center + Vector3(7.5, 21.0, -4.5), Vector3(5.8, 42.0, 5.8), brick)
+		_add_cyl(center + Vector3(7.5, 44.0, -4.5), 1.8, 2.2, 4.5, gold)
+		var crown := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = 2.0
+		sm.height = 4.0
+		crown.mesh = sm
+		crown.position = center + Vector3(7.5, 47.5, -4.5)
+		crown.material_override = gold
+		city_root.add_child(crown)
+		return 50.0
+	elif city_id == "istanbul":
+		# HAGIA SOFIA: stor kupol + 4 smala minareter
+		var terra := _poi_mat(Color(0.72, 0.52, 0.42))
+		_add_box(center + Vector3(0.0, 8.0, 0.0), Vector3(18.0, 16.0, 18.0), terra)
+		var dome := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = 8.5
+		sm.height = 14.0
+		dome.mesh = sm
+		dome.position = center + Vector3(0.0, 17.5, 0.0)
+		dome.material_override = dark_stone
+		city_root.add_child(dome)
+		for mx in [-10.0, 10.0]:
+			for mz in [-10.0, 10.0]:
+				_add_cyl(center + Vector3(float(mx), 19.0, float(mz)), 0.7, 1.3, 38.0, stone)
+				_add_cyl(center + Vector3(float(mx), 40.0, float(mz)), 0.1, 0.9, 5.0, gold)
+		return 44.0
+	elif city_id == "berlin":
+		# BRANDENBURGER TOR: 6 kolonner + bred attika + gyllene Quadriga
+		for kx in [-7.5, -4.5, -1.5, 1.5, 4.5, 7.5]:
+			_add_cyl(center + Vector3(float(kx), 7.5, 0.0), 0.9, 1.0, 15.0, stone)
+		_add_box(center + Vector3(0.0, 16.5, 0.0), Vector3(19.0, 3.5, 6.0), stone)
+		_add_box(center + Vector3(0.0, 20.0, 0.0), Vector3(8.0, 3.5, 3.0), gold)
+		return 24.0
+	elif city_id == "athens":
+		# PARTHENON / AKROPOLIS: klassiskt grekiskt tempel med kolonnrad
+		_add_box(center + Vector3(0.0, 1.5, 0.0), Vector3(20.0, 3.0, 14.0), stone)
+		for px in [-8.0, -4.8, -1.6, 1.6, 4.8, 8.0]:
+			_add_cyl(center + Vector3(float(px), 8.5, 5.2), 0.75, 0.9, 11.0, stone)
+			_add_cyl(center + Vector3(float(px), 8.5, -5.2), 0.75, 0.9, 11.0, stone)
+		_add_box(center + Vector3(0.0, 15.0, 0.0), Vector3(19.5, 2.2, 13.0), stone)
+		return 19.0
 	else:
-		var sp := MeshInstance3D.new()
-		var cm := CylinderMesh.new()
-		cm.top_radius = 0.6
-		cm.bottom_radius = 4.2
-		cm.height = 24.0
-		sp.mesh = cm
-		sp.position = Vector3(center.x, 12.0, center.z)
-		sp.material_override = gold_mat
-		city_root.add_child(sp)
-		return 26.0
+		# Ståtligt europeiskt katedral-/palatsmonument med tvillingtorn & kupol
+		_add_box(center + Vector3(0.0, 8.0, 0.0), Vector3(16.0, 16.0, 14.0), stone)
+		_add_cyl(center + Vector3(-6.2, 18.0, 4.5), 1.4, 2.4, 24.0, stone)
+		_add_cyl(center + Vector3(6.2, 18.0, 4.5), 1.4, 2.4, 24.0, stone)
+		_add_cyl(center + Vector3(-6.2, 32.0, 4.5), 0.2, 1.6, 6.0, gold)
+		_add_cyl(center + Vector3(6.2, 32.0, 4.5), 0.2, 1.6, 6.0, gold)
+		_add_box(center + Vector3(0.0, 7.0, 7.2), Vector3(5.0, 8.0, 0.4), warm_glow)
+		return 36.0
 
 func _add_invisible_wall(pos: Vector3, sz: Vector3) -> void:
 	var body := StaticBody3D.new()
@@ -679,8 +943,11 @@ func get_police_spawn_pos() -> Vector3:
 	return Vector3(120.0, 0.1, -120.0)
 
 func _process(delta: float) -> void:
-	if is_visible_in_tree() and focus_target != null and not chunk_data.is_empty():
-		_update_building_chunks(focus_target.global_position, 2)
+	if is_visible_in_tree() and focus_target != null:
+		if not chunk_data.is_empty():
+			_update_building_chunks(focus_target.global_position, 2)
+		if is_instance_valid(fog_cloud_plane):
+			fog_cloud_plane.position = Vector3(focus_target.global_position.x, 28.0, focus_target.global_position.z)
 	var t: float = float(Time.get_ticks_msec()) * 0.004
 	for pkey in pois.keys():
 		var r: MeshInstance3D = pois[pkey]["ring"]

@@ -47,8 +47,9 @@ func _ready() -> void:
 	var tex_spec: Texture2D = load("res://assets/globe/earth_spec.jpg") as Texture2D
 	if tex_day != null:
 		mat.albedo_texture = tex_day
+		mat.albedo_color = Color(0.54, 0.60, 0.72) # Film Noir skymningston på världskartan!
 	else:
-		mat.albedo_color = Color(0.14, 0.36, 0.56)
+		mat.albedo_color = Color(0.10, 0.22, 0.36)
 	if tex_norm != null:
 		mat.normal_enabled = true
 		mat.normal_texture = tex_norm
@@ -224,8 +225,8 @@ func _rebuild_markers() -> void:
 		else:
 			is_target = GameState.suspect_pool.has(cid) and not GameState.cleared_suspects.has(cid)
 
-		var dot_col: Color = Color(0.20, 0.85, 0.55) if is_cur else (Color(0.98, 0.80, 0.25) if is_target else Color(0.92, 0.90, 0.82))
-		var dot_r: float = 0.22 if is_cur else (0.20 if is_target else 0.13)
+		var dot_col: Color = Color(0.28, 0.90, 0.62) if is_cur else (Color(0.98, 0.78, 0.28) if is_target else Color(0.76, 0.74, 0.68))
+		var dot_r: float = 0.095 if is_cur else (0.085 if is_target else 0.055)
 		var dot := _make_sphere(dot_r, dot_col)
 		dot.position = pos
 		markers_root.add_child(dot)
@@ -255,28 +256,29 @@ func _rebuild_markers() -> void:
 		lbl.outline_size = 6
 		markers_root.add_child(lbl)
 
-	# Tjuvmarkör
+	# Diskret Noir-tjuvmarkör (liten glödande nål + ikon, ingen stor klumpig boll!)
 	thief_marker = Node3D.new()
-	thief_marker.add_child(_make_sphere(0.26, Color(0.92, 0.20, 0.20)))
+	thief_marker.add_child(_make_sphere(0.11, Color(0.95, 0.24, 0.24)))
 	thief_label = Label3D.new()
 	thief_label.text = "🕵️"
 	thief_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	thief_label.font_size = 42
-	thief_label.pixel_size = 0.012
-	thief_label.position = Vector3(0.0, 0.45, 0.0)
+	thief_label.font_size = 34
+	thief_label.pixel_size = 0.0095
+	thief_label.position = Vector3(0.0, 0.28, 0.0)
+	thief_label.outline_size = 6
 	thief_marker.add_child(thief_label)
 	markers_root.add_child(thief_marker)
 
-	# Polismarkörer (klickbara i Polischef-läge!)
+	# Diskreta Noir-polismarkörer (klickbara i Polischef-läge!)
 	for p in GameState.police:
 		var pn := Node3D.new()
-		pn.add_child(_make_sphere(0.23, Color(0.20, 0.72, 0.98)))
+		pn.add_child(_make_sphere(0.10, Color(0.28, 0.76, 1.0)))
 		var psb := StaticBody3D.new()
 		psb.collision_layer = 2
 		psb.collision_mask = 0
 		var pcs := CollisionShape3D.new()
 		var psp := SphereShape3D.new()
-		psp.radius = 0.42
+		psp.radius = 0.34
 		pcs.shape = psp
 		psb.add_child(pcs)
 		pn.add_child(psb)
@@ -285,22 +287,35 @@ func _rebuild_markers() -> void:
 		var pl := Label3D.new()
 		pl.text = "🚓 " + String(p["short"])
 		pl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		pl.font_size = 30
-		pl.pixel_size = 0.010
-		pl.position = Vector3(0.0, 0.42, 0.0)
+		pl.font_size = 24
+		pl.pixel_size = 0.0085
+		pl.position = Vector3(0.0, 0.26, 0.0)
+		pl.modulate = Color(0.68, 0.90, 1.0)
+		pl.outline_size = 6
 		pn.add_child(pl)
 		markers_root.add_child(pn)
 		police_markers[p["id"]] = { "node": pn, "label": pl }
 
-	# Senaste radarping med 📡 + Dag/Tid-etikett
+	# Senaste radarping: tunn pulserande röd skanner-ring istället för stor boll!
 	ping_marker = Node3D.new()
-	ping_marker.add_child(_make_sphere(0.36, Color(1.0, 0.28, 0.28, 0.55)))
+	var pring := MeshInstance3D.new()
+	var ptor := TorusMesh.new()
+	ptor.inner_radius = 0.16
+	ptor.outer_radius = 0.21
+	pring.mesh = ptor
+	var pmat := StandardMaterial3D.new()
+	pmat.albedo_color = Color(1.0, 0.26, 0.28, 0.85)
+	pmat.emission_enabled = true
+	pmat.emission = Color(1.0, 0.22, 0.24)
+	pmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	pring.material_override = pmat
+	ping_marker.add_child(pring)
 	ping_label = Label3D.new()
 	ping_label.text = "📡"
 	ping_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	ping_label.font_size = 28
-	ping_label.pixel_size = 0.0095
-	ping_label.position = Vector3(0.0, 0.55, 0.0)
+	ping_label.font_size = 24
+	ping_label.pixel_size = 0.0085
+	ping_label.position = Vector3(0.0, 0.34, 0.0)
 	ping_label.modulate = Color(1.0, 0.45, 0.45)
 	ping_label.outline_size = 6
 	ping_marker.add_child(ping_label)
