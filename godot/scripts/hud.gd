@@ -8,6 +8,8 @@ extends CanvasLayer
 ## - Hopfällbar 1-rads Polisradio [R] med chatt & snabb-bluffar
 ## - Modaler: Setup (Roll, Tid, Missar X), Uppdragspass, Klappertavla, Frågekort + Kassaskåp + Minispel, Hotell/Marknad/Bibliotek, Game Over
 
+const NoirTheme = preload("res://scripts/noir_theme.gd")
+
 const RadarScript = preload("res://scripts/radar_minimap.gd")
 const MinigameScript = preload("res://scripts/minigame_panel.gd")
 const PoiCompassScript = preload("res://scripts/poi_compass.gd")
@@ -51,6 +53,10 @@ var radio_input: LineEdit
 var radio_qb1: Button
 var radio_qb2: Button
 
+var modal_clock: Label
+var modal_art: TextureRect
+var noir_theme: Theme
+var noir_art_cache: Dictionary = {}
 var modal_backdrop: ColorRect
 var modal_panel: PanelContainer
 var modal_vbox: VBoxContainer
@@ -76,7 +82,11 @@ var lock_pips_ref: Label
 var lock_city_id: String = ""
 
 func _ready() -> void:
+	noir_theme = NoirTheme.create()
 	_build_hud()
+	for control in get_children():
+		if control is Control:
+			control.theme = noir_theme
 	GameState.radio_logged.connect(_on_radio_logged)
 	GameState.match_started.connect(_on_match_started)
 	GameState.target_updated.connect(_rebuild_police_tabs)
@@ -100,10 +110,10 @@ func _on_match_started() -> void:
 
 func _make_style(bg: Color, border: Color, radius: int = 8) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = bg
-	sb.border_color = border
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(radius)
+	sb.bg_color = Color(0.055, 0.085, 0.09, bg.a) if bg.r < 0.3 else bg
+	sb.border_color = NoirTheme.BRASS if border.r > 0.7 and border.b < 0.4 else border
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(mini(radius, 4))
 	sb.content_margin_left = 12
 	sb.content_margin_right = 12
 	sb.content_margin_top = 8
@@ -443,16 +453,31 @@ func _build_hud() -> void:
 	modal_backdrop.visible = false
 	add_child(modal_backdrop)
 
+	modal_art = TextureRect.new()
+	modal_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	modal_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	modal_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	modal_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	modal_backdrop.add_child(modal_art)
+	var art_shade := ColorRect.new()
+	art_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art_shade.color = Color(0.02, 0.04, 0.04, 0.24)
+	art_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	modal_backdrop.add_child(art_shade)
+	modal_clock = Label.new()
+	modal_clock.position = Vector2(24, 24)
+	modal_clock.add_theme_color_override("font_color", NoirTheme.PAPER)
+	modal_backdrop.add_child(modal_clock)
 	modal_panel = PanelContainer.new()
 	modal_panel.anchor_left = 0.5
 	modal_panel.anchor_right = 0.5
 	modal_panel.anchor_top = 0.5
 	modal_panel.anchor_bottom = 0.5
-	modal_panel.offset_left = -310
-	modal_panel.offset_right = 310
-	modal_panel.offset_top = -255
-	modal_panel.offset_bottom = 255
-	modal_panel.add_theme_stylebox_override("panel", _make_style(Color(0.14, 0.10, 0.07, 0.98), Color(0.82, 0.64, 0.28), 12))
+	modal_panel.offset_left = -450
+	modal_panel.offset_right = 230
+	modal_panel.offset_top = -280
+	modal_panel.offset_bottom = 280
+	modal_panel.add_theme_stylebox_override("panel", NoirTheme.panel(Color(0.045, 0.075, 0.08, 0.95), NoirTheme.BRASS))
 	modal_backdrop.add_child(modal_panel)
 
 	var mscroll := ScrollContainer.new()
@@ -489,7 +514,14 @@ func _rebuild_police_tabs() -> void:
 		b.pressed.connect(func(): GameState.select_police(pid))
 		police_tab_box.add_child(b)
 
-func _show_modal() -> void:
+func _set_noir_art(key: String) -> void:
+	var path := "res://assets/noir/" + key + ".png"
+	if not noir_art_cache.has(key) and ResourceLoader.exists(path):
+		noir_art_cache[key] = load(path)
+	modal_art.texture = noir_art_cache.get(key)
+
+func _show_modal(art_key: String = "dossier") -> void:
+	_set_noir_art(art_key)
 	for c in modal_vbox.get_children():
 		c.queue_free()
 	lock_active = false
@@ -504,16 +536,16 @@ func _close_modal() -> void:
 		player_ref.ui_blocking_input = false
 
 func _open_start_modal() -> void:
-	_show_modal()
+	_show_modal("title")
 	var t := Label.new()
 	t.text = "🕵️ GLOBETROTTER: SCOTLAND YARD 3D"
 	t.add_theme_font_size_override("font_size", 22)
-	t.add_theme_color_override("font_color", Color(1.0, 0.85, 0.42))
+	t.add_theme_color_override("font_color", NoirTheme.PAPER)
 	modal_vbox.add_child(t)
 
 	var desc := Label.new()
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD
-	desc.text = "10 kontinuerliga dagar över Europa. Spring på riktiga 3D-gator (WASD), tryck [E] vid glittrande byggnader, [G] för 3D-Glob med berg & moln, [P] för Passet och [R] för Polisradion."
+	desc.text = "10 dagar över Europa. WASD / klick för att röra dig · [E] Interagera · [G] Glob · [P] Pass · [B] Väska · [R] Radio."
 	modal_vbox.add_child(desc)
 
 	# Rollval
@@ -564,6 +596,8 @@ func _open_start_modal() -> void:
 	var start_b := Button.new()
 	start_b.text = "🚀 STARTA NY JAKT" if (GameState.active and not GameState.finished) else "🚀 STARTA JAKTEN"
 	start_b.custom_minimum_size = Vector2(0, 46)
+	start_b.add_theme_stylebox_override("normal", NoirTheme.panel(NoirTheme.BRASS, NoirTheme.BRASS))
+	start_b.add_theme_color_override("font_color", NoirTheme.INK)
 	start_b.pressed.connect(func():
 		_close_modal()
 		GameState.start_match(setup_role, setup_sec_per_day, setup_miss_limit)
@@ -585,7 +619,7 @@ func _open_pause_or_start_modal() -> void:
 	var t := Label.new()
 	t.text = "☰ MENY — GLOBETROTTER"
 	t.add_theme_font_size_override("font_size", 20)
-	t.add_theme_color_override("font_color", Color(1.0, 0.85, 0.42))
+	t.add_theme_color_override("font_color", NoirTheme.PAPER)
 	modal_vbox.add_child(t)
 
 	var b_res := Button.new()
@@ -627,11 +661,11 @@ func _open_bag_modal() -> void:
 	if not GameState.active:
 		return
 	AudioMgr.play_sound("paper")
-	_show_modal()
+	_show_modal("equipment")
 	var h := Label.new()
 	h.text = "🎒 RYGGSÄCK & UTRUSTNING"
 	h.add_theme_font_size_override("font_size", 20)
-	h.add_theme_color_override("font_color", Color(1.0, 0.85, 0.42))
+	h.add_theme_color_override("font_color", NoirTheme.PAPER)
 	modal_vbox.add_child(h)
 
 	var is_thief: bool = GameState.player_role == "thief"
@@ -718,7 +752,7 @@ func _open_passport_modal() -> void:
 	var h := Label.new()
 	h.text = "🛂 TJUVENS UPPDRAGSPASS" if GameState.player_role == "thief" else "🛂 INTERPOLS SPANINGSAKT"
 	h.add_theme_font_size_override("font_size", 20)
-	h.add_theme_color_override("font_color", Color(1.0, 0.85, 0.42))
+	h.add_theme_color_override("font_color", NoirTheme.PAPER)
 	modal_vbox.add_child(h)
 
 	var rules := Label.new()
@@ -752,7 +786,7 @@ func _open_passport_modal() -> void:
 	modal_vbox.add_child(cb)
 
 func _open_departures_modal(city_id: String) -> void:
-	_show_modal()
+	_show_modal("station")
 	AudioMgr.play_sound("flap")
 	var actor: Dictionary = GameState.get_controlled_actor()
 	var c: Dictionary = GameState.cities[city_id]
@@ -761,7 +795,7 @@ func _open_departures_modal(city_id: String) -> void:
 	var h := Label.new()
 	h.text = "🚉 KLAPPERTAVLA — %s" % String(c["name"]).to_upper()
 	h.add_theme_font_size_override("font_size", 18)
-	h.add_theme_color_override("font_color", Color(1.0, 0.85, 0.42))
+	h.add_theme_color_override("font_color", NoirTheme.PAPER)
 	modal_vbox.add_child(h)
 
 	if is_thief:
@@ -780,7 +814,7 @@ func _open_departures_modal(city_id: String) -> void:
 		var pol_here: bool = police_cities.has(city_id)
 		if pol_here and c["trains"].size() > 0:
 			var eb := Button.new()
-			eb.text = "🏃 NÖDFLYKT: Kasta dig på nästa tåg (2s boarding · +250 kr · Pingar avgångsstad)"
+			eb.text = "🏃 Nödflykt · 2s · +250 kr"
 			eb.pressed.connect(func():
 				var safe_trains: Array[String] = []
 				for tid in c["trains"]:
@@ -847,7 +881,7 @@ func _open_challenge_modal(city_id: String) -> void:
 			GameState.add_radio("🔍 Spaning i %s redan gjord (%ds kvar)." % [GameState.cities[city_id]["name"], ceili(cd_until - GameState.elapsed_sec)], "police")
 			return
 
-	_show_modal()
+	_show_modal("vault")
 	lock_city_id = city_id
 	var c: Dictionary = GameState.cities[city_id]
 	var is_police: bool = GameState.player_role == "police"
@@ -856,7 +890,7 @@ func _open_challenge_modal(city_id: String) -> void:
 	var h := Label.new()
 	h.text = "%s — %s" % [c["landmark"]["name"], "SPANING" if is_police else ("STÖLDMÅL: " + String(c["landmark"]["artifact"]) if is_target else "Tjäna +900 kr")]
 	h.add_theme_font_size_override("font_size", 18)
-	h.add_theme_color_override("font_color", Color(1.0, 0.85, 0.42))
+	h.add_theme_color_override("font_color", NoirTheme.PAPER)
 	modal_vbox.add_child(h)
 
 	var tick_lbl := Label.new()
@@ -888,6 +922,7 @@ func _open_challenge_modal(city_id: String) -> void:
 	var modal_state: Dictionary = { "lockpick_applied": false, "guide_applied": false }
 
 	var show_quiz := func():
+		_set_noir_art("dossier")
 		lock_active = false
 		for ch in content.get_children(): ch.queue_free()
 
@@ -938,6 +973,7 @@ func _open_challenge_modal(city_id: String) -> void:
 		content.add_child(fb)
 
 	var show_lock := func():
+		_set_noir_art("vault")
 		for ch in content.get_children(): ch.queue_free()
 		var hint := Label.new()
 		hint.text = "Tryck STOPP / MELLANSLAG i den gröna zonen (3 träffar)!"
@@ -981,6 +1017,7 @@ func _open_challenge_modal(city_id: String) -> void:
 
 	var show_mg_holder: Array = []
 	var show_mg := func():
+		_set_noir_art("vault")
 		lock_active = false
 		for ch in content.get_children(): ch.queue_free()
 		var mg: VBoxContainer = MinigameScript.new()
@@ -1055,7 +1092,7 @@ func _open_extra_place_modal(place_key: String, city_id: String) -> void:
 		GameState.add_radio("⏳ Du besökte nyss %s i %s (%ds kvar)." % [place_key.capitalize(), GameState.cities[city_id]["name"], ceili(cd_until - GameState.elapsed_sec)], "")
 		return
 
-	_show_modal()
+	_show_modal("equipment" if place_key == "market" else place_key)
 	AudioMgr.play_sound("bell")
 	var is_police: bool = GameState.player_role == "police"
 	var c: Dictionary = GameState.cities[city_id]
@@ -1064,7 +1101,7 @@ func _open_extra_place_modal(place_key: String, city_id: String) -> void:
 
 	var h := Label.new()
 	h.add_theme_font_size_override("font_size", 18)
-	h.add_theme_color_override("font_color", Color(1.0, 0.85, 0.42))
+	h.add_theme_color_override("font_color", NoirTheme.PAPER)
 	modal_vbox.add_child(h)
 
 	if place_key == "hotel":
@@ -1099,7 +1136,7 @@ func _open_extra_place_modal(place_key: String, city_id: String) -> void:
 			if nb.size() > 0:
 				var decoy_id: String = String(nb[randi() % nb.size()])
 				var b2 := Button.new()
-				b2.text = "📡 Falsk hotellbokning i %s (Falskt spår på polisradarn) — 400 kr" % GameState.cities[decoy_id]["name"]
+				b2.text = "📡 Falsk bokning i %s — 400 kr" % GameState.cities[decoy_id]["name"]
 				b2.disabled = GameState.cash < 400
 				b2.pressed.connect(func():
 					GameState.cash -= 400
@@ -1265,6 +1302,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				elif k.keycode == KEY_3 and GameState.police.size() > 2: GameState.select_police(String(GameState.police[2]["id"]))
 
 func _process(delta: float) -> void:
+	if modal_clock != null and modal_backdrop.visible:
+		modal_clock.visible = GameState.active and not GameState.finished
+		modal_clock.text = "%s · %s · JAKTEN FORTSÄTTER" % [lbl_day.text, lbl_clock.text]
 	if lock_active and is_instance_valid(lock_bar_ref):
 		lock_pos += lock_dir * lock_speed * delta
 		if lock_pos >= 0.98: lock_pos = 0.98; lock_dir = -1.0
@@ -1310,11 +1350,11 @@ func _process(delta: float) -> void:
 		if GameState.player_role == "thief":
 			var d_str: String = " (%dm)" % int(GameState.nearest_police_dist_in_city) if GameState.nearest_police_dist_in_city < 900.0 else ""
 			if GameState.nearest_police_chasing:
-				lbl_chase.text = "🚨 POLIS JAGAR DIG%s! DRA IFRÅN >%dm ELLER NÖDFLY!" % [d_str, int(GameState.LOSE_SIGHT_DIST_M)]
+				lbl_chase.text = "🚨 POLIS JAGAR DIG%s" % d_str
 			else:
-				lbl_chase.text = "⚠️ POLIS SÖKER I STADEN%s — LÄGE ATT FLY ELLER GÖMMA SIG!" % d_str
+				lbl_chase.text = "⚠️ POLIS I STADEN%s" % d_str
 		else:
-			lbl_chase.text = "🚨 TJUVEN I %s! GRIP TJUVEN!" % String(GameState.cities[GameState.thief["city"]]["name"]).to_upper()
+			lbl_chase.text = "🚨 TJUVEN I %s" % String(GameState.cities[GameState.thief["city"]]["name"]).to_upper()
 
 	var exposed: bool = (not GameState.last_ping.is_empty()) and String(GameState.last_ping["city_id"]) == String(GameState.thief["city"])
 	lbl_status.text = ("%s · ⚠️%d/%d" % ["AVSLÖJAD" if exposed else "DOLD", GameState.misses_count, GameState.miss_limit]) if GameState.player_role == "thief" else String(actor.get("short", "Polis"))

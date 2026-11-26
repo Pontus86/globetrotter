@@ -15,6 +15,8 @@ var city_builder: Node3D
 var player: CharacterBody3D
 var police_nodes: Dictionary = {}
 var ai_thief_node: CharacterBody3D
+var thief_area_marker: MeshInstance3D
+var thief_area_timer: float = 0.0
 var globe: Node3D
 var hud: CanvasLayer
 
@@ -87,6 +89,9 @@ func _clear_city_bots() -> void:
 	if is_instance_valid(ai_thief_node):
 		ai_thief_node.queue_free()
 	ai_thief_node = null
+	if is_instance_valid(thief_area_marker):
+		thief_area_marker.queue_free()
+	thief_area_marker = null
 
 func _on_view_changed(mode: String, city_id: String) -> void:
 	if mode == "city":
@@ -131,9 +136,14 @@ func _process(_delta: float) -> void:
 		var thief_here: bool = (GameState.view_mode == "city" and actor.get("travel") == null and GameState.thief.get("travel") == null and String(GameState.thief.get("city", "")) == GameState.current_city_id)
 		if thief_here and not is_instance_valid(ai_thief_node):
 			ai_thief_node = _spawn_ai_thief()
+			thief_area_marker = _spawn_thief_area_marker()
+			thief_area_timer = 0.0
 		elif not thief_here and is_instance_valid(ai_thief_node):
 			ai_thief_node.queue_free()
 			ai_thief_node = null
+			if is_instance_valid(thief_area_marker):
+				thief_area_marker.queue_free()
+			thief_area_marker = null
 
 func _physics_process(delta: float) -> void:
 	if not GameState.active or GameState.finished or GameState.view_mode != "city":
@@ -167,10 +177,48 @@ func _physics_process(delta: float) -> void:
 		var rf: Node = ai_thief_node.get_node_or_null("RunnerFig")
 		if rf != null:
 			rf.update_run(ai_thief_node.velocity, delta)
-		var cap_r: float = GameState.CAPTURE_DIST_M * (2.0 if GameState.elapsed_sec < GameState.hound_until else 1.0)
+
+		# Riktig 3D-raycast siktlinje: polischefen ser bara tjuvens modell om inga hus står i vägen!
+		var from_p: Vector3 = player.global_position + Vector3(0.0, 3.5, 0.0)
+		var to_p: Vector3 = ai_thief_node.global_position + Vector3(0.0, 3.5, 0.0)
+		var q := PhysicsRayQueryParameters3D.create(from_p, to_p)
+		q.collision_mask = 1
+		q.exclude = [player.get_rid(), ai_thief_node.get_rid()]
+		var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(q)
 		var dist: float = Vector2(player.global_position.x, player.global_position.z).distance_to(Vector2(ai_thief_node.global_position.x, ai_thief_node.global_position.z))
-		if dist <= cap_r:
+		var can_see_thief: bool = hit.is_empty() and dist <= GameState.VISION_DIST_M * 1.45
+
+		ai_thief_node.visible = can_see_thief
+		if is_instance_valid(thief_area_marker):
+			thief_area_marker.visible = not can_see_thief
+			thief_area_timer -= delta
+			if thief_area_timer <= 0.0:
+				thief_area_timer = 2.4
+				var jitter := Vector3(randf_range(-16.0, 16.0), 0.35, randf_range(-16.0, 16.0))
+				thief_area_marker.global_position = Vector3(ai_thief_node.global_position.x, 0.35, ai_thief_node.global_position.z) + jitter
+
+		var cap_r: float = GameState.CAPTURE_DIST_M * (2.0 if GameState.elapsed_sec < GameState.hound_until else 1.0)
+		if dist <= cap_r and hit.is_empty():
 			GameState.end_game(true, "Du grep mästertjuven på gatorna i %s!" % GameState.cities[GameState.current_city_id]["name"])
+
+func _spawn_thief_area_marker() -> MeshInstance3D:
+	# Ungefärlig sökområdes-cirkel när hus blockerar siktlinjen till tjuven!
+	var mi := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 36.0
+	cyl.bottom_radius = 36.0
+	cyl.height = 0.3
+	mi.mesh = cyl
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.95, 0.22, 0.22, 0.22)
+	mat.emission_enabled = true
+	mat.emission = Color(0.90, 0.18, 0.18)
+	mat.emission_energy_multiplier = 0.8
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mi.material_override = mat
+	mi.visible = false
+	city_container.add_child(mi)
+	return mi
 
 func _spawn_ai_thief() -> CharacterBody3D:
 	var th := CharacterBody3D.new()

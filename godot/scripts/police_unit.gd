@@ -72,6 +72,17 @@ func _ready() -> void:
 	vis_ring.material_override = vmat
 	add_child(vis_ring)
 
+func _has_line_of_sight_to_player() -> bool:
+	if target_player == null:
+		return false
+	var from_p: Vector3 = global_position + Vector3(0.0, 3.5, 0.0)
+	var to_p: Vector3 = target_player.global_position + Vector3(0.0, 3.5, 0.0)
+	var query := PhysicsRayQueryParameters3D.create(from_p, to_p)
+	query.collision_mask = 1
+	query.exclude = [get_rid(), target_player.get_rid()]
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+	return hit.is_empty()
+
 func _physics_process(delta: float) -> void:
 	if not is_visible_in_tree() or not GameState.active or GameState.finished or target_player == null:
 		velocity = Vector3.ZERO
@@ -86,26 +97,27 @@ func _physics_process(delta: float) -> void:
 	var dist: float = Vector2(global_position.x, global_position.z).distance_to(Vector2(target_player.global_position.x, target_player.global_position.z))
 	var thief_hidden: bool = GameState.elapsed_sec < GameState.thief_hidden_until
 	var thief_sprinting: bool = GameState.elapsed_sec < GameState.boost_until
+	var has_los: bool = (dist <= GameState.LOSE_SIGHT_DIST_M * 1.4) and _has_line_of_sight_to_player()
 
-	# Gripande!
-	if dist <= GameState.CAPTURE_DIST_M and GameState.thief.get("travel") == null:
+	# Gripande! (kräver avstånd <= CAPTURE_DIST_M och ingen husvägg emellan)
+	if dist <= GameState.CAPTURE_DIST_M and has_los and GameState.thief.get("travel") == null:
 		GameState.end_game(false, "%s grep dig på gatorna i %s!" % [police_data.get("name", "Polisen"), GameState.cities[GameState.current_city_id]["name"]])
 		return
 
-	# Folkmassa-gömställe: nollställ spotted_pos direkt så polisen tappar spåret på riktigt!
+	# Riktig 3D-siktlinje: byggnader blockerar polisens syn!
 	if thief_hidden:
 		if alert_state == "chasing":
 			alert_state = "searching"
 			has_spotted_pos = false
-	elif dist <= GameState.VISION_DIST_M or thief_sprinting:
+	elif has_los and (dist <= GameState.VISION_DIST_M or thief_sprinting):
 		if alert_state != "chasing":
 			alert_state = "chasing"
-			GameState.add_radio('📻 %s: "Jag har ögonkontakt med tjuven i %s!"' % [police_data.get("short", "Polis"), GameState.cities[GameState.current_city_id]["name"]], "alert")
+			GameState.add_radio('📻 %s: "Ögonkontakt i %s!"' % [police_data.get("short", "Polis"), GameState.cities[GameState.current_city_id]["name"]], "alert")
 		spotted_pos = target_player.global_position
 		has_spotted_pos = true
-	elif alert_state == "chasing" and dist > GameState.LOSE_SIGHT_DIST_M:
+	elif alert_state == "chasing" and (not has_los or dist > GameState.LOSE_SIGHT_DIST_M):
 		alert_state = "searching"
-		GameState.add_radio('📻 %s: "Tappade siktlinjen — söker av kvarteren!"' % police_data.get("short", "Polis"), "police")
+		GameState.add_radio('📻 %s: "Tappade siktlinjen bakom kvarteret."' % police_data.get("short", "Polis"), "police")
 
 	var goal: Vector3 = spotted_pos
 	if not has_spotted_pos or Vector2(global_position.x, global_position.z).distance_to(Vector2(goal.x, goal.z)) < 8.0:
