@@ -10,6 +10,7 @@ const CHUNK_SIZE: float = 180.0
 const CHUNK_LOAD_RADIUS: int = 2   # 5x5 chunks = 900x900m synfält runt spelaren!
 const CHUNK_UNLOAD_RADIUS: int = 3 # Avlasta chunks >540m bort för 144 FPS
 const CityLifeScript = preload("res://scripts/city_life.gd")
+const RooftopPropsScript = preload("res://scripts/rooftop_props.gd")
 
 var pois: Dictionary = {}
 var city_root: Node3D
@@ -535,6 +536,9 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 	rs.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var col_faces := PackedVector3Array()
 	var entrance_count: int = 0
+	var roof_props: Node3D = RooftopPropsScript.new()
+	chunk_node.add_child(roof_props)
+	var props_in_chunk: int = 0
 
 	for b_raw in b_list:
 		var b: Dictionary = b_raw
@@ -620,7 +624,12 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 				col_faces.append(cv0); col_faces.append(cv1); col_faces.append(cv2)
 				col_faces.append(cv0); col_faces.append(cv2); col_faces.append(cv3)
 
-		_build_noir_roof(rs, pts2, h, col_roof, building_seed)
+		var roof_info: Dictionary = _build_noir_roof(rs, pts2, h, col_roof, building_seed)
+		if min_h < 0.5 and props_in_chunk < 24 and rng.randf() < 0.36:
+			var rp2: Vector2 = roof_info["pos"]
+			if Geometry2D.is_point_in_polygon(rp2, pts2):
+				roof_props.add_random_prop(Vector3(rp2.x, float(roof_info["y"]), rp2.y), h, rng, bool(roof_info["pitched"]))
+				props_in_chunk += 1
 
 	for variant in range(wall_surfaces.size()):
 		if wall_counts[variant] == 0:
@@ -677,7 +686,7 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 
 	return chunk_node
 
-func _build_noir_roof(surface: SurfaceTool, footprint: PackedVector2Array, height: float, tint: Color, seed: float) -> void:
+func _build_noir_roof(surface: SurfaceTool, footprint: PackedVector2Array, height: float, tint: Color, seed: float) -> Dictionary:
 	# A raised inner ridge on convex footprints gives true hip roofs, no false
 	# triangles across courtyards. Tall blocks/complex outlines retain flat roofs.
 	# Ignore tiny facade recesses for the roof outline; deep courtyards remain flat.
@@ -730,6 +739,7 @@ func _build_noir_roof(surface: SurfaceTool, footprint: PackedVector2Array, heigh
 			_roof_triangle(surface, Vector3(a.x,height,a.y), Vector3(b.x,height,b.y), Vector3(rb.x,height+rise,rb.y), tint)
 			if ra.distance_squared_to(rb) > 0.01:
 				_roof_triangle(surface, Vector3(a.x,height,a.y), Vector3(rb.x,height+rise,rb.y), Vector3(ra.x,height+rise,ra.y), tint)
+		return { "y": height + rise, "pitched": true, "pos": (end_a + end_b) * 0.5 }
 	else:
 		var triangles := Geometry2D.triangulate_polygon(footprint)
 		for i in range(0,triangles.size(),3):
@@ -737,6 +747,7 @@ func _build_noir_roof(surface: SurfaceTool, footprint: PackedVector2Array, heigh
 			var b := footprint[triangles[i+1]]
 			var c := footprint[triangles[i+2]]
 			_roof_triangle(surface,Vector3(a.x,height,a.y),Vector3(b.x,height,b.y),Vector3(c.x,height,c.y),tint)
+		return { "y": height, "pitched": false, "pos": center }
 
 func _outline_area(points: PackedVector2Array) -> float:
 	var area := 0.0
