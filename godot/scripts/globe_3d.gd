@@ -14,7 +14,9 @@ var active_routes_mesh: MeshInstance3D
 var thief_marker: Node3D
 var thief_label: Label3D
 var police_markers: Dictionary = {}
-var ping_marker: MeshInstance3D
+var police_hitboxes: Dictionary = {} # StaticBody3D -> police_id
+var ping_marker: Node3D
+var ping_label: Label3D
 var city_hitboxes: Dictionary = {} # StaticBody3D -> city_id
 
 var rot_y: float = PI + 0.18
@@ -103,6 +105,8 @@ func _ready() -> void:
 
 	GameState.match_started.connect(_rebuild_all)
 	GameState.target_updated.connect(_rebuild_all)
+	GameState.city_arrived.connect(func(_cid): _rebuild_markers())
+	GameState.view_changed.connect(func(_m, _c): _rebuild_markers())
 	_rebuild_all()
 
 func _lat_lon_to_vec3(lon_deg: float, lat_deg: float, radius: float = GLOBE_RADIUS + 0.14) -> Vector3:
@@ -164,18 +168,25 @@ func _rebuild_markers() -> void:
 	for ch in markers_root.get_children():
 		ch.queue_free()
 	police_markers.clear()
+	police_hitboxes.clear()
 	city_hitboxes.clear()
+
+	var actor: Dictionary = GameState.get_controlled_actor()
+	var cur_cid: String = String(actor.get("city", ""))
 
 	for cid in GameState.cities.keys():
 		var c: Dictionary = GameState.cities[cid]
 		var pos: Vector3 = _lat_lon_to_vec3(float(c["center"][0]), float(c["center"][1]))
+		var is_cur: bool = String(cid) == cur_cid
 		var is_target: bool = false
 		if GameState.player_role == "thief":
 			is_target = GameState.real_targets.has(cid) and not GameState.collected_targets.has(cid)
 		else:
 			is_target = GameState.suspect_pool.has(cid) and not GameState.cleared_suspects.has(cid)
 
-		var dot := _make_sphere(0.20 if is_target else 0.13, Color(0.98, 0.80, 0.25) if is_target else Color(0.92, 0.90, 0.82))
+		var dot_col: Color = Color(0.20, 0.85, 0.55) if is_cur else (Color(0.98, 0.80, 0.25) if is_target else Color(0.92, 0.90, 0.82))
+		var dot_r: float = 0.22 if is_cur else (0.20 if is_target else 0.13)
+		var dot := _make_sphere(dot_r, dot_col)
 		dot.position = pos
 		markers_root.add_child(dot)
 
@@ -193,12 +204,14 @@ func _rebuild_markers() -> void:
 		city_hitboxes[sb] = String(cid)
 
 		var lbl := Label3D.new()
-		lbl.text = (("🎯 " if GameState.player_role == "thief" else "❓ ") if is_target else "") + String(c["name"])
+		var art_icon: String = String(c.get("landmark", {}).get("icon", "🎯"))
+		var prefix: String = ((art_icon + " ") if GameState.player_role == "thief" else "❓ ") if is_target else ""
+		lbl.text = prefix + String(c["name"])
 		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		lbl.font_size = 24
 		lbl.pixel_size = 0.0085
 		lbl.position = pos * 1.036
-		lbl.modulate = Color(1.0, 0.92, 0.55) if is_target else Color(0.95, 0.95, 0.95)
+		lbl.modulate = Color(0.45, 1.0, 0.72) if is_cur else (Color(1.0, 0.92, 0.55) if is_target else Color(0.95, 0.95, 0.95))
 		lbl.outline_size = 6
 		markers_root.add_child(lbl)
 
@@ -214,10 +227,21 @@ func _rebuild_markers() -> void:
 	thief_marker.add_child(thief_label)
 	markers_root.add_child(thief_marker)
 
-	# Polismarkörer
+	# Polismarkörer (klickbara i Polischef-läge!)
 	for p in GameState.police:
 		var pn := Node3D.new()
 		pn.add_child(_make_sphere(0.23, Color(0.20, 0.72, 0.98)))
+		var psb := StaticBody3D.new()
+		psb.collision_layer = 2
+		psb.collision_mask = 0
+		var pcs := CollisionShape3D.new()
+		var psp := SphereShape3D.new()
+		psp.radius = 0.42
+		pcs.shape = psp
+		psb.add_child(pcs)
+		pn.add_child(psb)
+		police_hitboxes[psb] = String(p["id"])
+
 		var pl := Label3D.new()
 		pl.text = "🚓 " + String(p["short"])
 		pl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -228,8 +252,18 @@ func _rebuild_markers() -> void:
 		markers_root.add_child(pn)
 		police_markers[p["id"]] = { "node": pn, "label": pl }
 
-	# Senaste radarping
-	ping_marker = _make_sphere(0.36, Color(1.0, 0.28, 0.28, 0.55))
+	# Senaste radarping med 📡 + Dag/Tid-etikett
+	ping_marker = Node3D.new()
+	ping_marker.add_child(_make_sphere(0.36, Color(1.0, 0.28, 0.28, 0.55)))
+	ping_label = Label3D.new()
+	ping_label.text = "📡"
+	ping_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	ping_label.font_size = 28
+	ping_label.pixel_size = 0.0095
+	ping_label.position = Vector3(0.0, 0.55, 0.0)
+	ping_label.modulate = Color(1.0, 0.45, 0.45)
+	ping_label.outline_size = 6
+	ping_marker.add_child(ping_label)
 	ping_marker.visible = false
 	markers_root.add_child(ping_marker)
 
@@ -279,9 +313,14 @@ func _try_click_city(screen_pos: Vector2) -> void:
 	var query := PhysicsRayQueryParameters3D.create(from, to)
 	query.collision_mask = 2
 	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
-	if not hit.is_empty() and city_hitboxes.has(hit["collider"]):
-		var cid: String = city_hitboxes[hit["collider"]]
-		GameState.handle_globe_city_click(cid)
+	if not hit.is_empty():
+		if GameState.player_role == "police" and police_hitboxes.has(hit["collider"]):
+			var pid: String = police_hitboxes[hit["collider"]]
+			GameState.select_police(pid)
+			return
+		if city_hitboxes.has(hit["collider"]):
+			var cid: String = city_hitboxes[hit["collider"]]
+			GameState.handle_globe_city_click(cid)
 
 func _process(delta: float) -> void:
 	if not visible or not GameState.active:
@@ -318,6 +357,8 @@ func _process(delta: float) -> void:
 			var pulse: float = 1.0 + sin(Time.get_ticks_msec() * 0.008) * 0.22
 			ping_marker.scale = Vector3(pulse, pulse, pulse)
 			ping_marker.position = _lat_lon_to_vec3(float(pc["center"][0]), float(pc["center"][1]), GLOBE_RADIUS + 0.22)
+			if ping_label != null:
+				ping_label.text = "📡 Spår D%d %s:%s" % [int(GameState.last_ping["day"]), GameState.last_ping["hh"], GameState.last_ping["mm"]]
 		else:
 			ping_marker.visible = false
 
@@ -340,7 +381,7 @@ func _update_active_route_arcs(show_thief: bool) -> void:
 		if not has_any:
 			im.surface_begin(Mesh.PRIMITIVE_LINES)
 			has_any = true
-		_draw_arc_lines(im, va, vb, GLOBE_RADIUS + 0.18, lift, Color(1.0, 0.25, 0.25), 14)
+		_draw_arc_lines(im, va, vb, GLOBE_RADIUS + 0.18, lift, Color(0.96, 0.78, 0.34), 14)
 
 	for p in GameState.police:
 		if p.get("travel") != null:

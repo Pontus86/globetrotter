@@ -75,20 +75,28 @@ func _draw() -> void:
 		draw_circle(Vector2(float(p["x"]), float(p["y"])), 4.2 if is_cur else (3.6 if is_target else 2.5), col)
 		draw_string(font, Vector2(float(p["x"]) - 18.0, float(p["y"]) - 6.0), String(c["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, col)
 
-	# Alla 3 poliser — prick om inom radie, klassisk riktningspil på kanten om utanför!
+	# Alla 3 poliser — prick med initial (H/V/L) om inom radie, vitkantad riktningspil om utanför!
 	for pol in GameState.police:
 		var pol_pos: Array = _actor_lng_lat(pol)
 		var p: Dictionary = _proj(origin, pol_pos, cos_lat, cx, cy, max_r)
 		if float(p["dist_km"]) <= RANGE_KM * 0.94:
 			var pt := Vector2(float(p["x"]), float(p["y"]))
-			draw_circle(pt, 5.2, Color(0.22, 0.74, 0.98))
-			draw_arc(pt, 5.2, 0.0, TAU, 16, Color.WHITE, 1.4)
+			draw_circle(pt, 6.5, Color(0.22, 0.74, 0.98))
+			draw_arc(pt, 6.5, 0.0, TAU, 16, Color.WHITE, 1.4)
+			var init_ch: String = String(pol.get("short", "P")).left(1)
+			draw_string(font, Vector2(pt.x - 3.5, pt.y + 3.5), init_ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color.WHITE)
 		else:
 			var ang: float = float(p["angle"])
 			var tip := Vector2(cx + cos(ang) * (max_r + 1.0), cy + sin(ang) * (max_r + 1.0))
-			var left_pt := tip + Vector2(cos(ang + 2.55), sin(ang + 2.55)) * 9.0
-			var right_pt := tip + Vector2(cos(ang - 2.55), sin(ang - 2.55)) * 9.0
-			draw_colored_polygon(PackedVector2Array([tip, left_pt, right_pt]), Color(0.22, 0.74, 0.98))
+			var left_pt := tip + Vector2(cos(ang + 2.55), sin(ang + 2.55)) * 10.0
+			var right_pt := tip + Vector2(cos(ang - 2.55), sin(ang - 2.55)) * 10.0
+			var poly := PackedVector2Array([tip, left_pt, right_pt])
+			draw_colored_polygon(poly, Color(0.22, 0.74, 0.98))
+			draw_polyline(PackedVector2Array([tip, left_pt, right_pt, tip]), Color.WHITE, 1.3)
+
+	# Norr-markör & RADAR-etikett (som webbversionen!)
+	draw_string(font, Vector2(cx - 4.0, 14.0), "N", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.98, 0.84, 0.42))
+	draw_string(font, Vector2(cx - 17.0, size.y - 6.0), "RADAR", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.77, 0.61, 0.28))
 
 func _proj(origin: Array, target: Array, cos_lat: float, cx: float, cy: float, max_r: float) -> Dictionary:
 	var dx_km: float = (float(target[0]) - float(origin[0])) * 111.32 * cos_lat

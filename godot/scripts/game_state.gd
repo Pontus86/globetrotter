@@ -17,9 +17,10 @@ signal extra_place_requested(place_key: String, city_id: String)
 
 const TOTAL_DAYS: int = 10
 const REVEAL_DAYS := [3, 6, 8]
-const CAPTURE_DIST_M: float = 6.0
-const VISION_DIST_M: float = 36.0
-const LOSE_SIGHT_DIST_M: float = 44.0
+const CAPTURE_DIST_M: float = 16.0
+const VISION_DIST_M: float = 95.0
+const LOSE_SIGHT_DIST_M: float = 115.0
+const CROWD_HIDE_SAFE_DIST_M: float = 38.0
 const POLICE_RECON_COOLDOWN_SEC: float = 90.0
 const PLACE_COOLDOWN_SEC: float = 55.0
 
@@ -55,6 +56,8 @@ var recon_cooldown_until: Dictionary = {}
 var place_cooldown_until: Dictionary = {}
 var match_token: int = 0
 var nearest_police_dist_in_city: float = 999.0
+var nearest_police_chasing: bool = false
+var player_at_hub: bool = false
 var thief_visit_log: Dictionary = {} # city_id -> { last_to, mode_label, day, hh, mm }
 var reveal_triggered: Dictionary = {}
 var last_ping: Dictionary = {}
@@ -112,6 +115,8 @@ func start_match(role: String = "thief", p_sec_per_day: float = 60.0, p_miss_lim
 	place_cooldown_until.clear()
 	match_token += 1
 	nearest_police_dist_in_city = 999.0
+	nearest_police_chasing = false
+	player_at_hub = false
 	thief_visit_log.clear()
 	radio_feed.clear()
 	stats = { "solved": 0, "travels": 0, "reveals": 0 }
@@ -301,7 +306,8 @@ func _start_travel(actor: Dictionary, dest_id: String, mode: String, is_thief: b
 		add_radio("⚡ Snabbrekvisition använd! Halverad restid (%ds)." % int(dur), "police")
 
 	if is_thief and player_role == "thief":
-		var cost: int = 250 if emergency else get_fare_kr(from_id, dest_id, mode)
+		var fare: int = get_fare_kr(from_id, dest_id, mode)
+		var cost: int = (fare + 250) if emergency else fare
 		cash = maxi(0, cash - cost)
 		AudioMgr.play_sound("cash_out")
 
@@ -352,6 +358,11 @@ func handle_globe_city_click(city_id: String) -> void:
 		set_view_mode("city", city_id)
 		return
 	if player_role == "thief":
+		var cur_t: Dictionary = cities[actor["city"]]
+		if player_at_hub and (cur_t["trains"].has(city_id) or cur_t["flights"].has(city_id)):
+			var m_mode: String = "train" if cur_t["trains"].has(city_id) else "flight"
+			begin_actor_boarding(actor, city_id, m_mode, false)
+			return
 		add_radio("🚉 Gå till stationen i %s för att resa vidare!" % cities[actor["city"]]["name"], "alert")
 		set_view_mode("city", String(actor["city"]))
 		return
@@ -411,9 +422,11 @@ func complete_landmark_challenge(city_id: String, loud: bool = false) -> void:
 	var is_target: bool = real_targets.has(city_id) and not collected_targets.has(city_id)
 	if is_target:
 		collected_targets.append(city_id)
-		cash += 600
+		var reward: int = 0 if loud else 600
+		cash += reward
 		AudioMgr.play_sound("fanfar")
-		add_radio("🏆 Stöldgods: %s i %s (+600 kr · %d/3)!" % [cities[city_id]["landmark"]["artifact"], cities[city_id]["name"], collected_targets.size()], "good")
+		var r_txt: String = "0 kr (Snabbkupp)" if loud else "+600 kr"
+		add_radio("🏆 Stöldgods: %s i %s (%s · %d/3)!" % [cities[city_id]["landmark"]["artifact"], cities[city_id]["name"], r_txt, collected_targets.size()], "good")
 		if loud:
 			trigger_thief_reveal(city_id, "Snabbkupp vid %s!" % cities[city_id]["landmark"]["name"])
 		target_updated.emit()
@@ -443,8 +456,8 @@ func trigger_crowd_hide(place_name: String) -> void:
 			break
 	if not pol_here:
 		return
-	if nearest_police_dist_in_city < 12.0:
-		add_radio("🚨 Polisen är för nära (<12m) — du hinner inte gömma dig i folkmassan på %s!" % place_name, "alert")
+	if nearest_police_dist_in_city < CROWD_HIDE_SAFE_DIST_M:
+		add_radio("🚨 Polisen är för nära (<%dm) — du hinner inte gömma dig i folkmassan på %s!" % [int(CROWD_HIDE_SAFE_DIST_M), place_name], "alert")
 		return
 	thief_hidden_until = elapsed_sec + 8.0
 	add_radio("👥 Du smälte in i folkmassan på %s! Polisen tappade spåret i 8s!" % place_name, "good")
@@ -589,7 +602,7 @@ func bfs_next_step(from_id: String, to_id: String) -> Dictionary:
 	while q.size() > 0:
 		var path: Array = q.pop_front()
 		var cur: String = String(path[path.size() - 1])
-		var edges: Array = cities[cur]["trains"] + cities[cur]["flights"]
+		var edges: Array = cities[cur]["flights"] + cities[cur]["trains"]
 		for nxt in edges:
 			var ns: String = String(nxt)
 			if ns == to_id:

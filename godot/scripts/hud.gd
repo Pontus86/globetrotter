@@ -17,14 +17,17 @@ var lbl_city: Label
 var lbl_clock: Label
 var lbl_cash: Label
 var btn_passport: Button
+var btn_bag: Button
 var btn_toggle_view: Button
 var btn_sound: Button
+var danger_vignette: Panel
 var chase_banner: PanelContainer
 var lbl_chase: Label
 
 var radar_minimap: Control
 
 var lbl_status: Label
+var lbl_next_ping: Label
 var lbl_gear: Label
 var police_tab_box: HBoxContainer
 var btn_nearby: Button
@@ -64,6 +67,7 @@ var lock_bar_ref: Control
 var lock_zone_ref: ColorRect
 var lock_needle_ref: ColorRect
 var lock_fb_ref: Label
+var lock_pips_ref: Label
 var lock_city_id: String = ""
 
 func _ready() -> void:
@@ -102,6 +106,19 @@ func _make_style(bg: Color, border: Color, radius: int = 8) -> StyleBoxFlat:
 	return sb
 
 func _build_hud() -> void:
+	# 0. Pulserande Siren-vinjett runt skärmkanten under jakt (som webbversionen!)
+	danger_vignette = Panel.new()
+	danger_vignette.anchor_right = 1.0
+	danger_vignette.anchor_bottom = 1.0
+	danger_vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	danger_vignette.visible = false
+	var dv_sb := StyleBoxFlat.new()
+	dv_sb.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+	dv_sb.border_color = Color(0.95, 0.15, 0.18, 0.72)
+	dv_sb.set_border_width_all(10)
+	danger_vignette.add_theme_stylebox_override("panel", dv_sb)
+	add_child(danger_vignette)
+
 	# 1. Topp-list
 	var top_panel := PanelContainer.new()
 	top_panel.anchor_left = 0.01
@@ -137,6 +154,11 @@ func _build_hud() -> void:
 	btn_passport.pressed.connect(_open_passport_modal)
 	top_h.add_child(btn_passport)
 
+	btn_bag = Button.new()
+	btn_bag.text = "🎒 Väska [B]"
+	btn_bag.pressed.connect(_open_bag_modal)
+	top_h.add_child(btn_bag)
+
 	btn_toggle_view = Button.new()
 	btn_toggle_view.text = "🌍 3D-Glob [G]"
 	btn_toggle_view.pressed.connect(func():
@@ -157,7 +179,7 @@ func _build_hud() -> void:
 
 	var btn_menu := Button.new()
 	btn_menu.text = "☰"
-	btn_menu.pressed.connect(_open_start_modal)
+	btn_menu.pressed.connect(_open_pause_or_start_modal)
 	top_h.add_child(btn_menu)
 
 	# 2. Siren-banner under topp-listen under pågående jakt
@@ -208,6 +230,11 @@ func _build_hud() -> void:
 	lbl_status = Label.new()
 	lbl_status.text = "DOLD · 0/2"
 	bot_h.add_child(lbl_status)
+
+	lbl_next_ping = Label.new()
+	lbl_next_ping.text = "📡 D3"
+	lbl_next_ping.add_theme_color_override("font_color", Color(1.0, 0.72, 0.42))
+	bot_h.add_child(lbl_next_ping)
 
 	lbl_gear = Label.new()
 	lbl_gear.visible = false
@@ -495,6 +522,139 @@ func _open_start_modal() -> void:
 		resume_b.pressed.connect(_close_modal)
 		modal_vbox.add_child(resume_b)
 
+func _open_pause_or_start_modal() -> void:
+	if not GameState.active or GameState.finished:
+		_open_start_modal()
+		return
+	_show_modal()
+	var t := Label.new()
+	t.text = "☰ MENY — GLOBETROTTER"
+	t.add_theme_font_size_override("font_size", 20)
+	t.add_theme_color_override("font_color", Color(1.0, 0.85, 0.42))
+	modal_vbox.add_child(t)
+
+	var b_res := Button.new()
+	b_res.text = "▶ Fortsätt jakten [Esc]"
+	b_res.custom_minimum_size = Vector2(0, 42)
+	b_res.pressed.connect(_close_modal)
+	modal_vbox.add_child(b_res)
+
+	var b_pass := Button.new()
+	b_pass.text = "🛂 Öppna Pass / Uppdrag [P]"
+	b_pass.pressed.connect(_open_passport_modal)
+	modal_vbox.add_child(b_pass)
+
+	var b_bag := Button.new()
+	b_bag.text = "🎒 Öppna Ryggsäck / Prylar [B]"
+	b_bag.pressed.connect(_open_bag_modal)
+	modal_vbox.add_child(b_bag)
+
+	var b_dep := Button.new()
+	b_dep.text = "🚉 Öppna Avgångstavla (%s)" % GameState.cities[GameState.current_city_id]["name"]
+	b_dep.pressed.connect(func(): _open_departures_modal(GameState.current_city_id))
+	modal_vbox.add_child(b_dep)
+
+	var b_snd := Button.new()
+	b_snd.text = "🔊 Ljud: PÅ" if AudioMgr.enabled else "🔇 Ljud: AV"
+	b_snd.pressed.connect(func():
+		var on: bool = AudioMgr.toggle()
+		btn_sound.text = "🔊" if on else "🔇"
+		b_snd.text = "🔊 Ljud: PÅ" if on else "🔇 Ljud: AV"
+	)
+	modal_vbox.add_child(b_snd)
+
+	var b_new := Button.new()
+	b_new.text = "🔄 Ny match / Byt roll & inställningar"
+	b_new.pressed.connect(_open_start_modal)
+	modal_vbox.add_child(b_new)
+
+func _open_bag_modal() -> void:
+	if not GameState.active:
+		return
+	AudioMgr.play_sound("paper")
+	_show_modal()
+	var h := Label.new()
+	h.text = "🎒 RYGGSÄCK & UTRUSTNING"
+	h.add_theme_font_size_override("font_size", 20)
+	h.add_theme_color_override("font_color", Color(1.0, 0.85, 0.42))
+	modal_vbox.add_child(h)
+
+	var is_thief: bool = GameState.player_role == "thief"
+	var cash_l := Label.new()
+	cash_l.text = "💰 Reskassa: %s" % GameState.format_kr(GameState.cash) if is_thief else "🚓 Interpols fältutrustning"
+	cash_l.add_theme_color_override("font_color", Color(0.65, 0.96, 0.72))
+	modal_vbox.add_child(cash_l)
+
+	var any_item: bool = false
+	if is_thief:
+		if int(GameState.gear["lockpick"]) > 0:
+			any_item = true
+			var l1 := Label.new()
+			l1.text = "🔧 Dyrkset (%d st) — Dubbel grön zon i nästa Kassaskåp" % int(GameState.gear["lockpick"])
+			modal_vbox.add_child(l1)
+		if int(GameState.gear["smoke"]) > 0:
+			any_item = true
+			var b_sm := Button.new()
+			b_sm.text = "💨 Använd Rökbomb (%d st) — Fryser poliser i staden i 6s!" % int(GameState.gear["smoke"])
+			b_sm.pressed.connect(func():
+				GameState.gear["smoke"] = int(GameState.gear["smoke"]) - 1
+				GameState.police_frozen_until = GameState.elapsed_sec + 6.0
+				AudioMgr.play_sound("takeoff")
+				GameState.add_radio("💨 RÖKBOMB! Poliser i staden frusna i 6s!", "good")
+				_close_modal()
+			)
+			modal_vbox.add_child(b_sm)
+		if int(GameState.gear["fake_pass"]) > 0:
+			any_item = true
+			var l3 := Label.new()
+			l3.text = "🛂 Förfalskat pass (%d st) — Nästa direktflyg pingar inte avgångsstaden" % int(GameState.gear["fake_pass"])
+			modal_vbox.add_child(l3)
+		if GameState.skip_next_reveal:
+			any_item = true
+			var l4 := Label.new()
+			l4.text = "🎭 Hotellförklädnad (AKTIV) — Blockerar nästa radarping"
+			modal_vbox.add_child(l4)
+	else:
+		if int(GameState.gear["fast_flight"]) > 0:
+			any_item = true
+			var l5 := Label.new()
+			l5.text = "⚡ Snabbrekvisition (%d st) — Halverar nästa restid" % int(GameState.gear["fast_flight"])
+			modal_vbox.add_child(l5)
+		if int(GameState.gear["hound"]) > 0:
+			any_item = true
+			var b_hd := Button.new()
+			b_hd.text = "🐕 Släpp loss Spårhund (%d st) — 2x gripanderadie i 30s!" % int(GameState.gear["hound"])
+			b_hd.pressed.connect(func():
+				GameState.gear["hound"] = int(GameState.gear["hound"]) - 1
+				GameState.hound_until = GameState.elapsed_sec + 30.0
+				AudioMgr.play_sound("bell")
+				GameState.add_radio("🐕 SPÅRHUND! Dubbel gripanderadie i 30s!", "police")
+				_close_modal()
+			)
+			modal_vbox.add_child(b_hd)
+		if GameState.train_tap_active:
+			any_item = true
+			var l6 := Label.new()
+			l6.text = "📡 Tågspaning (AKTIV) — Avslöjar tjuvens nästa tåg/båt"
+			modal_vbox.add_child(l6)
+
+	if GameState.guide_hint_ready:
+		any_item = true
+		var lg := Label.new()
+		lg.text = "📖 Bibliotekets Guidebok (AKTIV) — Stryker 2 fel på nästa Frågekort"
+		modal_vbox.add_child(lg)
+
+	if not any_item:
+		var emp := Label.new()
+		emp.autowrap_mode = TextServer.AUTOWRAP_WORD
+		emp.text = "Ryggsäcken är tom just nu. Besök 🛍️ Marknaden, 🏨 Hotellet eller 📚 Biblioteket i valfri stad för att skaffa prylar!"
+		modal_vbox.add_child(emp)
+
+	var cb := Button.new()
+	cb.text = "Stäng ryggsäcken [Esc]"
+	cb.pressed.connect(_close_modal)
+	modal_vbox.add_child(cb)
+
 func _open_passport_modal() -> void:
 	if not GameState.active:
 		return
@@ -506,12 +666,20 @@ func _open_passport_modal() -> void:
 	h.add_theme_color_override("font_color", Color(1.0, 0.85, 0.42))
 	modal_vbox.add_child(h)
 
+	var rules := Label.new()
+	rules.autowrap_mode = TextServer.AUTOWRAP_WORD
+	rules.text = "Regler: 10 dagar · Radarping Dag 3, 6 & 8 · Missgräns: %d missar · Flyg pingar avgångsstaden." % GameState.miss_limit
+	rules.add_theme_color_override("font_color", Color(0.78, 0.82, 0.86))
+	modal_vbox.add_child(rules)
+
 	if GameState.player_role == "thief":
 		for tid in GameState.real_targets:
 			var c: Dictionary = GameState.cities[tid]
 			var done: bool = GameState.collected_targets.has(tid)
+			var icon: String = String(c["landmark"].get("icon", "🎯"))
 			var l := Label.new()
-			l.text = "%s %s — %s (%s)" % ["✅ STULEN:" if done else "🎯 MÅL:", String(c["landmark"]["artifact"]), String(c["name"]), String(c["landmark"]["name"])]
+			l.text = "%s %s %s — %s (%s)" % ["✅ STULEN:" if done else "🎯 MÅL:", icon, String(c["landmark"]["artifact"]), String(c["name"]), String(c["landmark"]["name"])]
+			l.add_theme_color_override("font_color", Color(0.45, 0.92, 0.60) if done else Color(1.0, 0.92, 0.65))
 			modal_vbox.add_child(l)
 	else:
 		for sid in GameState.suspect_pool:
@@ -520,10 +688,11 @@ func _open_passport_modal() -> void:
 			var cleared: bool = GameState.cleared_suspects.has(sid)
 			var l := Label.new()
 			l.text = "%s %s (%s)" % ["🚨 STULEN:" if stolen else ("✓ AVSKRIVEN:" if cleared else "❓ MISSTÄNKT:"), String(c["name"]), String(c["landmark"]["name"])]
+			l.add_theme_color_override("font_color", Color(1.0, 0.45, 0.45) if stolen else (Color(0.55, 0.65, 0.72) if cleared else Color(1.0, 0.90, 0.55)))
 			modal_vbox.add_child(l)
 
 	var cb := Button.new()
-	cb.text = "Stäng passet"
+	cb.text = "Stäng passet [Esc]"
 	cb.pressed.connect(_close_modal)
 	modal_vbox.add_child(cb)
 
@@ -541,23 +710,27 @@ func _open_departures_modal(city_id: String) -> void:
 	modal_vbox.add_child(h)
 
 	if is_thief:
-		var pol_here: bool = false
-		for p in GameState.police:
-			if p["travel"] == null and String(p["city"]) == city_id:
-				pol_here = true
+		var wallet := Label.new()
+		wallet.text = "💰 Reskassa: %s" % GameState.format_kr(GameState.cash)
+		wallet.add_theme_color_override("font_color", Color(0.65, 0.96, 0.72))
+		modal_vbox.add_child(wallet)
+
+	var police_cities: Dictionary = {}
+	for p in GameState.police:
+		if p["travel"] == null:
+			police_cities[String(p["city"])] = true
+
+	var min_train_fare: int = 999999
+	if is_thief:
+		var pol_here: bool = police_cities.has(city_id)
 		if pol_here and c["trains"].size() > 0:
 			var eb := Button.new()
-			eb.text = "🏃 NÖDFLYKT: Kasta dig på nästa tåg (2s boarding · 250 kr · Pingar avgångsstad)"
+			eb.text = "🏃 NÖDFLYKT: Kasta dig på nästa tåg (2s boarding · +250 kr · Pingar avgångsstad)"
 			eb.pressed.connect(func():
 				var safe_trains: Array[String] = []
 				for tid in c["trains"]:
 					var ts: String = String(tid)
-					var occupied: bool = false
-					for p in GameState.police:
-						if p["travel"] == null and String(p["city"]) == ts:
-							occupied = true
-							break
-					if not occupied:
+					if not police_cities.has(ts):
 						safe_trains.append(ts)
 				var dest: String = safe_trains[randi() % safe_trains.size()] if safe_trains.size() > 0 else String(c["trains"][randi() % c["trains"].size()])
 				_close_modal()
@@ -568,10 +741,15 @@ func _open_departures_modal(city_id: String) -> void:
 	for dest_id in c["trains"]:
 		var did: String = String(dest_id)
 		var fare: int = GameState.get_fare_kr(city_id, did, "train")
+		if fare < min_train_fare:
+			min_train_fare = fare
+		var secs: int = int(GameState.get_travel_seconds(city_id, did, "train"))
 		var tinfo: Dictionary = GameState.get_transit_mode_info(city_id, did, "train")
 		var b := Button.new()
 		var mark: String = " 🎯" if (is_thief and GameState.real_targets.has(did) and not GameState.collected_targets.has(did)) else ""
-		b.text = "%s %s%s  |  %s  |  OSYNLIG" % [tinfo["icon"], GameState.cities[did]["name"], mark, GameState.format_kr(fare) if is_thief else "POLIS"]
+		var pol_warn: String = " 🚓" if police_cities.has(did) else ""
+		var price_txt: String = (GameState.format_kr(fare) if GameState.cash >= fare else "SAKNAR %d kr" % (fare - GameState.cash)) if is_thief else "POLIS"
+		b.text = "%s %s%s%s  |  %ds  |  %s  |  OSYNLIG" % [tinfo["icon"], GameState.cities[did]["name"], mark, pol_warn, secs, price_txt]
 		b.disabled = is_thief and GameState.cash < fare
 		b.pressed.connect(func():
 			_close_modal()
@@ -582,15 +760,25 @@ func _open_departures_modal(city_id: String) -> void:
 	for dest_id in c["flights"]:
 		var did: String = String(dest_id)
 		var fare: int = GameState.get_fare_kr(city_id, did, "flight")
+		var secs2: int = int(GameState.get_travel_seconds(city_id, did, "flight"))
 		var b := Button.new()
 		var mark: String = " 🎯" if (is_thief and GameState.real_targets.has(did) and not GameState.collected_targets.has(did)) else ""
-		b.text = "✈️ %s%s  |  %s  |  PINGAR AVGÅNGSSTAD" % [GameState.cities[did]["name"], mark, GameState.format_kr(fare) if is_thief else "POLIS"]
+		var pol_warn2: String = " 🚓" if police_cities.has(did) else ""
+		var price_txt2: String = (GameState.format_kr(fare) if GameState.cash >= fare else "SAKNAR %d kr" % (fare - GameState.cash)) if is_thief else "POLIS"
+		var stealth_txt: String = "🛂 FALSKPASS (OSYNLIG)" if (is_thief and int(GameState.gear["fake_pass"]) > 0) else "PINGAR AVGÅNGSSTAD"
+		b.text = "✈️ %s%s%s  |  %ds  |  %s  |  %s" % [GameState.cities[did]["name"], mark, pol_warn2, secs2, price_txt2, stealth_txt]
 		b.disabled = is_thief and GameState.cash < fare
 		b.pressed.connect(func():
 			_close_modal()
 			GameState.begin_actor_boarding(actor, did, "flight", false)
 		)
 		modal_vbox.add_child(b)
+
+	if is_thief and GameState.cash < min_train_fare:
+		var broke_b := Button.new()
+		broke_b.text = "💰 Saknar pengar! Gå till %s och klara utmaningen (+900 kr)" % String(c["landmark"]["name"])
+		broke_b.pressed.connect(_close_modal)
+		modal_vbox.add_child(broke_b)
 
 	var close_b := Button.new()
 	close_b.text = "Stäng tavlan"
@@ -615,6 +803,11 @@ func _open_challenge_modal(city_id: String) -> void:
 	h.add_theme_font_size_override("font_size", 18)
 	h.add_theme_color_override("font_color", Color(1.0, 0.85, 0.42))
 	modal_vbox.add_child(h)
+
+	var tick_lbl := Label.new()
+	tick_lbl.text = "⏱️ KLOCKAN TICKAR I REALTID · Missar: %d / %d" % [GameState.misses_count, GameState.miss_limit]
+	tick_lbl.add_theme_color_override("font_color", Color(1.0, 0.45, 0.42))
+	modal_vbox.add_child(tick_lbl)
 
 	var tab_row := HBoxContainer.new()
 	var b_q := Button.new()
@@ -643,14 +836,20 @@ func _open_challenge_modal(city_id: String) -> void:
 		lock_active = false
 		for ch in content.get_children(): ch.queue_free()
 
-		# Polischef får levande Polisradio-diskussion från kollegorna!
+		# Polischef får levande Polisradio-diskussion från kollegorna med riktiga namn!
 		if is_police:
+			var col_names: Array[String] = []
+			for po in GameState.police:
+				if String(po["id"]) != GameState.selected_police_id:
+					col_names.append(String(po["short"]))
+			var cn1: String = col_names[0] if col_names.size() > 0 else "Vega"
+			var cn2: String = col_names[1] if col_names.size() > 1 else "Lind"
 			var wrong_txt: String = String(chosen_opts[0]) if String(chosen_opts[0]) != chosen_correct_txt else String(chosen_opts[1])
 			var t1: String = chosen_correct_txt if randf() < 0.78 else wrong_txt
 			var t2: String = chosen_correct_txt if randf() < 0.55 else wrong_txt
 			var tip_lbl := Label.new()
 			tip_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
-			tip_lbl.text = '📻 POLISRADIO:\n• Kollega 1: "Jag tror starkt på %s!"\n• Kollega 2: "Kan det inte vara %s?"' % [t1, t2]
+			tip_lbl.text = '📻 POLISRADIO:\n• %s: "Jag tror starkt på %s!"\n• %s: "Kan det inte vara %s?"' % [cn1, t1, cn2, t2]
 			tip_lbl.add_theme_color_override("font_color", Color(0.60, 0.88, 1.0))
 			content.add_child(tip_lbl)
 
@@ -707,6 +906,10 @@ func _open_challenge_modal(city_id: String) -> void:
 		hit_b.text = "🎯 STOPP! (Mellanslag)"
 		hit_b.pressed.connect(_handle_lock_hit)
 		content.add_child(hit_b)
+		lock_pips_ref = Label.new()
+		lock_pips_ref.text = "Låstappar: ○ ○ ○ (0/3)"
+		lock_pips_ref.add_theme_color_override("font_color", Color(0.45, 0.96, 0.65))
+		content.add_child(lock_pips_ref)
 		lock_fb_ref = Label.new()
 		content.add_child(lock_fb_ref)
 
@@ -773,6 +976,11 @@ func _handle_lock_hit() -> void:
 	if lock_pos >= lock_zone_start and lock_pos <= lock_zone_start + lock_zone_w:
 		lock_hits += 1
 		AudioMgr.play_sound("right1")
+		if is_instance_valid(lock_pips_ref):
+			var pips: String = ""
+			for i in range(3):
+				pips += "● " if i < lock_hits else "○ "
+			lock_pips_ref.text = "Låstappar: %s(%d/3)" % [pips, lock_hits]
 		if lock_hits >= 3:
 			lock_active = false
 			_close_modal()
@@ -811,7 +1019,9 @@ func _open_extra_place_modal(place_key: String, city_id: String) -> void:
 			log_l.autowrap_mode = TextServer.AUTOWRAP_WORD
 			if GameState.thief_visit_log.has(city_id):
 				var v: Dictionary = GameState.thief_visit_log[city_id]
-				log_l.text = "📖 SPÅR I HOTELLIGGAREN!\nEn misstänkt gäst checkade ut Dag %d kl %s:%s och reste med %s mot %s!" % [int(v["day"]), v["hh"], v["mm"], v["mode_label"], GameState.cities[v["last_to"]]["name"]]
+				var clue_txt: String = "En misstänkt gäst checkade ut Dag %d kl %s:%s och reste med %s mot %s!" % [int(v["day"]), v["hh"], v["mm"], v["mode_label"], GameState.cities[v["last_to"]]["name"]]
+				log_l.text = "📖 SPÅR I HOTELLIGGAREN!\n" + clue_txt
+				GameState.add_radio("🏨 Hotellspår i %s: %s" % [c["name"], clue_txt], "police")
 			else:
 				log_l.text = "Receptionisten kollar gästboken: Ingen misstänkt gäst har bott här."
 			modal_vbox.add_child(log_l)
@@ -922,34 +1132,65 @@ func _open_gameover_modal(won: bool, summary: String) -> void:
 	h.add_theme_color_override("font_color", Color(0.4, 0.95, 0.6) if won else Color(1.0, 0.4, 0.4))
 	modal_vbox.add_child(h)
 
+	var clk: Dictionary = GameState.get_clock()
 	var s := Label.new()
 	s.autowrap_mode = TextServer.AUTOWRAP_WORD
-	s.text = "%s\nFöremål: %d/3 · Lösta utmaningar: %d" % [summary, GameState.collected_targets.size(), int(GameState.stats["solved"])]
+	s.text = "%s\n\n📅 Sluttid: Dag %d · %s:%s\n🏆 Föremål: %d / 3\n🧠 Lösta utmaningar: %d" % [summary, int(clk["day"]), clk["hh"], clk["mm"], GameState.collected_targets.size(), int(GameState.stats["solved"])]
 	modal_vbox.add_child(s)
 
+	var brow := HBoxContainer.new()
 	var b := Button.new()
-	b.text = "🔄 Spela igen"
-	b.pressed.connect(_open_start_modal)
-	modal_vbox.add_child(b)
+	b.text = "🔄 Spela igen direkt"
+	b.pressed.connect(func():
+		_close_modal()
+		GameState.start_match(setup_role, setup_sec_per_day, setup_miss_limit)
+	)
+	var b2 := Button.new()
+	b2.text = "⚙️ Byt roll / Inställningar"
+	b2.pressed.connect(_open_start_modal)
+	brow.add_child(b)
+	brow.add_child(b2)
+	modal_vbox.add_child(brow)
 
 func _on_radio_logged(entry: Dictionary) -> void:
-	radio_ticker_btn.text = "📻 %s [R]" % String(entry["raw"])
+	radio_ticker_btn.text = "🔴 %s [R]" % String(entry["raw"])
 	var l := Label.new()
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD
 	l.text = String(entry["text"])
 	l.add_theme_font_size_override("font_size", 12)
+	var kind: String = String(entry.get("kind", ""))
+	if kind == "alert":
+		l.add_theme_color_override("font_color", Color(1.0, 0.45, 0.45))
+	elif kind == "police":
+		l.add_theme_color_override("font_color", Color(0.45, 0.82, 1.0))
+	elif kind == "good":
+		l.add_theme_color_override("font_color", Color(0.45, 0.95, 0.65))
+	elif kind == "thief":
+		l.add_theme_color_override("font_color", Color(1.0, 0.86, 0.42))
 	radio_log_box.add_child(l)
 	radio_log_box.move_child(l, 0)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if modal_backdrop.visible:
-		if lock_active and event is InputEventKey:
+		if event is InputEventKey:
 			var ek: InputEventKey = event
-			if ek.pressed and ek.keycode == KEY_SPACE:
+			if ek.pressed and ek.keycode == KEY_ESCAPE and GameState.active and not GameState.finished:
+				_close_modal()
+				return
+			if lock_active and ek.pressed and ek.keycode == KEY_SPACE:
 				_handle_lock_hit()
 		return
 	var fo: Control = get_viewport().gui_get_focus_owner()
 	if fo is LineEdit or fo is TextEdit:
+		if event is InputEventKey and (event as InputEventKey).pressed and (event as InputEventKey).keycode == KEY_ESCAPE:
+			fo.release_focus()
+			radio_panel.visible = false
+		return
+	if event is InputEventKey and (event as InputEventKey).pressed and (event as InputEventKey).keycode == KEY_ESCAPE:
+		if radio_panel.visible:
+			radio_panel.visible = false
+		elif GameState.active and not GameState.finished:
+			_open_pause_or_start_modal()
 		return
 	if event.is_action_pressed("toggle_radio"):
 		radio_panel.visible = not radio_panel.visible
@@ -961,6 +1202,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		if k.pressed and GameState.active and not GameState.finished:
 			if k.keycode == KEY_P:
 				_open_passport_modal()
+			elif k.keycode == KEY_B:
+				_open_bag_modal()
 			elif GameState.player_role == "police":
 				if k.keycode == KEY_1 and GameState.police.size() > 0: GameState.select_police(String(GameState.police[0]["id"]))
 				elif k.keycode == KEY_2 and GameState.police.size() > 1: GameState.select_police(String(GameState.police[1]["id"]))
@@ -986,18 +1229,42 @@ func _process(delta: float) -> void:
 	btn_passport.text = "🛂 Pass (%d/3) [P]" % GameState.collected_targets.size()
 	btn_toggle_view.text = "🌍 3D-Glob [G]" if GameState.view_mode == "city" else "🏙️ 3D-Stad [G]"
 
-	# Siren-banner om polis och tjuv är i samma stad
+	# Siren-banner + pulserande röd/blå skärmkant under pågående jakt
 	var in_same: bool = false
 	if GameState.thief.get("travel") == null:
 		for p in GameState.police:
 			if p["travel"] == null and String(p["city"]) == String(GameState.thief["city"]):
 				in_same = true
 	chase_banner.visible = in_same
+	danger_vignette.visible = in_same and GameState.view_mode == "city" and GameState.player_role == "thief" and GameState.nearest_police_chasing
+	if danger_vignette.visible:
+		var pulse_sb: StyleBoxFlat = danger_vignette.get_theme_stylebox("panel") as StyleBoxFlat
+		if pulse_sb != null:
+			var is_red: bool = (int(Time.get_ticks_msec() / 260) % 2) == 0
+			pulse_sb.border_color = Color(0.95, 0.16, 0.18, 0.72) if is_red else Color(0.18, 0.56, 0.98, 0.72)
 	if in_same:
-		lbl_chase.text = "🚨 POLIS I STADEN! DRA IFRÅN ELLER NÖDFLY!" if GameState.player_role == "thief" else "🚨 TJUVEN I %s! GRIP TJUVEN!" % String(GameState.cities[GameState.thief["city"]]["name"]).to_upper()
+		if GameState.player_role == "thief":
+			var d_str: String = " (%dm)" % int(GameState.nearest_police_dist_in_city) if GameState.nearest_police_dist_in_city < 900.0 else ""
+			if GameState.nearest_police_chasing:
+				lbl_chase.text = "🚨 POLIS JAGAR DIG%s! DRA IFRÅN >%dm ELLER NÖDFLY!" % [d_str, int(GameState.LOSE_SIGHT_DIST_M)]
+			else:
+				lbl_chase.text = "⚠️ POLIS SÖKER I STADEN%s — LÄGE ATT FLY ELLER GÖMMA SIG!" % d_str
+		else:
+			lbl_chase.text = "🚨 TJUVEN I %s! GRIP TJUVEN!" % String(GameState.cities[GameState.thief["city"]]["name"]).to_upper()
 
 	var exposed: bool = (not GameState.last_ping.is_empty()) and String(GameState.last_ping["city_id"]) == String(GameState.thief["city"])
 	lbl_status.text = ("%s · ⚠️%d/%d" % ["AVSLÖJAD" if exposed else "DOLD", GameState.misses_count, GameState.miss_limit]) if GameState.player_role == "thief" else String(actor.get("short", "Polis"))
+	lbl_status.add_theme_color_override("font_color", Color(1.0, 0.42, 0.42) if (GameState.player_role == "thief" and exposed) else Color(0.45, 0.95, 0.65))
+
+	# Nästa obligatoriska radarping (D3/D6/D8)
+	var next_rd: int = -1
+	for rd in GameState.REVEAL_DAYS:
+		if not GameState.reveal_triggered.has(rd):
+			next_rd = int(rd)
+			break
+	lbl_next_ping.visible = next_rd != -1
+	if lbl_next_ping.visible:
+		lbl_next_ping.text = "📡 D%d" % next_rd
 
 	# Passiva pryl-ikoner
 	var gear_badges: Array[String] = []

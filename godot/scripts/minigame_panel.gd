@@ -28,8 +28,10 @@ var piano_step: int = 0
 var piano_round: int = 0
 var piano_waiting: bool = false
 var piano_lbl: Label
+var piano_btns: Array[Button] = []
 const PIANO_FREQS := [261.63, 293.66, 329.63, 392.00, 440.00]
-const PIANO_NAMES := ["C", "D", "E", "G", "A"]
+const PIANO_NAMES := ["C [A]", "D [S]", "E [D]", "G [F]", "A [G]"]
+const PIANO_KEYS := [KEY_A, KEY_S, KEY_D, KEY_F, KEY_G]
 
 func start_for_city(city_id: String) -> void:
 	for c in get_children():
@@ -115,13 +117,13 @@ func _start_stoker() -> void:
 
 	var row := HBoxContainer.new()
 	var b_coal := Button.new()
-	b_coal.text = "🔥 SKOTTA KOL (+18%)"
+	b_coal.text = "🔥 SKOTTA KOL [Space] (+18%)"
 	b_coal.pressed.connect(func():
 		stoker_pressure = clampf(stoker_pressure + 0.18, 0.0, 1.0)
 		AudioMgr.play_sound("klick")
 	)
 	var b_vent := Button.new()
-	b_vent.text = "💨 SLÄPP ÅNGA (-18%)"
+	b_vent.text = "💨 SLÄPP ÅNGA [V] (-18%)"
 	b_vent.pressed.connect(func():
 		stoker_pressure = clampf(stoker_pressure - 0.18, 0.0, 1.0)
 		AudioMgr.play_sound("paper")
@@ -140,14 +142,16 @@ func _start_piano() -> void:
 	piano_lbl.text = "🎹 KONSERTPIANIST · Lyssna och upprepa melodin (2 rundor)!"
 	add_child(piano_lbl)
 
+	piano_btns.clear()
 	var row := HBoxContainer.new()
 	for i in range(PIANO_NAMES.size()):
 		var b := Button.new()
 		b.text = PIANO_NAMES[i]
-		b.custom_minimum_size = Vector2(64, 68)
+		b.custom_minimum_size = Vector2(72, 68)
 		var idx: int = i
 		b.pressed.connect(func(): _press_piano_key(idx))
 		row.add_child(b)
+		piano_btns.append(b)
 	add_child(row)
 	_next_piano_round()
 
@@ -163,17 +167,44 @@ func _next_piano_round() -> void:
 		piano_seq.append(randi() % PIANO_NAMES.size())
 	piano_step = 0
 	piano_waiting = false
-	var notes_txt: Array[String] = []
-	for n in piano_seq:
-		notes_txt.append(PIANO_NAMES[n])
-	piano_lbl.text = "🎹 Runda %d/2 — Spela: %s" % [piano_round, " → ".join(notes_txt)]
+	piano_lbl.text = "🎹 Runda %d/2 — Lyssna noga på tangenterna..." % piano_round
 	for i in range(piano_seq.size()):
-		var f: float = PIANO_FREQS[piano_seq[i]]
-		get_tree().create_timer(0.28 * float(i)).timeout.connect(func():
+		var note_idx: int = piano_seq[i]
+		var f: float = PIANO_FREQS[note_idx]
+		get_tree().create_timer(0.42 * float(i) + 0.25).timeout.connect(func():
 			if is_instance_valid(self) and active:
-				AudioMgr.play_note(f, 0.20)
+				AudioMgr.play_note(f, 0.22)
+				if note_idx < piano_btns.size() and is_instance_valid(piano_btns[note_idx]):
+					piano_btns[note_idx].modulate = Color(1.0, 0.90, 0.35)
+					get_tree().create_timer(0.28).timeout.connect(func():
+						if is_instance_valid(self) and note_idx < piano_btns.size() and is_instance_valid(piano_btns[note_idx]):
+							piano_btns[note_idx].modulate = Color.WHITE
+					)
 		)
-	piano_waiting = true
+	get_tree().create_timer(0.42 * float(piano_seq.size()) + 0.35).timeout.connect(func():
+		if is_instance_valid(self) and active:
+			piano_waiting = true
+			piano_lbl.text = "🎹 Runda %d/2 — Din tur! Upprepa %d toner (klick eller A/S/D/F/G)" % [piano_round, piano_seq.size()]
+	)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not active or not (event is InputEventKey):
+		return
+	var ek: InputEventKey = event
+	if not ek.pressed or ek.echo:
+		return
+	if mode == "stoker":
+		if ek.keycode == KEY_SPACE:
+			stoker_pressure = clampf(stoker_pressure + 0.18, 0.0, 1.0)
+			AudioMgr.play_sound("klick")
+		elif ek.keycode == KEY_V:
+			stoker_pressure = clampf(stoker_pressure - 0.18, 0.0, 1.0)
+			AudioMgr.play_sound("paper")
+	elif mode == "piano" and piano_waiting:
+		for i in range(PIANO_KEYS.size()):
+			if ek.keycode == PIANO_KEYS[i]:
+				_press_piano_key(i)
+				break
 
 func _press_piano_key(idx: int) -> void:
 	if not active or not piano_waiting:

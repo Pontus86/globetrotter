@@ -20,11 +20,20 @@ var hud: CanvasLayer
 func _ready() -> void:
 	var env := WorldEnvironment.new()
 	var e_res := Environment.new()
-	e_res.background_mode = Environment.BG_COLOR
-	e_res.background_color = Color(0.05, 0.09, 0.16)
+	var sky := Sky.new()
+	var psky := ProceduralSkyMaterial.new()
+	psky.sky_top_color = Color(0.10, 0.24, 0.44)
+	psky.sky_horizon_color = Color(0.54, 0.70, 0.84)
+	psky.ground_horizon_color = Color(0.42, 0.48, 0.56)
+	sky.sky_material = psky
+	e_res.background_mode = Environment.BG_SKY
+	e_res.sky = sky
 	e_res.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e_res.ambient_light_color = Color(0.65, 0.62, 0.56)
-	e_res.ambient_light_energy = 0.65
+	e_res.ambient_light_color = Color(0.76, 0.74, 0.68)
+	e_res.ambient_light_energy = 0.72
+	e_res.fog_enabled = true
+	e_res.fog_light_color = Color(0.72, 0.78, 0.86)
+	e_res.fog_density = 0.00055
 	env.environment = e_res
 	add_child(env)
 
@@ -120,23 +129,28 @@ func _process(_delta: float) -> void:
 func _physics_process(_delta: float) -> void:
 	if not GameState.active or GameState.finished or GameState.view_mode != "city":
 		GameState.nearest_police_dist_in_city = 999.0
+		GameState.nearest_police_chasing = false
 		return
 
 	if GameState.player_role == "thief":
 		var best_d: float = 999.0
+		var any_chasing: bool = false
 		for pn in police_nodes.values():
 			if is_instance_valid(pn):
 				var d: float = Vector2(player.global_position.x, player.global_position.z).distance_to(Vector2(pn.global_position.x, pn.global_position.z))
 				if d < best_d:
 					best_d = d
+				if pn.alert_state == "chasing":
+					any_chasing = true
 		GameState.nearest_police_dist_in_city = best_d
+		GameState.nearest_police_chasing = any_chasing
 	elif is_instance_valid(ai_thief_node):
 		# AI-tjuven springer mot stationen!
 		var hub_p: Vector3 = city_builder.get_spawn_pos("hub")
 		var dir := Vector3(hub_p.x - ai_thief_node.global_position.x, 0.0, hub_p.z - ai_thief_node.global_position.z)
-		if dir.length() > 1.0:
+		if dir.length() > 2.0:
 			dir = dir.normalized()
-			ai_thief_node.velocity = Vector3(dir.x * 16.5, 0.0, dir.z * 16.5)
+			ai_thief_node.velocity = Vector3(dir.x * 36.5, 0.0, dir.z * 36.5)
 			ai_thief_node.move_and_slide()
 			ai_thief_node.global_position.y = 0.1
 		var cap_r: float = GameState.CAPTURE_DIST_M * (2.0 if GameState.elapsed_sec < GameState.hound_until else 1.0)
@@ -148,10 +162,10 @@ func _spawn_ai_thief() -> CharacterBody3D:
 	var th := CharacterBody3D.new()
 	var m := MeshInstance3D.new()
 	var cap := CapsuleMesh.new()
-	cap.radius = 0.78
-	cap.height = 2.4
+	cap.radius = 1.6
+	cap.height = 5.0
 	m.mesh = cap
-	m.position = Vector3(0.0, 1.2, 0.0)
+	m.position = Vector3(0.0, 2.5, 0.0)
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color(0.95, 0.18, 0.18)
 	mat.emission_enabled = true
@@ -161,19 +175,20 @@ func _spawn_ai_thief() -> CharacterBody3D:
 
 	var col := CollisionShape3D.new()
 	var sh := CapsuleShape3D.new()
-	sh.radius = 0.78
-	sh.height = 2.4
+	sh.radius = 1.6
+	sh.height = 5.0
 	col.shape = sh
-	col.position = Vector3(0.0, 1.2, 0.0)
+	col.position = Vector3(0.0, 2.5, 0.0)
 	th.add_child(col)
 
 	var lbl := Label3D.new()
 	lbl.text = "🕵️ TJUVEN!"
 	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	lbl.font_size = 38
-	lbl.pixel_size = 0.025
-	lbl.position = Vector3(0.0, 3.6, 0.0)
+	lbl.font_size = 42
+	lbl.pixel_size = 0.06
+	lbl.position = Vector3(0.0, 7.6, 0.0)
 	lbl.modulate = Color(1.0, 0.4, 0.4)
+	lbl.outline_size = 8
 	th.add_child(lbl)
 
 	city_container.add_child(th)
