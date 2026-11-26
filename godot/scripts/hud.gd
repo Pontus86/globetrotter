@@ -1357,8 +1357,9 @@ func _process(delta: float) -> void:
 			lbl_chase.text = "🚨 TJUVEN I %s" % String(GameState.cities[GameState.thief["city"]]["name"]).to_upper()
 
 	var exposed: bool = (not GameState.last_ping.is_empty()) and String(GameState.last_ping["city_id"]) == String(GameState.thief["city"])
-	lbl_status.text = ("%s · ⚠️%d/%d" % ["AVSLÖJAD" if exposed else "DOLD", GameState.misses_count, GameState.miss_limit]) if GameState.player_role == "thief" else String(actor.get("short", "Polis"))
-	lbl_status.add_theme_color_override("font_color", Color(1.0, 0.42, 0.42) if (GameState.player_role == "thief" and exposed) else Color(0.45, 0.95, 0.65))
+	var state_word: String = "🤫 SMYGER" if GameState.player_sneaking else ("AVSLÖJAD" if exposed else "DOLD")
+	lbl_status.text = ("%s · ⚠️%d/%d" % [state_word, GameState.misses_count, GameState.miss_limit]) if GameState.player_role == "thief" else String(actor.get("short", "Polis"))
+	lbl_status.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0) if GameState.player_sneaking else (Color(1.0, 0.42, 0.42) if (GameState.player_role == "thief" and exposed) else Color(0.45, 0.95, 0.65)))
 
 	# Nästa obligatoriska radarping (D3/D6/D8)
 	var next_rd: int = -1

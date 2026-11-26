@@ -21,7 +21,11 @@ var walk_line_mesh: MeshInstance3D
 var nearby_poi_key: String = ""
 var nearby_poi_name: String = ""
 var city_builder: Node3D
+var stealth_fx: Node3D
 var ui_blocking_input: bool = false
+var footstep_accum: float = 0.0
+var footstep_side: float = 1.0
+var noise_accum: float = 0.0
 
 var cam_yaw: float = -0.22
 var cam_dist: float = 340.0
@@ -175,13 +179,33 @@ func _physics_process(delta: float) -> void:
 			move_dir = diff.normalized()
 			_draw_walk_line()
 
+	var sneaking: bool = Input.is_key_pressed(KEY_CTRL) or Input.is_key_pressed(KEY_C)
+	GameState.player_sneaking = sneaking and GameState.player_role == "thief"
+
 	if move_dir.length() > 0.05:
 		if actor.get("boarding") != null:
 			GameState.cancel_controlled_boarding()
 		var boosted: bool = GameState.player_role == "thief" and GameState.elapsed_sec < GameState.boost_until
-		var spd: float = BASE_SPEED * (1.7 if boosted else 1.0)
+		var spd: float = BASE_SPEED * (1.7 if boosted else (0.52 if GameState.player_sneaking else 1.0))
 		velocity.x = move_dir.x * spd
 		velocity.z = move_dir.z * spd
+
+		# Lämna färska fotspår & ljudringar när tjuven springer (helt tyst vid smygning!)
+		if GameState.player_role == "thief" and not GameState.player_sneaking and stealth_fx != null:
+			footstep_accum += spd * delta
+			if footstep_accum >= 10.5:
+				footstep_accum = 0.0
+				footstep_side = -footstep_side
+				var yaw: float = atan2(velocity.x, velocity.z)
+				var side_vec := Vector3(cos(yaw), 0.0, -sin(yaw)) * (0.9 * footstep_side)
+				stealth_fx.spawn_footprint(global_position + side_vec, yaw, true)
+			if boosted:
+				noise_accum += delta
+				if noise_accum >= 0.55:
+					noise_accum = 0.0
+					stealth_fx.spawn_noise_ring(global_position, 52.0, Color(1.0, 0.72, 0.28, 0.80))
+					GameState.last_noise_pos = global_position
+					GameState.last_noise_time = GameState.elapsed_sec
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, 220.0 * delta)
 		velocity.z = move_toward(velocity.z, 0.0, 220.0 * delta)

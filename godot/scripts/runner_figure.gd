@@ -1,141 +1,190 @@
 extends Node3D
 
-## Animerad liten springande 3D-figur för Tjuv (trenchcoat + fedora-hatt) och Polis (uniform + poliskeps)
-## Svänger armar & ben i takt med löphastigheten och vänder sig automatiskt i löpriktningen!
-
+## Human proportions in a deliberately enlarged tactical silhouette (about 5.6 m).
+## Geometry is authored in metres; elbows/knees articulate independently.
+const DISPLAY_SCALE := 3.0
 var body_pivot: Node3D
 var left_leg: Node3D
 var right_leg: Node3D
 var left_arm: Node3D
 var right_arm: Node3D
-var run_phase: float = 0.0
-var is_police: bool = false
+var knees: Array[Node3D] = []
+var elbows: Array[Node3D] = []
+var coat_tails: Array[Node3D] = []
+var run_phase := 0.0
+var is_police := false
 
 func setup(police_style: bool) -> void:
 	is_police = police_style
-	for ch in get_children():
-		ch.queue_free()
-
+	for child in get_children():
+		remove_child(child)
+		child.queue_free()
+	knees.clear()
+	elbows.clear()
+	coat_tails.clear()
 	body_pivot = Node3D.new()
+	body_pivot.scale = Vector3.ONE * DISPLAY_SCALE
 	add_child(body_pivot)
+	var cloth := _mat(Color("202c3b") if police_style else Color("514c40"), 0.95)
+	var dark := _mat(Color("18202a") if police_style else Color("262725"), 0.93)
+	var leather := _mat(Color("161715"), 0.42)
+	var skin := _mat(Color("b78d70"), 0.82)
+	var brass := _mat(Color("b29a68"), 0.32, 0.65)
+	var shirt := _mat(Color("c6c2ae"), 0.95)
+	var hair := _mat(Color("302820"), 0.94)
+	# Tailored torso with waist, chest and sloping shoulders.
+	_profile(body_pivot, Vector3(0, 0.91, 0), [Vector3(0.17,0,0.115), Vector3(0.16,0.15,0.105), Vector3(0.205,0.40,0.13), Vector3(0.22,0.46,0.12), Vector3(0.11,0.53,0.09)], cloth)
+	_ellipsoid(body_pivot, Vector3(0,0.91,0), Vector3(0.175,0.14,0.115), dark)
+	_ellipsoid(body_pivot, Vector3(0,1.47,0), Vector3(0.063,0.09,0.065), skin)
+	_ellipsoid(body_pivot, Vector3(0,1.64,0), Vector3(0.096,0.13,0.092), skin)
+	_ellipsoid(body_pivot, Vector3(0,1.70,-0.018), Vector3(0.098,0.087,0.085), hair)
+	# Jaw, nose and ears; restrained detail for a medium-distance game character.
+	_ellipsoid(body_pivot, Vector3(0,1.57,0.018), Vector3(0.078,0.055,0.073), skin)
+	_ellipsoid(body_pivot, Vector3(0,1.635,0.094), Vector3(0.018,0.032,0.026), skin)
+	for side in [-1.0,1.0]:
+		_ellipsoid(body_pivot, Vector3(side*0.098,1.64,0), Vector3(0.015,0.032,0.021), skin)
+		_ellipsoid(body_pivot, Vector3(side*0.036,1.665,0.084), Vector3(0.012,0.006,0.006), dark)
+	# Shirt triangle and two cloth lapels.
+	_triangle(body_pivot, Vector3(-0.08,1.43,0.112), Vector3(0.08,1.43,0.112), Vector3(0,1.20,0.14), shirt)
+	_triangle(body_pivot, Vector3(-0.10,1.44,0.13), Vector3(-0.20,1.34,0.14), Vector3(0,1.17,0.145), dark)
+	_triangle(body_pivot, Vector3(0.10,1.44,0.13), Vector3(0.20,1.34,0.14), Vector3(0,1.17,0.145), cloth)
+	_profile(body_pivot, Vector3(0,1.015,0), [Vector3(0.171,0,0.12),Vector3(0.17,0.035,0.12)], leather)
+	_box(body_pivot, Vector3(0,1.033,0.126), Vector3(0.045,0.036,0.009), brass)
+	for y in [1.12,1.22,1.32]:
+		_ellipsoid(body_pivot, Vector3(0.045,y,0.14), Vector3(0.009,0.009,0.004), brass)
+	if police_style:
+		# Peaked cap, dark leather visor, badge, epaulettes and duty pouches.
+		_profile(body_pivot, Vector3(0,1.745,0), [Vector3(0.10,0,0.095),Vector3(0.12,0.04,0.105),Vector3(0.105,0.075,0.09)], cloth)
+		_ellipsoid(body_pivot, Vector3(0,1.752,0.09), Vector3(0.105,0.012,0.075), leather)
+		_ellipsoid(body_pivot, Vector3(0,1.785,0.104), Vector3(0.018,0.024,0.006), brass)
+		_ellipsoid(body_pivot, Vector3(-0.11,1.33,0.14), Vector3(0.025,0.033,0.006), brass)
+		for side in [-1.0,1.0]:
+			_box(body_pivot, Vector3(side*0.19,1.415,0), Vector3(0.08,0.015,0.095), dark)
+			_box(body_pivot, Vector3(side*0.17,0.99,0.04), Vector3(0.075,0.10,0.07), leather)
+	else:
+		# Felt fedora with flattened brim and grosgrain band.
+		_ellipsoid(body_pivot, Vector3(0,1.755,0), Vector3(0.17,0.012,0.145), dark)
+		_profile(body_pivot, Vector3(0,1.755,0), [Vector3(0.108,0,0.10),Vector3(0.103,0.055,0.095),Vector3(0.078,0.10,0.077)], dark)
+		_profile(body_pivot, Vector3(0,1.766,0), [Vector3(0.109,0,0.101),Vector3(0.107,0.02,0.100)], leather)
+		# Split coat skirts move independently, leaving the legs visible.
+		for side in [-1.0,1.0]:
+			var tail := Node3D.new()
+			tail.position = Vector3(side*0.10,1.015,-0.025)
+			body_pivot.add_child(tail)
+			_profile(tail, Vector3.ZERO, [Vector3(0.105,0,0.105),Vector3(0.12,-0.22,0.13),Vector3(0.13,-0.43,0.145)], cloth)
+			coat_tails.append(tail)
+		_box(body_pivot, Vector3(0.17,1.15,-0.15),Vector3(0.14,0.19,0.06),leather)
+	for side in [-1.0,1.0]:
+		var leg := Node3D.new()
+		leg.position = Vector3(side*0.10,0.91,0)
+		body_pivot.add_child(leg)
+		_segment(leg,0.43,0.078,0.063,dark)
+		var knee := Node3D.new()
+		knee.position.y = -0.43
+		leg.add_child(knee)
+		_segment(knee,0.39,0.061,0.043,dark)
+		_ellipsoid(knee,Vector3(0,-0.405,0.055),Vector3(0.060,0.050,0.12),leather)
+		knees.append(knee)
+		var arm := Node3D.new()
+		arm.position = Vector3(side*0.235,1.365,0)
+		arm.rotation.z = side*0.06
+		body_pivot.add_child(arm)
+		_segment(arm,0.29,0.065,0.049,cloth)
+		var elbow := Node3D.new()
+		elbow.position.y = -0.29
+		arm.add_child(elbow)
+		_segment(elbow,0.25,0.049,0.036,cloth)
+		_ellipsoid(elbow,Vector3(0,-0.285,0.012),Vector3(0.035,0.06,0.025),skin)
+		elbows.append(elbow)
+		if side < 0:
+			left_leg = leg
+			left_arm = arm
+		else:
+			right_leg = leg
+			right_arm = arm
 
-	var coat_col: Color = Color(0.10, 0.32, 0.68) if police_style else Color(0.68, 0.14, 0.14)
-	var pants_col: Color = Color(0.08, 0.16, 0.34) if police_style else Color(0.16, 0.14, 0.15)
-	var skin_col: Color = Color(0.94, 0.78, 0.64)
-	var hat_col: Color = Color(0.08, 0.22, 0.52) if police_style else Color(0.15, 0.12, 0.12)
-	var accent_col: Color = Color(1.0, 0.84, 0.30)
+func _mat(color: Color, roughness: float, metallic: float = 0.0) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = roughness
+	material.metallic = metallic
+	return material
 
-	var coat_mat := _mat(coat_col, coat_col * 0.25)
-	var pants_mat := _mat(pants_col, Color.BLACK)
-	var skin_mat := _mat(skin_col, Color.BLACK)
-	var hat_mat := _mat(hat_col, Color.BLACK)
-	var acc_mat := _mat(accent_col, accent_col * 0.4)
+func _ellipsoid(parent: Node3D, pos: Vector3, radii: Vector3, material: Material) -> void:
+	var mesh := SphereMesh.new()
+	mesh.radius = 1.0
+	mesh.height = 2.0
+	mesh.radial_segments = 16
+	mesh.rings = 8
+	var node := MeshInstance3D.new()
+	node.mesh = mesh
+	node.position = pos
+	node.scale = radii
+	node.material_override = material
+	parent.add_child(node)
 
-	# Skala så figuren syns superbra även i utzoomad stadsvy (total höjd ~9.5m)
-	var s: float = 1.65
-	body_pivot.scale = Vector3(s, s, s)
+func _box(parent: Node3D, pos: Vector3, dimensions: Vector3, material: Material) -> void:
+	var mesh := BoxMesh.new()
+	mesh.size = dimensions
+	var node := MeshInstance3D.new()
+	node.mesh = mesh
+	node.position = pos
+	node.material_override = material
+	parent.add_child(node)
 
-	# Kropp (trenchcoat / uniform)
-	var torso := MeshInstance3D.new()
-	var tb := BoxMesh.new()
-	tb.size = Vector3(1.5, 2.2, 0.95)
-	torso.mesh = tb
-	torso.position = Vector3(0.0, 3.0, 0.0)
-	torso.material_override = coat_mat
-	body_pivot.add_child(torso)
+func _segment(parent: Node3D, length: float, upper: float, lower: float, material: Material) -> void:
+	_profile(parent,Vector3.ZERO,[Vector3(upper,0,upper),Vector3(upper,-0.06,upper),Vector3(lower,-length,lower)],material)
+	_ellipsoid(parent,Vector3.ZERO,Vector3(upper,upper,upper),material)
 
-	# Gulddetalj (polisbricka / tjuvscarf)
-	var badge := MeshInstance3D.new()
-	var bb := BoxMesh.new()
-	bb.size = Vector3(1.58, 0.32, 1.02) if not police_style else Vector3(0.38, 0.38, 0.18)
-	badge.mesh = bb
-	badge.position = Vector3(0.0, 3.95, 0.0) if not police_style else Vector3(0.35, 3.4, 0.52)
-	badge.material_override = acc_mat
-	body_pivot.add_child(badge)
+func _triangle(parent: Node3D, a: Vector3, b: Vector3, c: Vector3, material: Material) -> void:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for v in [a,b,c]:
+		surface.set_normal(Vector3.FORWARD)
+		surface.add_vertex(v)
+	var node := MeshInstance3D.new()
+	node.mesh = surface.commit()
+	var double_sided = material.duplicate()
+	double_sided.cull_mode = BaseMaterial3D.CULL_DISABLED
+	node.material_override = double_sided
+	parent.add_child(node)
 
-	# Huvud
-	var head := MeshInstance3D.new()
-	var hs := SphereMesh.new()
-	hs.radius = 0.68
-	hs.height = 1.36
-	head.mesh = hs
-	head.position = Vector3(0.0, 4.75, 0.0)
-	head.material_override = skin_mat
-	body_pivot.add_child(head)
-
-	# Hatt (Poliskeps med skärm eller Tjuv-fedora med brätte!)
-	var hat := MeshInstance3D.new()
-	var hc := CylinderMesh.new()
-	hc.top_radius = 0.62 if police_style else 0.52
-	hc.bottom_radius = 0.70
-	hc.height = 0.55
-	hat.mesh = hc
-	hat.position = Vector3(0.0, 5.45, 0.0)
-	hat.material_override = hat_mat
-	body_pivot.add_child(hat)
-
-	var brim := MeshInstance3D.new()
-	var br_m := CylinderMesh.new()
-	br_m.top_radius = 0.78 if police_style else 1.08
-	br_m.bottom_radius = 0.78 if police_style else 1.08
-	br_m.height = 0.14
-	brim.mesh = br_m
-	brim.position = Vector3(0.0, 5.22, 0.22 if police_style else 0.0)
-	brim.material_override = acc_mat if police_style else hat_mat
-	body_pivot.add_child(brim)
-
-	# Ben (svingande från höften)
-	left_leg = _make_limb(Vector3(-0.42, 1.9, 0.0), Vector3(0.52, 1.9, 0.55), pants_mat)
-	right_leg = _make_limb(Vector3(0.42, 1.9, 0.0), Vector3(0.52, 1.9, 0.55), pants_mat)
-	body_pivot.add_child(left_leg)
-	body_pivot.add_child(right_leg)
-
-	# Armar (svingande från axeln)
-	left_arm = _make_limb(Vector3(-1.02, 3.85, 0.0), Vector3(0.44, 1.75, 0.44), coat_mat)
-	right_arm = _make_limb(Vector3(1.02, 3.85, 0.0), Vector3(0.44, 1.75, 0.44), coat_mat)
-	body_pivot.add_child(left_arm)
-	body_pivot.add_child(right_arm)
-
-func _make_limb(pivot_pos: Vector3, sz: Vector3, mat: StandardMaterial3D) -> Node3D:
-	var piv := Node3D.new()
-	piv.position = pivot_pos
-	var mi := MeshInstance3D.new()
-	var bm := BoxMesh.new()
-	bm.size = sz
-	mi.mesh = bm
-	mi.position = Vector3(0.0, -sz.y * 0.5, 0.0)
-	mi.material_override = mat
-	piv.add_child(mi)
-	return piv
-
-func _mat(col: Color, em: Color) -> StandardMaterial3D:
-	var m := StandardMaterial3D.new()
-	m.albedo_color = col
-	if em != Color.BLACK:
-		m.emission_enabled = true
-		m.emission = em
-	m.roughness = 0.65
-	return m
+func _profile(parent: Node3D, pos: Vector3, rings: Array, material: Material) -> void:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for row in range(rings.size()-1):
+		for i in range(16):
+			for corner in [[row,i],[row+1,i],[row+1,i+1],[row,i],[row+1,i+1],[row,i+1]]:
+				var ring: Vector3 = rings[corner[0]]
+				var angle: float = float(corner[1])*TAU/16.0
+				surface.set_normal(Vector3(cos(angle),0,sin(angle)))
+				surface.add_vertex(Vector3(cos(angle)*ring.x,ring.y,sin(angle)*ring.z))
+	var node := MeshInstance3D.new()
+	node.mesh = surface.commit()
+	node.position = pos
+	var double_sided = material.duplicate()
+	double_sided.cull_mode = BaseMaterial3D.CULL_DISABLED
+	node.material_override = double_sided
+	parent.add_child(node)
 
 func update_run(vel: Vector3, delta: float) -> void:
 	if body_pivot == null:
 		return
-	var horiz := Vector2(vel.x, vel.z)
-	var spd: float = horiz.length()
-	if spd > 1.5:
-		# Vänd figuren mjukt i löpriktningen (+Z är framåt på figuren)
-		var target_yaw: float = atan2(vel.x, vel.z)
-		body_pivot.rotation.y = lerp_angle(body_pivot.rotation.y, target_yaw, clampf(delta * 14.0, 0.0, 1.0))
-		run_phase += delta * clampf(spd * 0.34, 6.0, 22.0)
-		var swing: float = sin(run_phase) * 0.85
-		left_leg.rotation.x = swing
-		right_leg.rotation.x = -swing
-		left_arm.rotation.x = -swing * 0.85
-		right_arm.rotation.x = swing * 0.85
-		body_pivot.position.y = absf(sin(run_phase)) * 0.65
-	else:
-		left_leg.rotation.x = lerpf(left_leg.rotation.x, 0.0, delta * 10.0)
-		right_leg.rotation.x = lerpf(right_leg.rotation.x, 0.0, delta * 10.0)
-		left_arm.rotation.x = lerpf(left_arm.rotation.x, 0.0, delta * 10.0)
-		right_arm.rotation.x = lerpf(right_arm.rotation.x, 0.0, delta * 10.0)
-		body_pivot.position.y = lerpf(body_pivot.position.y, 0.0, delta * 10.0)
+	var speed := Vector2(vel.x,vel.z).length()
+	var blend := clampf(delta*12.0,0,1)
+	var running := speed > 1.5
+	if running:
+		body_pivot.rotation.y = lerp_angle(body_pivot.rotation.y,atan2(vel.x,vel.z),blend)
+		run_phase += delta*clampf(speed*0.22,5.0,11.0)
+	var swing: float = sin(run_phase)*0.65 if running else 0.0
+	left_leg.rotation.x = lerpf(left_leg.rotation.x,swing,blend)
+	right_leg.rotation.x = lerpf(right_leg.rotation.x,-swing,blend)
+	left_arm.rotation.x = lerpf(left_arm.rotation.x,-swing*0.75,blend)
+	right_arm.rotation.x = lerpf(right_arm.rotation.x,swing*0.75,blend)
+	for i in range(2):
+		var phase: float = run_phase + float(i)*PI
+		knees[i].rotation.x = lerpf(knees[i].rotation.x,-maxf(0,sin(phase))*1.1 if running else 0.03,blend)
+		elbows[i].rotation.x = lerpf(elbows[i].rotation.x,0.85 if running else 0.12,blend)
+		if not coat_tails.is_empty():
+			coat_tails[i].rotation.x = lerpf(coat_tails[i].rotation.x,sin(phase)*0.15 if running else 0.0,blend)
+	body_pivot.position.y = lerpf(body_pivot.position.y,absf(sin(run_phase*2))*0.10 if running else 0.0,blend)

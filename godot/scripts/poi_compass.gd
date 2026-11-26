@@ -30,20 +30,6 @@ func _draw() -> void:
 	var pad_top: float = 92.0
 	var pad_bot: float = 96.0
 
-	var icons := {
-		"landmark": "🎯",
-		"hub": "🚉",
-		"hotel": "🏨",
-		"market": "🛍️",
-		"library": "📚"
-	}
-	var cols := {
-		"landmark": Color(1.0, 0.84, 0.28),
-		"hub": Color(0.38, 0.80, 1.0),
-		"hotel": Color(0.95, 0.50, 0.65),
-		"market": Color(0.42, 0.90, 0.58),
-		"library": Color(0.74, 0.58, 0.98)
-	}
 
 	for pkey in ["landmark", "hub", "hotel", "market", "library"]:
 		if not cb.pois.has(pkey):
@@ -62,7 +48,7 @@ func _draw() -> void:
 			short_nm = "Bibliotek"
 
 		var is_target_lm: bool = (pkey == "landmark" and GameState.player_role == "thief" and GameState.real_targets.has(GameState.current_city_id) and not GameState.collected_targets.has(GameState.current_city_id))
-		var col: Color = cols.get(pkey, Color.WHITE)
+		var col := Color("c4b78e")
 		if is_target_lm:
 			col = Color(1.0, 0.88, 0.22)
 
@@ -72,9 +58,9 @@ func _draw() -> void:
 			screen_pt = vp - screen_pt
 
 		var on_screen: bool = (not behind) and screen_pt.x >= pad_x and screen_pt.x <= vp.x - pad_x and screen_pt.y >= pad_top and screen_pt.y <= vp.y - pad_bot
-		var label_txt: String = "%s %s · %dm" % [String(icons.get(pkey, "✦")), short_nm, dist_m]
+		var label_txt: String = "%s · %dm" % [NoirVisuals.clean(short_nm), dist_m]
 		var txt_sz: Vector2 = font.get_string_size(label_txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 12)
-		var pill_w: float = txt_sz.x + 18.0
+		var pill_w: float = txt_sz.x + 40.0
 		var pill_h: float = 24.0
 
 		if on_screen:
@@ -82,7 +68,8 @@ func _draw() -> void:
 			var rect := Rect2(screen_pt.x - pill_w * 0.5, screen_pt.y - 34.0, pill_w, pill_h)
 			draw_rect(rect, Color(0.10, 0.07, 0.04, 0.82), true)
 			draw_rect(rect, col, false, 1.5)
-			draw_string(font, Vector2(rect.position.x + 9.0, rect.position.y + 16.0), label_txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, col)
+			draw_texture_rect(NoirVisuals.icon(pkey), Rect2(rect.position + Vector2(6, 3), Vector2(18, 18)), false)
+			draw_string(font, Vector2(rect.position.x + 30.0, rect.position.y + 16.0), label_txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, col)
 		else:
 			# Fastklistrad riktningspil + avstånd längs skärmkanten!
 			var dir: Vector2 = (screen_pt - center)
@@ -109,4 +96,5 @@ func _draw() -> void:
 			var rect2 := Rect2(edge_pt.x - pill_w * 0.5, edge_pt.y - pill_h * 0.5, pill_w, pill_h)
 			draw_rect(rect2, Color(0.10, 0.07, 0.04, 0.90), true)
 			draw_rect(rect2, col, false, 1.8)
-			draw_string(font, Vector2(rect2.position.x + 9.0, rect2.position.y + 16.0), label_txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, col)
+			draw_texture_rect(NoirVisuals.icon(pkey), Rect2(rect2.position + Vector2(6, 3), Vector2(18, 18)), false)
+			draw_string(font, Vector2(rect2.position.x + 30.0, rect2.position.y + 16.0), label_txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, col)

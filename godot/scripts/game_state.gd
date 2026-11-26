@@ -58,6 +58,9 @@ var match_token: int = 0
 var nearest_police_dist_in_city: float = 999.0
 var nearest_police_chasing: bool = false
 var player_at_hub: bool = false
+var player_sneaking: bool = false
+var last_noise_pos: Vector3 = Vector3.ZERO
+var last_noise_time: float = -999.0
 var thief_visit_log: Dictionary = {} # city_id -> { last_to, mode_label, day, hh, mm }
 var reveal_triggered: Dictionary = {}
 var last_ping: Dictionary = {}
@@ -117,6 +120,8 @@ func start_match(role: String = "thief", p_sec_per_day: float = 60.0, p_miss_lim
 	nearest_police_dist_in_city = 999.0
 	nearest_police_chasing = false
 	player_at_hub = false
+	player_sneaking = false
+	last_noise_time = -999.0
 	thief_visit_log.clear()
 	radio_feed.clear()
 	stats = { "solved": 0, "travels": 0, "reveals": 0 }

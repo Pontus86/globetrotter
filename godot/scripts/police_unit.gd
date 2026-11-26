@@ -12,10 +12,12 @@ const RunnerFigureScript = preload("res://scripts/runner_figure.gd")
 var police_data: Dictionary = {}
 var target_player: CharacterBody3D
 var city_builder: Node3D
+var stealth_fx: Node3D
 var runner_fig: Node3D
 var alert_state: String = "patrol" # "chasing" | "searching" | "patrol"
 var spotted_pos: Vector3 = Vector3.ZERO
 var has_spotted_pos: bool = false
+var last_heard_time: float = -999.0
 var stuck_timer: float = 0.0
 var detour_sign: float = 1.0
 
@@ -97,6 +99,7 @@ func _physics_process(delta: float) -> void:
 	var dist: float = Vector2(global_position.x, global_position.z).distance_to(Vector2(target_player.global_position.x, target_player.global_position.z))
 	var thief_hidden: bool = GameState.elapsed_sec < GameState.thief_hidden_until
 	var thief_sprinting: bool = GameState.elapsed_sec < GameState.boost_until
+	var eff_vision: float = GameState.VISION_DIST_M * (0.55 if GameState.player_sneaking else 1.0)
 	var has_los: bool = (dist <= GameState.LOSE_SIGHT_DIST_M * 1.4) and _has_line_of_sight_to_player()
 
 	# Gripande! (kräver avstånd <= CAPTURE_DIST_M och ingen husvägg emellan)
@@ -104,20 +107,37 @@ func _physics_process(delta: float) -> void:
 		GameState.end_game(false, "%s grep dig på gatorna i %s!" % [police_data.get("name", "Polisen"), GameState.cities[GameState.current_city_id]["name"]])
 		return
 
-	# Riktig 3D-siktlinje: byggnader blockerar polisens syn!
+	# Riktig 3D-siktlinje + hörsel (sprintljud genom väggar!) + fotspår!
 	if thief_hidden:
 		if alert_state == "chasing":
 			alert_state = "searching"
 			has_spotted_pos = false
-	elif has_los and (dist <= GameState.VISION_DIST_M or thief_sprinting):
+	elif has_los and (dist <= eff_vision or thief_sprinting):
 		if alert_state != "chasing":
 			alert_state = "chasing"
 			GameState.add_radio('📻 %s: "Ögonkontakt i %s!"' % [police_data.get("short", "Polis"), GameState.cities[GameState.current_city_id]["name"]], "alert")
 		spotted_pos = target_player.global_position
 		has_spotted_pos = true
-	elif alert_state == "chasing" and (not has_los or dist > GameState.LOSE_SIGHT_DIST_M):
-		alert_state = "searching"
-		GameState.add_radio('📻 %s: "Tappade siktlinjen bakom kvarteret."' % police_data.get("short", "Polis"), "police")
+	else:
+		if alert_state == "chasing":
+			alert_state = "searching"
+			GameState.add_radio('📻 %s: "Tappade siktlinjen bakom kvarteret."' % police_data.get("short", "Polis"), "police")
+		# Hörsel: sprintljud hörs genom hus upp till 95m!
+		if GameState.last_noise_time > last_heard_time and (GameState.elapsed_sec - GameState.last_noise_time) < 2.0:
+			var nd: float = Vector2(global_position.x, global_position.z).distance_to(Vector2(GameState.last_noise_pos.x, GameState.last_noise_pos.z))
+			if nd <= 95.0:
+				last_heard_time = GameState.last_noise_time
+				spotted_pos = GameState.last_noise_pos
+				has_spotted_pos = true
+				alert_state = "searching"
+				GameState.add_radio('📻 %s: "Hörde snabba fotsteg i närheten!"' % police_data.get("short", "Polis"), "police")
+		# Fotspår: plocka upp färska fotspår inom 18m!
+		elif stealth_fx != null and not has_spotted_pos:
+			var fp_pos: Vector3 = stealth_fx.get_freshest_footprint_near(global_position, 18.0)
+			if fp_pos != Vector3.ZERO:
+				spotted_pos = fp_pos
+				has_spotted_pos = true
+				alert_state = "searching"
 
 	var goal: Vector3 = spotted_pos
 	if not has_spotted_pos or Vector2(global_position.x, global_position.z).distance_to(Vector2(goal.x, goal.z)) < 8.0:

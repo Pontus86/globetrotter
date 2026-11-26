@@ -9,12 +9,16 @@ const PoliceScript = preload("res://scripts/police_unit.gd")
 const GlobeScript = preload("res://scripts/globe_3d.gd")
 const HudScript = preload("res://scripts/hud.gd")
 const RunnerFigureScript = preload("res://scripts/runner_figure.gd")
+const StealthFxScript = preload("res://scripts/stealth_fx.gd")
 
 var city_container: Node3D
 var city_builder: Node3D
+var stealth_fx: Node3D
 var player: CharacterBody3D
 var police_nodes: Dictionary = {}
 var ai_thief_node: CharacterBody3D
+var ai_thief_step_accum: float = 0.0
+var ai_thief_step_side: float = 1.0
 var thief_area_marker: MeshInstance3D
 var thief_area_timer: float = 0.0
 var globe: Node3D
@@ -60,8 +64,12 @@ func _ready() -> void:
 	city_builder = CityBuilderScript.new()
 	city_container.add_child(city_builder)
 
+	stealth_fx = StealthFxScript.new()
+	city_container.add_child(stealth_fx)
+
 	player = PlayerScript.new()
 	player.city_builder = city_builder
+	player.stealth_fx = stealth_fx
 	city_container.add_child(player)
 	city_builder.focus_target = player
 
@@ -82,6 +90,8 @@ func _on_match_started() -> void:
 	_clear_city_bots()
 
 func _clear_city_bots() -> void:
+	if stealth_fx != null:
+		stealth_fx.clear_all()
 	for pn in police_nodes.values():
 		if is_instance_valid(pn):
 			pn.queue_free()
@@ -123,6 +133,7 @@ func _process(_delta: float) -> void:
 				pn.police_data = p
 				pn.target_player = player
 				pn.city_builder = city_builder
+				pn.stealth_fx = stealth_fx
 				city_container.add_child(pn)
 				pn.global_position = city_builder.get_police_spawn_pos()
 				police_nodes[pid] = pn
@@ -172,6 +183,15 @@ func _physics_process(delta: float) -> void:
 			ai_thief_node.velocity = Vector3(dir.x * 36.5, 0.0, dir.z * 36.5)
 			ai_thief_node.move_and_slide()
 			ai_thief_node.global_position.y = 0.1
+			# AI-tjuven lämnar färska fotspår i gränderna som polischefen kan följa!
+			if stealth_fx != null:
+				ai_thief_step_accum += 36.5 * delta
+				if ai_thief_step_accum >= 10.5:
+					ai_thief_step_accum = 0.0
+					ai_thief_step_side = -ai_thief_step_side
+					var tyaw: float = atan2(ai_thief_node.velocity.x, ai_thief_node.velocity.z)
+					var svec := Vector3(cos(tyaw), 0.0, -sin(tyaw)) * (0.9 * ai_thief_step_side)
+					stealth_fx.spawn_footprint(ai_thief_node.global_position + svec, tyaw, true)
 		else:
 			ai_thief_node.velocity = Vector3.ZERO
 		var rf: Node = ai_thief_node.get_node_or_null("RunnerFig")
