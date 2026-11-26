@@ -19,6 +19,7 @@ var focus_target: Node3D
 var chunk_data: Dictionary = {}      # Vector2i -> Array[Dictionary] (råa hus i chunken)
 var loaded_chunks: Dictionary = {}   # Vector2i -> Node3D (byggd mesh + hitbox)
 var chunk_clear_pts: Array[Vector2] = []
+var building_polys_2d: Array[PackedVector2Array] = []
 var chunk_seed: int = 0
 var facade_albedo_tex: Texture2D
 var facade_emit_tex: Texture2D
@@ -96,6 +97,7 @@ func build_city(city_id: String) -> void:
 	chunk_data.clear()
 	loaded_chunks.clear()
 	chunk_clear_pts.clear()
+	building_polys_2d.clear()
 	chunk_seed = hash(city_id)
 	if city_root != null:
 		city_root.queue_free()
@@ -162,12 +164,13 @@ func _build_osm_city(city_id: String, city_data: Dictionary, osm: Dictionary) ->
 		plane_mi.material_override = pmat
 		city_root.add_child(plane_mi)
 
-		# Samla road_points för ev. polis-spawns utan att rita klumpiga fula extragator över kartbilden
+		# Samla road_points från ALLA noder på riktiga gator så vi alltid kan spawna på närmaste fria gata!
 		for r_raw in osm.get("roads", []):
 			var r: Dictionary = r_raw
 			var pts: Array = r.get("pts", [])
-			if pts.size() >= 2 and int(r.get("b", 0)) != 2:
-				road_points.append(Vector3(float(pts[0][0]), 0.1, float(pts[0][1])))
+			if int(r.get("b", 0)) != 2:
+				for pt in pts:
+					road_points.append(Vector3(float(pt[0]), 0.1, float(pt[1])))
 	else:
 		# Fallback utan kartbild: rita vektorlager
 		var g_mesh := MeshInstance3D.new()
@@ -467,6 +470,7 @@ func _build_osm_buildings(buildings: Array, _rng: RandomNumberGenerator, clear_p
 	# Sortera in ALLA hus i 180x180m chunks så bara husen som syns runt spelaren byggs & renderas!
 	chunk_data.clear()
 	loaded_chunks.clear()
+	building_polys_2d.clear()
 	chunk_clear_pts = clear_pts.duplicate()
 
 	for b_raw in buildings:
@@ -474,6 +478,10 @@ func _build_osm_buildings(buildings: Array, _rng: RandomNumberGenerator, clear_p
 		var pts: Array = b.get("pts", [])
 		if pts.size() < 3:
 			continue
+		var poly2 := PackedVector2Array()
+		for p in pts:
+			poly2.append(Vector2(float(p[0]), float(p[1])))
+		building_polys_2d.append(poly2)
 		var fx: float = float(pts[0][0])
 		var fz: float = float(pts[0][1])
 		var ck := Vector2i(int(floorf(fx / CHUNK_SIZE)), int(floorf(fz / CHUNK_SIZE)))
@@ -518,7 +526,7 @@ func _build_single_chunk(ck: Vector2i) -> Node3D:
 
 		var too_close: bool = false
 		for cp in chunk_clear_pts:
-			if center2.distance_to(cp) < 13.0:
+			if center2.distance_to(cp) < 15.0 or Geometry2D.is_point_in_polygon(cp, pts2):
 				too_close = true
 				break
 		if too_close:
@@ -930,16 +938,51 @@ func _build_fallback_city(city_id: String, city_data: Dictionary) -> void:
 	_add_osm_poi_marker("market", "🛍️ Basar / Marknad", Vector3(-110.0, 0.0, -110.0), Color(0.26, 0.72, 0.46), city_id)
 	_add_osm_poi_marker("library", "📚 Bibliotek", Vector3(110.0, 0.0, 110.0), Color(0.56, 0.42, 0.82), city_id)
 
+func _is_point_blocked_by_building(pt: Vector2) -> bool:
+	# Kolla både exakt punkt och 4 punkter i 3.5m radie (spelarens kapselradie + marginal!)
+	var offsets := [Vector2.ZERO, Vector2(3.5, 0.0), Vector2(-3.5, 0.0), Vector2(0.0, 3.5), Vector2(0.0, -3.5)]
+	for poly in building_polys_2d:
+		for off in offsets:
+			if Geometry2D.is_point_in_polygon(pt + off, poly):
+				return true
+	return false
+
+func _find_nearest_free_street(target: Vector3) -> Vector3:
+	var best_pt := Vector3(target.x, 0.1, target.z)
+	var best_d: float = 1e12
+	var t2 := Vector2(target.x, target.z)
+
+	# 1. Prova riktiga gatupunkter närmast målet som garanterat inte ligger i något hus!
+	for rp in road_points:
+		var rp2 := Vector2(rp.x, rp.z)
+		var d: float = t2.distance_squared_to(rp2)
+		if d < best_d and d > 16.0: # Minst 4m från själva POI-mitten
+			if not _is_point_blocked_by_building(rp2):
+				best_d = d
+				best_pt = Vector3(rp.x, 0.1, rp.z)
+	if best_d < 1e11:
+		return best_pt
+
+	# 2. Fallback: spiral utåt tills fri gata hittas
+	for r in [12.0, 20.0, 30.0, 42.0]:
+		for ang_i in range(12):
+			var a: float = float(ang_i) * (TAU / 12.0)
+			var cand := Vector2(target.x + cos(a) * float(r), target.z + sin(a) * float(r))
+			if not _is_point_blocked_by_building(cand):
+				return Vector3(cand.x, 0.1, cand.y)
+	return Vector3(target.x, 0.1, target.z)
+
 func get_spawn_pos(pkey: String) -> Vector3:
 	if pois.has(pkey):
-		return pois[pkey]["pos"]
-	return Vector3(0.0, 0.1, 0.0)
+		var c: Vector3 = pois[pkey]["center"]
+		return _find_nearest_free_street(c)
+	return _find_nearest_free_street(Vector3.ZERO)
 
 func get_police_spawn_pos() -> Vector3:
 	if pois.has("hotel"):
-		return pois["hotel"]["pos"]
+		return _find_nearest_free_street(pois["hotel"]["center"])
 	if road_points.size() > 0:
-		return road_points[randi() % road_points.size()]
+		return _find_nearest_free_street(road_points[randi() % road_points.size()])
 	return Vector3(120.0, 0.1, -120.0)
 
 func _process(delta: float) -> void:
